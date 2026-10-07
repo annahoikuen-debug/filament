@@ -24,6 +24,124 @@
 - **CSVエクスポート** — 月別リストCSV / 会計仕訳CSV（`InvoiceCsvExportService`、未請求は会計仕訳から除外）
 - **入金管理** — 支払方法の記録、請求書ステータス遷移（Unbilled → Billed → Paid）
 
+---
+
+## 管理画面デモ / スナップショット
+
+> **注意**: 以下の画像はプレースホルダです。実際のスクリーンショットに差し替えてご利用ください。
+> 撮影手順: `php artisan serve` 後、`http://localhost:8000/admin` にアクセスし、各リソース画面でスクリーンショットを撮影して `docs/screenshots/` 以下に保存してください。
+
+### 1. 入居者管理 (`ResidentResource`)
+
+| 画面 | 説明 |
+|------|------|
+| ![入居者一覧](docs/screenshots/residents-index.png) | **一覧画面** — 部屋番号・氏名・ステータス・家賃・管理費をテーブル表示。ステータスバッジ（入居中/退去済/予約中）で即座に把握。フィルタで「入居中のみ」「退去済みのみ」切替可能。 |
+| ![入居者作成](docs/screenshots/residents-create.png) | **作成/編集モーダル** — 基本情報（氏名・部屋番号・家賃・管理費）、入居日/退去日、ステータスを一括入力。退去日は入居日以降のみ入力可（バリデーション内蔵）。 |
+| ![入居者詳細](docs/screenshots/residents-view.png) | **詳細画面** — 入居者の基本情報、関連する日次利用料、月次請求書の履歴をタブ切替で確認。 |
+
+**主な Filament 機能**: Table Bulk Actions（一括ステータス変更）、インライン編集、リレーションマネージャ（日次利用料・月次請求書）
+
+---
+
+### 2. 請求項目管理 (`ChargeItemResource`)
+
+| 画面 | 説明 |
+|------|------|
+| ![請求項目一覧](docs/screenshots/charge-items-index.png) | **一覧画面** — 項目名・単価・税区分（課税/非課税）・施設紐付けを表示。施設ごとの既定単価を管理。 |
+| ![請求項目作成](docs/screenshots/charge-items-create.png) | **作成/編集フォーム** — 名称、単価、税区分、施設選択。施設を選ぶとその施設専用の項目として登録。 |
+
+**用途**: 立替金、日用品、レクリエーション費、医療費等の定型外請求項目をマスタ管理
+
+---
+
+### 3. 日次利用料管理 (`DailyChargeResource`)
+
+| 画面 | 説明 |
+|------|------|
+| ![日次利用料一覧](docs/screenshots/daily-charges-index.png) | **一覧画面** — 日付・入居者・請求項目・数量・金額・税額を表示。月別フィルタ・入居者フィルタで絞込み。 |
+| ![日次利用料作成](docs/screenshots/daily-charges-create.png) | **作成フォーム** — 入居者選択 → 請求項目選択（単価自動反映）→ 数量入力 → 金額自動計算。複数行一括登録対応。 |
+
+**特徴**: 請求項目の単価を参照し、数量変更時に金額・税額をリアルタイム再計算
+
+---
+
+### 4. 月次請求書生成 (`MonthlyInvoiceResource`)
+
+| 画面 | 説明 |
+|------|------|
+| ![月次請求書一覧](docs/screenshots/monthly-invoices-index.png) | **一覧画面** — 請求月・入居者・請求額・税額・ステータス（未請求/請求済/入金済）を表示。ステータス別集計サマリー付き。 |
+| ![請求書生成アクション](docs/screenshots/monthly-invoices-generate.png) | **生成アクション** — 「請求書生成」ボタンで対象月・施設を指定し一括生成。生成ログ（件数・合計額）をトースト通知。 |
+| ![請求書詳細](docs/screenshots/monthly-invoices-view.png) | **詳細画面** — 明細内訳（家賃・管理費・日次利用料・税額）、PDFダウンロード、ステータス遷移ボタン（請求確定/入金記録）。 |
+
+**バックエンド**: `InvoiceCalculationService` が月途中入居/退去を日割り計算、税率は `TaxSetting` を参照
+
+---
+
+### 5. PDF発行・ZIP一括ダウンロード (`InvoicePdfService`)
+
+| 画面 | 説明 |
+|------|------|
+| ![PDFプレビュー](docs/screenshots/pdf-preview.png) | **請求書PDFプレビュー** — 施設名・登録番号・請求先・明細・合計・振込先銀行情報をレイアウト。インボイス制度対応（登録番号・税率別内訳表示）。 |
+| ![領収書PDF](docs/screenshots/receipt-preview.png) | **領収書PDF** — 領収書番号（`%04d` 連番）、但書（家賃等）、収入印紙欄（5万円以上対応）。 |
+| ![ZIPダウンロード](docs/screenshots/pdf-zip-download.png) | **月次ZIP一括ダウンロード** — 選択月の全入居者分を1つのZIPにまとめてダウンロード。ファイル名は `請求書_施設名_YYYYMM_入居者名.pdf` 形式。 |
+
+**技術詳細**: `dompdf` + 日本語フォント（Noto Sans JP）、一時ディレクトリは `try/finally` で確実クリーンアップ
+
+---
+
+### 6. CSVエクスポート (`InvoiceCsvExportService`)
+
+| 画面 | 説明 |
+|------|------|
+| ![月別リストCSV](docs/screenshots/csv-monthly-list.png) | **月別リストCSV** — 入居者ごとの請求額内訳を横持ち出力。会計ソフト取込用フォーマット。 |
+| ![会計仕訳CSV](docs/screenshots/csv-accounting.png) | **会計仕訳CSV** — 複式簿記対応の仕訳行（借方/貸方・勘定科目・金額・税区分）を出力。**Billed/Paid のみ対象**（未請求は除外）。 |
+
+**出力例**: `docs/samples/monthly_list_2026-10.csv`, `docs/samples/accounting_2026-10.csv`
+
+---
+
+### 7. 入金管理（ステータス遷移）
+
+| 画面 | 説明 |
+|------|------|
+| ![ステータス遷移](docs/screenshots/payment-status-flow.png) | **ステータス遷移フロー** — `Unbilled` → `Billed`（請求確定） → `Paid`（入金確認）。各遷移で確認モーダル表示。 |
+| ![入金記録モーダル](docs/screenshots/payment-record.png) | **入金記録モーダル** — 支払日・支払方法（現金/振込/口座振替/その他）・備考を入力。`Paid` 遷移時に自動記録。 |
+
+---
+
+### 8. 施設管理 (`FacilityResource`) — **v1.1 新機能**
+
+| 画面 | 説明 |
+|------|------|
+| ![施設一覧](docs/screenshots/facilities-index.png) | **一覧画面** — 施設名・運営者・所在地・電話・インボイス登録番号・銀行口座を一覧。 |
+| ![施設作成](docs/screenshots/facilities-create.png) | **作成/編集フォーム** — 基本情報、インボイス登録番号（T+13桁バリデーション）、銀行口座（銀行名・支店・種別・番号・名義）。 |
+
+**役割**: 複数施設運営の基盤。請求書PDFのヘッダー情報・振込先として使用。
+
+---
+
+### 9. 税率設定 (`TaxSettingResource`) — **v1.1 新機能**
+
+| 画面 | 説明 |
+|------|------|
+| ![税率一覧](docs/screenshots/tax-settings-index.png) | **一覧画面** — 税率・適用開始日・適用終了日・施設を表示。期間重複チェック機能付き。 |
+| ![税率作成](docs/screenshots/tax-settings-create.png) | **作成フォーム** — 税率（%）、適用期間、施設選択。終了日未入力で「現在適用中」扱い。 |
+
+**連携**: `InvoiceCalculationService` が請求月時点での有効税率を自動選択
+
+---
+
+### 10. PDFテンプレート設定 (`PdfTemplateSettingResource`) — **v1.1 新機能**
+
+| 画面 | 説明 |
+|------|------|
+| ![テンプレート一覧](docs/screenshots/pdf-templates-index.png) | **一覧画面** — テンプレート名・種別（請求書/領収書）・施設・デフォルトフラグを表示。 |
+| ![テンプレート編集](docs/screenshots/pdf-templates-edit.png) | **編集画面** — Blade テンプレートコードをエディタで編集（シンタックスハイライト付き）。プレビューボタンで即時確認。 |
+
+**カスタマイズ項目**: ヘッダーロゴ位置、明細テーブル列幅、フッター備考欄、フォントサイズ等
+
+---
+
 ## 技術スタック
 
 | 項目 | 内容 |
