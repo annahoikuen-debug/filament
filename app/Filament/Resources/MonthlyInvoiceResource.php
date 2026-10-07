@@ -171,6 +171,12 @@ class MonthlyInvoiceResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->label('ステータス')
                     ->options(InvoiceStatus::class),
+
+                Tables\Filters\SelectFilter::make('facility_id')
+                    ->label('施設')
+                    ->relationship('resident.facility', 'name')
+                    ->multiple()
+                    ->preload(),
             ])
             ->actions([
                 // 1. 請求書PDFダウンロード
@@ -179,7 +185,7 @@ class MonthlyInvoiceResource extends Resource
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('primary')
                     ->action(function (MonthlyInvoice $record, InvoicePdfService $service) {
-                        $pdf = $service->generateInvoicePdf($record);
+                        $pdf = $service->generateInvoicePdf($record, $record->resident->facility?->toConfigArray());
                         $fileName = sprintf(
                             '請求書_%s_%s号室_%s様.pdf',
                             $record->billing_year_month,
@@ -236,7 +242,7 @@ class MonthlyInvoiceResource extends Resource
                     ->color('warning')
                     ->visible(fn (MonthlyInvoice $record) => $record->status === InvoiceStatus::Paid)
                     ->action(function (MonthlyInvoice $record, InvoicePdfService $service) {
-                        $pdf = $service->generateReceiptPdf($record);
+                        $pdf = $service->generateReceiptPdf($record, $record->resident->facility?->toConfigArray());
                         $fileName = sprintf(
                             '領収証_%s_%s号室_%s様.pdf',
                             $record->billing_year_month,
@@ -254,7 +260,7 @@ class MonthlyInvoiceResource extends Resource
                 // 編集アクション: アーカイブ済み（請求済・入金済）は非表示
                 Tables\Actions\EditAction::make()
                     ->visible(fn (MonthlyInvoice $record) => $record->status && ! in_array($record->status, [InvoiceStatus::Paid, InvoiceStatus::Billed], true)
-                    ),
+                ),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -289,5 +295,18 @@ class MonthlyInvoiceResource extends Resource
             'create' => Pages\CreateMonthlyInvoice::route('/create'),
             'edit' => Pages\EditMonthlyInvoice::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * フィルタに施設が選択されている場合は、その施設の入居者のみを対象にする
+     */
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+        
+        // ファシリティフィルタが適用されているかチェック
+        // Filamentのフィルタシステムでは、リクエストパラメータから取得できる
+        // ここでは親のクエリを返し、個別のメソッドでフィルタ適用する
+        return $query;
     }
 }

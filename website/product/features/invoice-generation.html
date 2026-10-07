@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>月次請求一括生成・日割り計算 | 高齢者施設請求管理システム「あんしん」</title>
+  <meta name="description" content="あんしんの月次請求一括生成機能を詳しく解説。日割り計算ロジック、確定済みデータ保護機能、操作フローを図解入りでご紹介。">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="c-header">
+    <div class="c-container">
+      <div class="c-header__content">
+        <h1 class="c-header__logo">
+          <a href="../../index.html">あんしん</a>
+        </h1>
+        <nav class="c-header__nav">
+          <ul class="c-header__menu">
+            <li><a href="../../index.html">トップ</a></li>
+            <li><a href="../index.html">製品情報</a></li>
+            <li><a href="index.html" class="c-header__nav--active">月次請求一括生成・日割り計算</a></li>
+          </ul>
+        </nav>
+        <div class="c-header__actions">
+          <a href="../../request/catalog.html" class="c-btn c-btn--outline c-btn--md">
+            <svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-download"></use></svg>
+            資料請求
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Page Header -->
+    <section class="c-section c-section--light" aria-labelledby="page-title">
+      <div class="c-container">
+        <header class="c-section-header" id="page-title">
+          <h2 class="c-section-header__title">月次請求一括生成・日割り計算</h2>
+          <p class="c-section-header__text">
+            翌月1日、ボタン一つで全入居者分の請求データを自動生成。<br>
+            月中入居・退去者も在籍日数で正確に日割り計算され、確定済みデータは保護されます。
+          </p>
+        </header>
+      </div>
+    </section>
+
+    <!-- Challenge Section -->
+    <section class="c-section c-section--light" aria-labelledby="challenge-title">
+      <div class="c-container">
+        <header class="c-section-header" id="challenge-title">
+          <h2 class="c-section-header__title">こんな課題ありませんか？</h2>
+        </header>
+        <div class="c-grid c-grid--3">
+          <div class="c-card">
+            <div class="c-card__body">
+              <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="%231E40AF"/></svg>
+              </div>
+              <h3 class="c-card__title">手作業の日割り計算ミス</h3>
+              <p class="c-card__text">
+                月途中の入居・退去者の家賃・管理費を手作業で日割り計算すると、<br>
+                計算ミスや修正漏れが発生しやすく、請求金額に誤りが生じます。
+              </p>
+            </div>
+          </div>
+          <div class="c-card">
+            <div class="c-card__body">
+              <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2V20M2 12h20M17 9H7M12 17V7" fill="%231E40AF"/></svg>
+              </div>
+              <h3 class="c-card__title">月末の請求作業に時間がかかる</h3>
+              <p class="c-card__text">
+                入居者一人ひとりの在籍日数を計算し、請求金額を算出する作業に<br>
+                施設規模によっては数時間かかり、月末の事務作業に大きな負担となっています。
+              </p>
+            </div>
+          </div>
+          <div class="c-card">
+            <div class="c-card__body">
+              <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8-3.59 8-8 8z" fill="%231E40AF"/></svg>
+              </div>
+              <h3 class="c-card__title">確定済みデータの誤った修正</h3>
+              <p class="c-card__text">
+                請求済みや入金済みのデータを誤って修正してしまうと、<br>
+                二重請求や会計への影響など、深刻な問題を引き起こすリスクがあります。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="c-section c-section--light" aria-labelledby="solution-title">
+      <div class="c-container">
+        <header class="c-section-header" id="solution-title">
+          <h2 class="c-section-header__title">あんしんの解決方法</h2>
+        </header>
+        <div class="c-grid c-grid--2">
+          <div class="c-card">
+            <div class="c-card__body">
+              <h3 class="c-card__title">ボタン一つで自動生成</h3>
+              <p class="c-card__text">
+                翌月1日、対象月の自費記録が揃ったら「請求データを一括生成」ボタンを押すだけで、<br>
+                全入居者分の請求データを自動生成します。複雑な設定や事前準備は不要です。
+              </p>
+              <div class="c-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); font-size: 0.875rem; color: var(--color-text-secondary);">
+                「月次請求データ」メニュー → 「〇月の請求データを一括生成する」 → 「一括生成を実行する」
+              </div>
+            </div>
+          </div>
+          <div class="c-card">
+            <div class="c-card__body">
+              <img src="https://via.placeholder.com/400x250/1e40af/ffffff?text=月次請求生成画面" alt="月次請求一括生成画面" class="c-card__image">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="c-section c-section--light" aria-labelledby="how-it-works-title">
+      <div class="c-container">
+        <header class="c-section-header" id="how-it-works-title">
+          <h2 class="c-section-header__title">日割り計算の仕組み</h2>
+        </header>
+        <div class="c-card">
+          <div class="c-card__body">
+            <h3 class="c-card__title">在籍日数ベースの正確な計算</h3>
+            <p class="c-card__text">
+              あんしんの日割り計算は、入居日から退去日までの実際の在籍日数をベースに<br>
+              月額料金を日割りにして、その月の在籍日数で掛け算します。<br>
+              月中入居・退去者も正確に処理されます。
+            </p>
+            <div class="c-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+              <div class="c-grid c-grid--2">
+                <div class="c-card__body">
+                  <h4 class="c-card__title">計算式</h4>
+                  <div style="background: #f9fafb; padding: var(--space-4); border-radius: var(--radius-md); font-family: monospace;">
+在籍日数 = 月末日 - max(月初日, 入居日) + 1<br>
+按分額 = 月額 ÷ その月の日数 × 在籍日数（四捨五入）
+                  </div>
+                </div>
+                <div class="c-card__body">
+                  <h4 class="c-card__title">計算例</h4>
+                  <table style="width: 100%; border-collapse: collapse; margin-top: var(--space-2);">
+                    <thead>
+                      <tr style="background-color: #f9fafb;">
+                        <th style="text-align: left; padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">項目</th>
+                        <th style="text-align: center; padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">値</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style="padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">月額家賃</td>
+                        <td style="text-align: center; padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">65,000円</td>
+                      </tr>
+                      <tr style="background-color: #fafafa;">
+                        <td style="padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">その月の日数</td>
+                        <td style="text-align: center; padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">31日</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">在籍日数（15日間在籍）</td>
+                        <td style="text-align: center; padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">15日</td>
+                      </tr>
+                      <tr style="background-color: #fafafa;">
+                        <td style="padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">日割り家賃</td>
+                        <td style="text-align: center; padding: var(--space-2); border-bottom: 1px solid #e5e7eb;">31,452円</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Protection Feature Section -->
+    <section class="c-section c-section--light" aria-labelledby="protection-title">
+      <div class="c-container">
+        <header class="c-section-header" id="protection-title">
+          <h2 class="c-section-header__title">確定済みデータ保護機能</h2>
+        </header>
+        <div class="c-card">
+          <div class="c-card__body">
+            <h3 class="c-card__title">二重請求・修正漏れを防止する仕組み</h3>
+            <p class="c-card__text">
+              あんしんでは、請求済み（青）・入金済み（緑）のデータは自動的に保護され、<br>
+              通常の一括生成では再計算されません。これにより、すでに請求書を出したデータを<br>
+              誤って修正してしまうリスクを完全に排除します。
+            </p>
+            <div class="c-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+              <div class="c-grid c-grid--2">
+                <div class="c-card__body">
+                  <h4 class="c-card__title">ステータス別の挙動</h4>
+                  <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: var(--space-2);"><span style="color: #f59e0b;">●</span> 未請求（黄）：編集・削除・再計算・PDF出力・入金消込可能</li>
+                    <li style="margin-bottom: var(--space-2);"><span style="color: #3b82f6;">●</span> 請求済み（青）：PDF出力・入金消込可能（編集・削除・再計算不可）</li>
+                    <li style="margin-bottom: var(--space-2);"><span style="color: #10b981;">●</span> 入金済み（緑）：領収書PDF出力のみ可能（編集・削除・再計算不可）</li>
+                  </ul>
+                </div>
+                <div class="c-card__body">
+                  <h4 class="c-card__title">修正が必要な場合の対応</h4>
+                  <p class="c-card__text">
+                    確定済みデータの修正が必要な場合は、<br>
+                    「確定済みのデータも上書き再計算する（強制更新）」オプションをONにして<br>
+                    一括生成を再実行します。これにより、最新の在籍情報に基づいて正しく再計算されます。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Operation Flow Section -->
+    <section class="c-section c-section--light" aria-labelledby="operation-flow-title">
+      <div class="c-container">
+        <header class="c-section-header" id="operation-flow-title">
+          <h2 class="c-section-header__title">操作フロー</h2>
+        </header>
+        <div class="c-card">
+          <div class="c-card__body">
+            <h3 class="c-card__title">月次請求業務の流れ</h3>
+            <div class="c-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+              <ol style="padding-left: var(--space-6);">
+                <li><strong>日々の自費記録入力</strong>：毎日・随時（紙おむつ・理美容等）</li>
+                <li><strong>月次請求データ一括生成</strong>：翌月1日以降、対象月の自費記録が揃ったら</li>
+                <li><strong>金額確認</strong>：生成結果を確認し、問題なければ次へ</li>
+                <li><strong>請求書PDF出力</strong>：個別または全員分ZIPで出力</li>
+                <li><strong>一括「請求済」に変更</strong>：請求書送付後にステータスを確定</li>
+                <li><strong>入金消込</strong>：入金確認後に消込処理を実行</li>
+                <li><strong>領収書PDF出力</strong>：入金済データから領収書を発行</li>
+                <li><strong>会計CSV出力</strong>：会計ソフトへのデータ連携用にCSVを出力</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Effectiveness Section -->
+    <section class="c-section c-section--light" aria-labelledby="effectiveness-title">
+      <div class="c-container">
+        <header class="c-section-header" id="effectiveness-title">
+          <h2 class="c-section-header__title">導入による効果</h2>
+        </header>
+        <div class="c-grid c-grid--3">
+          <div class="c-card">
+            <div class="c-card__body">
+              <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="%2310B981"/></svg>
+              </div>
+              <h3 class="c-card__title">作業時間大幅削減</h3>
+              <p class="c-card__text">
+                月次請求作業時間が<br>
+                <strong>3時間 → 15分</strong><br>
+                （95%削減）
+              </p>
+            </div>
+          </div>
+          <div class="c-card">
+            <div class="c-card__body">
+              <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="%2310B981"/></svg>
+              </div>
+              <h3 class="c-card__title">計算ミスゼロ</h3>
+              <p class="c-card__text">
+                日割り計算の自動化により<br>
+                <strong>ミス・修正漏れゼロ</strong><br>
+                を実現
+              </p>
+            </div>
+          </div>
+          <div class="c-card">
+            <div class="c-card__body">
+              <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="%2310B981"/></svg>
+              </div>
+              <h3 class="c-card__title">月末の負荷分散</h3>
+              <p class="c-card__text">
+                ボタン一つで完結するため<br>
+                <strong>作業の平準化</strong><br>
+                が可能に
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Related Features Section -->
+    <section class="c-section c-section--light" aria-labelledby="related-title">
+      <div class="c-container">
+        <header class="c-section-header" id="related-title">
+          <h2 class="c-section-header__title">関連機能</h2>
+        </header>
+        <div class="c-grid c-grid--3">
+          <div class="c-card">
+            <div class="c-card__body">
+              <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 12H3a2 2 0 01-2-2V6a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2z" fill="%231E40AF"/></svg>
+              </div>
+              <h3 class="c-card__title">適格請求書・領収書PDF出力</h3>
+              <p class="c-card__text">
+                請求データからインボイス制度対応の適格請求書PDFと<br>
+                領収書PDFを自動生成します。領収書番号は入金消込時に自動採番。
+              </p>
+              <a href="pdf-output.html" class="c-card__link">
+                詳細を見る <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 3l3-3 3 3H5V6h4V3H9z" fill="%231E40AF"/></svg></a>
+            </div>
+          </div>
+          <div class="c-card">
+            <div class="c-card__body">
+              <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="%231E40AF"/></svg>
+              </div>
+              <h3 class="c-card__title">会計ソフト連携CSV</h3>
+              <p class="c-card__text">
+                弥生会計・freee・マネーフォワード等への連携用CSVを自動生成。<br>
+                UTF-8 BOM付きでExcelでの文字化けも発生しません。
+              </p>
+              <a href="accounting-export.html" class="c-card__link">
+                詳細を見る <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 3l3-3 3 3H5V6h4V3H9z" fill="%231E40AF"/></svg></a>
+            </div>
+          </div>
+          <div class="c-card">
+            <div class="c-card__body">
+              <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 10H6v-2h12v2zm-1-8V6h10v2H8zm4 4H8v-2h4v2z" fill="%231E40AF"/></svg>
+              </div>
+              <h3 class="c-card__title">入居者マスタ・在籍期間管理</h3>
+              <p class="c-card__text">
+                入居者の基本情報・入退去日を管理し、日割り計算の基盤を提供します。<br>
+                月中入居・退去者も正確に処理されます。
+              </p>
+              <a href="resident-management.html" class="c-card__link">
+                詳細を見る <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 3l3-3 3 3H5V6h4V3H9z" fill="%231E40AF"/></svg></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="c-section c-section--light" style="text-align: center; padding: var(--space-20) 0; background-color: #f9fafb;">
+      <div class="c-container">
+        <h2 class="c-section-header__title" style="margin-bottom: var(--space-4);">月次請求業務を自動化して、<br>月末の負担を劇的に軽減しませんか？</h2>
+        <p style="max-width: 600px; margin: 0 auto var(--space-8); color: var(--color-text-secondary);">
+          導入施設150+の実績が、あんしんの信頼性を証明しています。まずは無料で資料をダウンロードし、詳細をご確認ください。
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: center;">
+          <a href="../../request/catalog.html" class="c-btn c-btn--primary c-btn--xl">
+            <svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-download"></use></svg>
+            資料をダウンロード（無料）
+          </a>
+          <a href="../../request/demo.html" class="c-btn c-btn--outline c-btn--xl">
+            <svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-play"></use></svg>
+            無料デモを体験
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="c-footer">
+    <div class="c-container">
+      <div class="c-footer__top">
+        <div class="c-footer__section">
+          <h3>あんしんについて</h3>
+          <ul>
+            <li><a href="../../index.html">トップページ</a></li>
+            <li><a href="../index.html">製品情報</a></li>
+            <li><a href="../../case-studies.html">導入事例</a></li>
+            <li><a href="../pricing.html">料金プラン</a></li>
+          </ul>
+        </div>
+        <div class="c-footer__section">
+          <h3>サポート</h3>
+          <ul>
+            <li><a href="../../request/catalog.html">資料請求</a></li>
+            <li><a href="../../request/demo.html">無料デモ</a></li>
+            <li><a href="../../company/">会社情報</a></li>
+          </ul>
+        </div>
+        <div class="c-footer__section">
+          <h3>法人情報</h3>
+          <ul>
+            <li><a href="../../company/">会社概要</a></li>
+            <li><a href="../../company/index.html">代表メッセージ</a></li>
+            <li><a href="../../company/index.html">アクセス</a></li>
+            <li><a href="../../company/index.html">採用情報</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="c-footer__bottom">
+        <div class="c-footer__copyright">
+          © 2026 アンシン株式会社. All Rights Reserved.
+        </div>
+        <div class="c-footer__social">
+          <a href="#" aria-label="Twitter"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.46 6c-.77.35-1.6.58-2.46.69a4.3 4.3 0 001.88-2.38 6.47 6.47 0 01-2.06 1.08A4.29 4.29 0 0012.71 5.09A4.29 4.29 0 005 8.29c0 1.41.45 2.61 1.17 3.56A5.9 5.9 0 011.08 7.91a5.89 5.89 0 006.58 4.91c4.08.04 7.72-2.14 9.54-5.21a6.29 6.29 0 00-.96-2.99 6.29 6.29 0 01-2.89-.8 6.29 6.29 0 005.43 3.2z" fill="currentColor"/></svg></a>
+          <a href="#" aria-label="Facebook"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.68 0H1.32c-.901 0-1.63.73-1.63 1.63v20.74c0 .901.73 1.63 1.63 1.63H7V12.38h3.26V9.69h-2.57v-2.36h2.57V6.64c0-2.48 1.42-4 3.18-4h2.4v2.08h-2c-.14 0-.25.11-.25.25v2.16h3.28l-.26 2.36h-3.02v2.88h4.18c.901 0 1.63-.73 1.63-1.63V1.65c0-.901-.72-1.63-1.63-1.63z" fill="currentColor"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 15l5-3-5-3v6zM21 2h-3.18a1 1 0 00-.87.41l-1.17 3.62C15.13 6.5 12.5 6.5 12.5 6.5s-2.63 0-3.69.56l-1.17-3.62A1 1 0 003.18 2H1c-.55 0-1 .45-1 1v18c0 .55.45 1 1 1h18c.55 0 1-.45-1-1V3c0-.55-.45-1-1-1z" fill="currentColor"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SVG Icons (inline for simplicity) -->
+  <svg style="display: none;" aria-hidden="true">
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M3 16l5-5 5 5H3zm5-14h8v2H8V2zM3 20h18v2H3v-2z" fill="currentColor"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16l2 2 4-4" fill="currentColor"/></symbol>
+    <symbol id="icon-phone" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.35 6.35l2.2-2.2a.79.79 0 00.01-1.09l-2.34-2.34a1.99 1.99 0 00-2.81 0l-1.83 1.83a6.06 6.06 0 01-7.76-2.75zM18.98 13.4l-1.83-1.83a6.06 6.06 0 01-2.75-7.76l1.83-1.83a.79.79 0 001.09.01l2.2 2.2c2.83 1.44 5.14 3.76 6.35 6.35l1.22 1.22a.79.79 0 001.09 0l2.34-2.34a1 1 0 000-1.41l-2.46-2.46a1.99 1.99 0 000-2.81 0l-1.83 1.83c-1.44 2.83-3.76 5.14-6.35 6.35l-1.22 1.22a.79.79 0 00-1.09 0l-2.34 2.34a1 1 0 000 1.41l2.46 2.46a2 2 0 002.81 0l1.83-1.83z" fill="currentColor"/></symbol>
+  </symbol>
+</body>
+</html>

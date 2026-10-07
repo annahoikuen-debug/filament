@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Resident extends Model
@@ -14,6 +15,7 @@ class Resident extends Model
     use HasFactory;
 
     protected $fillable = [
+        'facility_id',
         'room_number',
         'name',
         'name_kana',
@@ -31,6 +33,14 @@ class Resident extends Model
         'move_in_date' => 'date',
         'move_out_date' => 'date',
     ];
+
+    /**
+     * 施設リレーション
+     */
+    public function facility(): BelongsTo
+    {
+        return $this->belongsTo(Facility::class);
+    }
 
     /**
      * 日々の自費利用明細一覧
@@ -54,6 +64,14 @@ class Resident extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ResidentStatus::Active);
+    }
+
+    /**
+     * 施設でフィルタするスコープ
+     */
+    public function scopeForFacility(Builder $query, int $facilityId): Builder
+    {
+        return $query->where('facility_id', $facilityId);
     }
 
     /**

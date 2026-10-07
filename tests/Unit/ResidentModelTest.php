@@ -46,6 +46,7 @@ test('fill可能フィールド一覧が正しいこと', function () {
     $resident = new Resident;
 
     expect($resident->getFillable())->toBe([
+        'facility_id',
         'room_number',
         'name',
         'name_kana',

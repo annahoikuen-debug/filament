@@ -77,6 +77,14 @@ class MonthlyInvoice extends Model
     }
 
     /**
+     * 施設
+     */
+    public function facility(): BelongsTo
+    {
+        return $this->belongsTo(Facility::class);
+    }
+
+    /**
      * 非課税額（家賃）を取得する
      */
     public function getNonTaxableAmountAttribute(): int
@@ -130,5 +138,13 @@ class MonthlyInvoice extends Model
     public function scopeForYearMonth(Builder $query, string $yearMonth): Builder
     {
         return $query->where('billing_year_month', $yearMonth);
+    }
+
+    /**
+     * 施設でフィルタするスコープ
+     */
+    public function scopeForFacility(Builder $query, int $facilityId): Builder
+    {
+        return $query->where('facility_id', $facilityId);
     }
 }

@@ -46,6 +46,14 @@ class DailyCharge extends Model
     }
 
     /**
+     * 施設
+     */
+    public function facility(): BelongsTo
+    {
+        return $this->belongsTo(Facility::class);
+    }
+
+    /**
      * 自費サービス品目
      */
     public function chargeItem(): BelongsTo
@@ -70,5 +78,13 @@ class DailyCharge extends Model
             "{$yearMonth}-01",
             date('Y-m-t', strtotime("{$yearMonth}-01")),
         ]);
+    }
+
+    /**
+     * 施設でフィルタするスコープ
+     */
+    public function scopeForFacility(Builder $query, int $facilityId): Builder
+    {
+        return $query->where('facility_id', $facilityId);
     }
 }

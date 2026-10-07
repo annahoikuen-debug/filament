@@ -8,202 +8,170 @@
             margin: 12mm 15mm 15mm 15mm;
             size: a4 portrait;
         }
+        
         body {
-            /* 日本語フォントフォールバック設定 */
-            font-family: 'ipaexg', 'ipag', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-            font-size: 9.5pt;
-            color: #333333;
-            line-height: 1.4;
-        }
-        .header-title {
-            text-align: center;
-            font-size: 18pt;
-            letter-spacing: 6px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #1f2937;
-            padding-bottom: 4px;
-        }
-        .meta-table {
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        .meta-table td {
-            vertical-align: top;
-        }
-        .recipient-box {
-            font-size: 11pt;
-            line-height: 1.5;
-        }
-        .recipient-name {
-            font-size: 15pt;
-            font-weight: bold;
-            text-decoration: underline;
-        }
-        .issuer-box {
-            text-align: right;
-            font-size: 8.5pt;
-            line-height: 1.35;
-        }
-        .total-box {
-            background-color: #f3f4f6;
-            border: 2px solid #374151;
-            padding: 8px 12px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .total-label {
-            font-size: 11pt;
-            font-weight: bold;
-        }
-        .total-amount {
-            font-size: 18pt;
-            font-weight: bold;
-            color: #111827;
-        }
-        .section-title {
+            font-family: 'ipaexg', 'Noto Sans JP', 'Yu Mincho', 'YuMincho', 'Hiragino Mincho Pro', 'HGS明朝E', 'ＭＳ 明朝', serif;
             font-size: 10.5pt;
-            font-weight: bold;
-            border-left: 4px solid #2563eb;
-            padding-left: 8px;
-            margin-top: 12px;
-            margin-bottom: 6px;
+            color: #111827;
+            line-height: 1.6;
         }
-        table.data-table {
+        
+        .tabular-nums {
+            font-family: 'ipaexg', 'Noto Sans JP', 'Yu Gothic', 'Meiryo', sans-serif;
+        }
+        
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
         }
-        table.data-table th,
-        table.data-table td {
-            border: 1px solid #d1d5db;
-            padding: 5px 8px;
-            font-size: 8.5pt;
+        
+        th, td {
+            padding: 4mm 6mm;
+            border: 1px solid #e5e7eb;
+            vertical-align: middle;
         }
-        table.data-table th {
-            background-color: #f9fafb;
-            font-weight: bold;
-            text-align: center;
+        
+        th {
+            background-color: #f3f4f6;
+            font-weight: 600;
         }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .footer-note {
-            margin-top: 15px;
-            font-size: 8pt;
-            color: #4b5563;
-            border: 1px dashed #9ca3af;
-            padding: 8px;
-            line-height: 1.45;
+        
+        .page-break {
+            page-break-after: always;
         }
     </style>
 </head>
 <body>
-
-    <div class="header-title">御 請 求 書</div>
-
-    <table class="meta-table">
-        <tr>
-            <td style="width: 55%;" class="recipient-box">
-                <div>居室: <strong>{{ $resident->room_number }} 号室</strong></div>
-                <div class="recipient-name">{{ $resident->name }} 様</div>
-                @if($resident->name_kana)
-                    <div style="font-size: 8.5pt; color: #6b7280;">({{ $resident->name_kana }})</div>
-                @endif
-                <div style="margin-top: 8px; font-size: 9pt;">
-                    平素は格別のご愛顧を賜り、厚く御礼申し上げます。<br>
-                    {{ substr($invoice->billing_year_month, 0, 4) }}年{{ (int)substr($invoice->billing_year_month, 5, 2) }}月度のご利用料金を下記の通りご請求申し上げます。
-                </div>
-            </td>
-            <td style="width: 45%;" class="issuer-box">
-                <div>請求番号: INV-{{ str_replace('-', '', $invoice->billing_year_month) }}-{{ str_pad($resident->id, 3, '0', STR_PAD_LEFT) }}</div>
-                <div>発行日: {{ now()->format('Y年m月d日') }}</div>
-                <div style="font-weight: bold; margin-top: 4px; font-size: 10pt;">{{ $facility['name'] ?? config('facility.name') }}</div>
-                <div>{{ $facility['operator'] ?? config('facility.operator') }}</div>
-                <div>〒{{ $facility['postal_code'] ?? config('facility.postal_code') }} {{ $facility['address'] ?? config('facility.address') }}</div>
-                <div>TEL: {{ $facility['phone'] ?? config('facility.phone') }} / FAX: {{ $facility['fax'] ?? config('facility.fax') }}</div>
-                @if(!empty($facility['invoice_registration_number'] ?? config('facility.invoice_registration_number')))
-                    <div style="margin-top: 2px; color: #1e40af; font-weight: bold;">
-                        登録番号: {{ $facility['invoice_registration_number'] ?? config('facility.invoice_registration_number') }}
+    @include('invoices.partials.header', ['type' => 'invoice', 'template' => $template, 'invoice' => $invoice, 'resident' => $resident, 'facility' => $facility])
+    
+    <div class="page-content">
+        <!-- 受取人・発行者セクション -->
+        <div style="display: table; width: 100%; border-spacing: 6mm; margin-bottom: 6mm;">
+            <!-- 受取人情報 -->
+            <div style="display: table-cell; width: 50%; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 4mm; background-color: #fafafa;">
+                <div style="font-weight: 600; color: #1e3a8a; margin-bottom: 2mm;">ご請求先</div>
+                <div style="margin-bottom: 2mm;">
+                    <div style="margin-bottom: 2mm;">
+                        <span style="margin-right: 2mm;">🏠</span>
+                        <span>居室:</span>
+                        <strong style="font-weight: 500;">{{ $resident->room_number }} 号室</strong>
                     </div>
-                @endif
-            </td>
-        </tr>
-    </table>
+                    <div style="font-weight: 700; font-size: 12pt; text-decoration: underline;">{{ $resident->name }} 様</div>
+                    @if($resident->name_kana)
+                        <div style="font-size: 9pt; color: #6b7280;">({{ $resident->name_kana }})</div>
+                    @endif
+                    <div style="font-size: 9pt; color: #6b7280; margin-top: 2mm;">
+                        平素は格別のご愛顧を賜り、厚く御礼申し上げます。<br>
+                        {{ substr($invoice->billing_year_month, 0, 4) }}年{{ (int)substr($invoice->billing_year_month, 5, 2) }}月度のご利用料金を下記の通りご請求申し上げます。
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 発行者情報 -->
+            <div style="display: table-cell; width: 50%; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 4mm; background-color: #fafafa;">
+                <div style="font-weight: 600; color: #1e3a8a; margin-bottom: 2mm;">発行者情報</div>
+                <div style="font-size: 9pt;">
+                    <div style="margin-bottom: 2mm;">請求番号: INV-{{ str_replace('-', '', $invoice->billing_year_month) }}-{{ str_pad($resident->id, 3, '0', STR_PAD_LEFT) }}</div>
+                    <div style="margin-bottom: 2mm;">発行日: {{ now()->format('Y年m月d日') }}</div>
+                    <div style="margin-bottom: 2mm; font-weight: 500;">{{ $facility['name'] ?? config('facility.name') }}</div>
+                    <div style="margin-bottom: 2mm;">{{ $facility['operator'] ?? config('facility.operator') }}</div>
+                    <div style="margin-bottom: 2mm;">〒{{ $facility['postal_code'] ?? config('facility.postal_code') }} {{ $facility['address'] ?? config('facility.address') }}</div>
+                    <div style="margin-bottom: 2mm;">
+                        <span>TEL:</span>
+                        <span style="font-weight: 500;">{{ $facility['phone'] ?? config('facility.phone') }}</span>
+                        <span style="margin-left: 2mm; margin-right: 2mm;">/</span>
+                        <span>FAX:</span>
+                        <span style="font-weight: 500;">{{ $facility['fax'] ?? config('facility.fax') }}</span>
+                    </div>
+                    @if(!empty($facility['invoice_registration_number'] ?? config('facility.invoice_registration_number')))
+                        <div style="margin-top: 2mm; color: #1e3a8a; font-weight: 500;">
+                            登録番号: {{ $facility['invoice_registration_number'] ?? config('facility.invoice_registration_number') }}
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
 
-    <div class="total-box">
-        <span class="total-label">ご請求金額 (税込)：</span>
-        <span class="total-amount">¥{{ number_format($tax_info['total_with_tax']) }} -</span>
+        <!-- 合計金額エリア -->
+        <div style="margin-bottom: 6mm; padding: 6mm; border-radius: 0.5rem; background-color: #1e3a8a; color: #ffffff; text-align: center;">
+            <div style="font-size: 12pt; font-weight: 500; margin-bottom: 2mm;">ご請求金額 (税込)：</div>
+            <div style="font-size: 24pt; font-weight: 700;" class="tabular-nums">¥{{ number_format($tax_info['total_with_tax']) }}</div>
+            <div style="font-size: 9pt; margin-top: 2mm;">（内訳: 基本料金 ¥{{ number_format($tax_info['non_taxable'] + $tax_info['taxable']) }} + 消費税 ¥{{ number_format($tax_info['tax_amount']) }}）</div>
+        </div>
+
+        <!-- 請求内訳サマリー -->
+        <div style="margin-bottom: 6mm;">
+            <div style="font-weight: 600; color: #1e3a8a; font-size: 11pt; margin-bottom: 3mm; border-bottom: 2px solid #1e3a8a; padding-bottom: 1mm;">【ご請求サマリー】</div>
+            <table>
+                <thead>
+                    <tr style="background-color: #3b82f6; color: #ffffff;">
+                        <th style="padding: 4mm; text-align: left;">項目</th>
+                        <th style="padding: 4mm; text-align: right; width: 32mm;">金額 (税抜)</th>
+                        <th style="padding: 4mm; text-align: center; width: 24mm;">税率</th>
+                        <th style="padding: 4mm; text-align: right; width: 32mm;">消費税額</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 4mm;">基本家賃</td>
+                        <td style="padding: 4mm; text-align: right;" class="tabular-nums">¥{{ number_format($tax_info['non_taxable']) }}</td>
+                        <td style="padding: 4mm; text-align: center;">非課税</td>
+                        <td style="padding: 4mm; text-align: center;">¥0</td>
+                    </tr>
+                    <tr style="background-color: #fafafa; border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 4mm;">基本管理費＋自費サービス</td>
+                        <td style="padding: 4mm; text-align: right;" class="tabular-nums">¥{{ number_format($tax_info['taxable']) }}</td>
+                        <td style="padding: 4mm; text-align: center;">{{ $tax_info['tax_rate'] }}%</td>
+                        <td style="padding: 4mm; text-align: right;" class="tabular-nums">¥{{ number_format($tax_info['tax_amount']) }}</td>
+                    </tr>
+                    <tr style="font-weight: 700; background-color: #3b82f6; color: #ffffff;">
+                        <td style="padding: 4mm; text-align: center;">合計</td>
+                        <td style="padding: 4mm; text-align: right;" class="tabular-nums">¥{{ number_format($tax_info['non_taxable'] + $tax_info['taxable']) }}</td>
+                        <td style="padding: 4mm;"></td>
+                        <td style="padding: 4mm; text-align: right;" class="tabular-nums">¥{{ number_format($tax_info['tax_amount']) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ページブレーク：明細は次のページから開始 -->
+        @if(isset($dailyCharges) && $dailyCharges->count() > 0)
+        <div class="page-break"></div>
+        @endif
+
+        <!-- 自費サービス利用明細 -->
+        @if(isset($dailyCharges) && $dailyCharges->count() > 0)
+        <div style="margin-bottom: 6mm;">
+            <div style="font-weight: 600; color: #1e3a8a; font-size: 11pt; margin-bottom: 3mm; border-bottom: 2px solid #1e3a8a; padding-bottom: 1mm;">【日々の自費サービス利用明細】</div>
+            <table>
+                <thead>
+                    <tr style="background-color: #3b82f6; color: #ffffff;">
+                        <th style="padding: 4mm; text-align: center; width: 16mm;">利用日</th>
+                        <th style="padding: 4mm; text-align: left; width: 48mm;">品目名</th>
+                        <th style="padding: 4mm; text-align: center; width: 20mm;">単価</th>
+                        <th style="padding: 4mm; text-align: center; width: 12mm;">数量</th>
+                        <th style="padding: 4mm; text-align: right; width: 20mm;">小計</th>
+                        <th style="padding: 4mm; text-align: left;">備考</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($dailyCharges as $charge)
+                    <tr style="{{ $loop->even ? 'background-color: #ffffff;' : 'background-color: #fafafa;' }} border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 4mm; text-align: center;">{{ \Carbon\Carbon::parse($charge->date)->format('m/d') }}</td>
+                        <td style="padding: 4mm;">{{ $charge->chargeItem->name ?? '自費サービス' }}</td>
+                        <td style="padding: 4mm; text-align: right;" class="tabular-nums">¥{{ number_format($charge->unit_price) }}</td>
+                        <td style="padding: 4mm; text-align: center;">{{ $charge->quantity }}</td>
+                        <td style="padding: 4mm; text-align: right;" class="tabular-nums">¥{{ number_format($charge->subtotal) }}</td>
+                        <td style="padding: 4mm; font-size: 9pt; color: #6b7280;">{{ $charge->note }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
+        <!-- フッター情報 -->
+        @include('invoices.partials.footer', ['type' => 'invoice', 'template' => $template, 'invoice' => $invoice, 'resident' => $resident, 'facility' => $facility])
     </div>
-
-    <!-- 請求内訳サマリー -->
-    <div class="section-title">【ご請求サマリー】</div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>項目</th>
-                <th style="width: 30%;">金額 (税抜)</th>
-                <th style="width: 30%;">税率</th>
-                <th style="width: 30%;">消費税額</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>基本家賃</td>
-                <td class="text-right">¥{{ number_format($tax_info['non_taxable']) }}</td>
-                <td class="text-center">非課税</td>
-                <td class="text-center">¥0</td>
-            </tr>
-            <tr>
-                <td>基本管理費＋自費サービス</td>
-                <td class="text-right">¥{{ number_format($tax_info['taxable']) }}</td>
-                <td class="text-center">{{ $tax_info['tax_rate'] }}%</td>
-                <td class="text-right">¥{{ number_format($tax_info['tax_amount']) }}</td>
-            </tr>
-            <tr style="background-color: #f3f4f6; font-weight: bold;">
-                <td class="text-center">合計</td>
-                <td class="text-right">¥{{ number_format($tax_info['non_taxable'] + $tax_info['taxable']) }}</td>
-                <td class="text-center"></td>
-                <td class="text-right">¥{{ number_format($tax_info['tax_amount']) }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- 自費サービス利用明細 -->
-    @if(isset($dailyCharges) && $dailyCharges->count() > 0)
-    <div class="section-title">【日々の自費サービス利用明細】</div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th style="width: 12%;">利用日</th>
-                <th style="width: 38%;">品目名</th>
-                <th style="width: 14%;">単価</th>
-                <th style="width: 8%;">数量</th>
-                <th style="width: 14%;">小計</th>
-                <th>備考</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($dailyCharges as $charge)
-            <tr>
-                <td class="text-center">{{ \Carbon\Carbon::parse($charge->date)->format('m/d') }}</td>
-                <td>{{ $charge->chargeItem->name ?? '自費サービス' }}</td>
-                <td class="text-right">¥{{ number_format($charge->unit_price) }}</td>
-                <td class="text-center">{{ $charge->quantity }}</td>
-                <td class="text-right">¥{{ number_format($charge->subtotal) }}</td>
-                <td style="font-size: 7.5pt; color: #6b7280;">{{ $charge->note }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-    @endif
-
-    <div class="footer-note">
-        <strong>【お支払いについてのご案内】</strong><br>
-        お支払期限：<strong>{{ \Carbon\Carbon::createFromFormat('Y-m', $invoice->billing_year_month)->addMonth()->endOfMonth()->format('Y年m月d日') }}</strong><br>
-        お振込先：{{ $facility['bank']['name'] ?? config('facility.bank.name') }} {{ $facility['bank']['branch_name'] ?? config('facility.bank.branch_name') }} {{ $facility['bank']['account_type'] ?? config('facility.bank.account_type') }} {{ $facility['bank']['account_number'] ?? config('facility.bank.account_number') }}<br>
-        口座名義：{{ $facility['bank']['account_holder'] ?? config('facility.bank.account_holder') }}<br>
-        ※口座振替をご利用の方は、翌月{{ $facility['billing']['direct_debit_day'] ?? config('facility.billing.direct_debit_day') }}日にお引き落としとなります。
-    </div>
-
 </body>
 </html>

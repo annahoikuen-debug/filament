@@ -6,6 +6,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\ResidentStatus;
 use App\Models\ChargeItem;
 use App\Models\DailyCharge;
+use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Models\User;
@@ -28,7 +29,48 @@ class FacilityBillingSeeder extends Seeder
             ]
         );
 
-        // 1. 自費サービス品目マスタの登録
+        // 1. デフォルト施設を取得または作成
+        $facility = Facility::first();
+        if (!$facility) {
+            $facility = Facility::create([
+                'name' => 'ケアレジデンス ひまわり',
+                'operator' => '株式会社ひまわりケア',
+                'postal_code' => '123-4567',
+                'address' => '東京都〇〇区〇〇町 1-2-3',
+                'phone' => '03-1234-5678',
+                'fax' => '03-1234-5679',
+                'email' => 'info@care-himawari.example.jp',
+                'invoice_registration_number' => 'T1234567890123',
+                'bank' => [
+                    'name' => '〇〇銀行',
+                    'branch_name' => '〇〇支店',
+                    'account_type' => '普通',
+                    'account_number' => '1234567',
+                    'account_holder' => 'カ）ヒマワリケア',
+                ],
+                'billing' => [
+                    'direct_debit_day' => 27,
+                    'bank_transfer_due_days' => 30,
+                ],
+                'is_active' => true,
+            ]);
+        }
+
+        // ファシリティ情報が正しく設定されているか確認
+        if (empty($facility->bank['name']) || empty($facility->bank['account_number']) || empty($facility->bank['account_holder'])) {
+            // データが不正な場合は再作成
+            $facility->update([
+                'bank' => [
+                    'name' => '〇〇銀行',
+                    'branch_name' => '〇〇支店',
+                    'account_type' => '普通',
+                    'account_number' => '1234567',
+                    'account_holder' => 'カ）ヒマワリケア',
+                ],
+            ]);
+        }
+
+        // 2. 自費サービス品目マスタの登録
         $items = [
             ['name' => '紙おむつ (パンツタイプ)', 'default_price' => 180],
             ['name' => '尿とりパッド', 'default_price' => 70],
@@ -44,7 +86,7 @@ class FacilityBillingSeeder extends Seeder
             $createdItems[] = ChargeItem::updateOrCreate(['name' => $item['name']], $item);
         }
 
-        // 2. 入居者25名分の登録 (定員25名施設、入居日設定)
+        // 3. 入居者25名分の登録 (定員25名施設、入居日設定)
         $sampleResidents = [
             ['101', '佐藤 一郎', 'サトウ イチロウ', 65000, 30000],
             ['102', '鈴木 ハナ', 'スズキ ハナ', 60000, 30000],
@@ -78,6 +120,7 @@ class FacilityBillingSeeder extends Seeder
             $residentModels[] = Resident::updateOrCreate(
                 ['room_number' => $room],
                 [
+                    'facility_id' => $facility->id,
                     'name' => $name,
                     'name_kana' => $kana,
                     'base_rent' => $rent,
@@ -89,7 +132,7 @@ class FacilityBillingSeeder extends Seeder
             );
         }
 
-        // 3. 当月（今月）の自費利用記録サンプル
+        // 4. 当月（今月）の自費利用記録サンプル
         $currentMonth = Carbon::now()->format('Y-m');
         $today = Carbon::today();
 
@@ -117,15 +160,20 @@ class FacilityBillingSeeder extends Seeder
             }
         }
 
-        // 4. 今月の請求書を一括集計生成
+        // 5. 今月の請求書を一括集計生成（施設スコープ付き）
         $service = new InvoiceCalculationService;
-        $service->generateForMonth($currentMonth);
+        $service->generateForMonth($currentMonth, false, $facility->id);
 
-        // 5. 先月分の請求データを作成し、一部を入金済みに設定（領収書検証用）
+        // 6. 先月分の請求データを作成し、一部を入金済みに設定（領収書検証用）
         $lastMonth = Carbon::now()->subMonth()->format('Y-m');
-        $service->generateForMonth($lastMonth);
+        $service->generateForMonth($lastMonth, false, $facility->id);
 
-        $lastMonthInvoices = MonthlyInvoice::forYearMonth($lastMonth)->take(5)->get();
+        $lastMonthInvoices = MonthlyInvoice::forYearMonth($lastMonth)
+            ->whereHas('resident', function ($q) use ($facility) {
+                $q->where('facility_id', $facility->id);
+            })
+            ->take(5)
+            ->get();
         foreach ($lastMonthInvoices as $inv) {
             $inv->markAsPaid(PaymentMethod::DirectDebit, Carbon::now()->subDays(5)->toDateString());
         }

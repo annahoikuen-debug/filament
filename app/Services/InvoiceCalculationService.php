@@ -18,13 +18,15 @@ class InvoiceCalculationService
      *
      * @param  string  $yearMonth  'YYYY-MM' 形式 (例: '2026-10')
      * @param  bool  $forceUpdate  確定済み（請求済・入金済）のデータも上書き再計算するか
+     * @param  int|null  $facilityId  施設IDで絞り込み（nullの場合は全施設）
      * @return array{created: int, updated: int, skipped: int, conflicts: int, total_residents: int}
      */
-    public function generateForMonth(string $yearMonth, bool $forceUpdate = false): array
+    public function generateForMonth(string $yearMonth, bool $forceUpdate = false, ?int $facilityId = null): array
     {
         Log::info('Invoice generation started', [
             'year_month' => $yearMonth,
             'force_update' => $forceUpdate,
+            'facility_id' => $facilityId,
         ]);
 
         // DBには 'Y-m-d H:i:s' 形式で保存されるため、日時境界で比較する
@@ -32,7 +34,7 @@ class InvoiceCalculationService
         $endDate = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth()->endOfDay()->format('Y-m-d H:i:s');
 
         // 1. 対象月に在籍していたResidentを取得（月中入居・月中退去を含む）
-        $residents = Resident::where(function ($query) use ($startDate) {
+        $query = Resident::where(function ($query) use ($startDate) {
             $query->whereNull('move_out_date')
                 ->orWhere('move_out_date', '>=', $startDate);
         })
@@ -41,8 +43,13 @@ class InvoiceCalculationService
                     ->orWhere('move_in_date', '<=', $endDate);
             })
             ->where('status', ResidentStatus::Active)
-            ->orderBy('room_number')
-            ->get();
+            ->orderBy('room_number');
+
+        if ($facilityId) {
+            $query->where('facility_id', $facilityId);
+        }
+
+        $residents = $query->get();
 
         $stats = [
             'created' => 0,
@@ -79,6 +86,7 @@ class InvoiceCalculationService
                     MonthlyInvoice::create([
                         'billing_year_month' => $yearMonth,
                         'resident_id' => $resident->id,
+                        'facility_id' => $resident->facility_id,
                         'rent_subtotal' => $rentSubtotal,
                         'management_fee_subtotal' => $managementSubtotal,
                         'service_subtotal' => $serviceSubtotal,

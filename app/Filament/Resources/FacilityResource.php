@@ -136,6 +136,14 @@ class FacilityResource extends Resource
                             ->label('備考')
                             ->rows(3)
                             ->columnSpanFull(),
+
+                        FileUpload::make('seal_path')
+                            ->label('印鑑画像')
+                            ->image()
+                            ->directory('seals')
+                            ->visibility('public')
+                            ->maxSize(1024) // 1MB
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
             ]);
@@ -195,10 +203,11 @@ class FacilityResource extends Resource
     }
 
     /**
-     * 単一レコード運用：作成済みなら編集ページへリダイレクト
+     * 全施設を表示（有効/無効に関わらず）
+     * 実際の施設選択はFacility::current()または明示的なfacility_id指定で行われる
      */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('is_active', true);
+        return parent::getEloquentQuery();
     }
 }

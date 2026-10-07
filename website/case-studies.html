@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>導入事例 | 高齢者施設請求管理システム「あんしん」</title>
+  <meta name="description" content="あんしんを導入した施設様の事例をご紹介。特養・老健・有料老人ホーム・グループホームなど、様々な施設種別での導入効果を掲載。">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="c-header">
+    <div class="c-container">
+      <div class="c-header__content">
+        <h1 class="c-header__logo">
+          <a href="index.html">あんしん</a>
+        </h1>
+        <nav class="c-header__nav">
+          <ul class="c-header__menu">
+            <li><a href="index.html">トップ</a></li>
+            <li><a href="product/index.html">製品情報</a></li>
+            <li><a href="index.html" class="c-header__nav--active">導入事例</a></li>
+            <li><a href="product/pricing.html">料金</a></li>
+            <li><a href="request/catalog.html">資料請求</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Page Header -->
+    <section class="c-section c-section--light" aria-labelledby="page-title">
+      <div class="c-container">
+        <header class="c-section-header" id="page-title">
+          <h2 class="c-section-header__title">導入事例</h2>
+          <p class="c-section-header__text">
+            あんしんを導入した施設様の声をご紹介。<br>
+            請求業務の効率化・ミス削減・会計連携の自動化など、具体的な導入効果を掲載しています。
+          </p>
+        </header>
+      </div>
+    </section>
+
+    <!-- Filter Section -->
+    <section class="c-section c-section--light" style="padding-bottom: var(--space-16);">
+      <div class="c-container">
+        <div class="c-card" style="max-width: 800px; margin: 0 auto;">
+          <div class="c-card__body">
+            <h3 class="c-card__title" style="text-align: center; margin-bottom: var(--space-6);">
+              事例を検索
+            </h3>
+            <div class="c-form" style="max-width: 600px; margin: 0 auto;">
+              <div class="c-form__row">
+                <label class="c-form__label" for="facilityFilter">施設種別</label>
+                <select id="facilityFilter" class="c-form__select">
+                  <option value="all">すべての施設種別</option>
+                  <option value="special_nursing">介護老人福祉施設（特養）</option>
+                  <option value="nursing_health">介護老人保健施設（老健）</option>
+                  <option value="medical_care">介護医療院</option>
+                  <option value="paid_elderly">有料老人ホーム・サ高住</option>
+                  <option value="group_home">グループホーム</option>
+                  <option value="home_care">訪問・通所系</option>
+                </select>
+              </div>
+              <div class="c-form__row">
+                <label class="c-form__label" for="challengeFilter">課題</label>
+                <select id="challengeFilter" class="c-form__select">
+                  <option value="all">すべての課題</option>
+                  <option value="calc_errors">計算ミス・日割り計算</option>
+                  <option value="manual_work">手作業の負担</option>
+                  <option value="accounting">会計連携の手間</option>
+                  <option value="invoice_system">インボイス制度対応</option>
+                  <option value="staff_burden">事務職員の残業</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Case Studies Grid -->
+    <section class="c-section c-section--light" aria-labelledby="case-studies-title">
+      <div class="c-container">
+        <header class="c-section-header" id="case-studies-title">
+          <h2 class="c-section-header__title">導入事例一覧</h2>
+        </header>
+        <div class="c-grid c-grid--1" id="caseStudiesContainer">
+          <!-- Case Study 1 -->
+          <article class="c-card c-case-card" data-facility="special_nursing" data-challenges="calc_errors,manual_work,staff_burden">
+            <img src="https://via.placeholder.com/400x200/1e40af/ffffff?text=特別養護老人ホーム+ひまわり園" alt="特別養護老人ホーム ひまわり園" class="c-case-card__image">
+            <div class="c-case-card__content">
+              <h3 class="c-case-card__title">特別養護老人ホーム　ひまわり園様</h3>
+              <p class="c-case-card__text">入居定員100名の特別養護老人ホーム。複数棟に分かれる施設構造で、請求業務の複雑さが課題でした。</p>
+              <div class="c-case-card__result">
+                <div>
+                  <div class="c-case-card__metric">3時間→15分</div>
+                  <div class="c-case-card__label">月次請求作業時間</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">ゼロ</div>
+                  <div class="c-case-card__label">計算ミス・修正漏れ</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">80%↓</div>
+                  <div class="c-case-card__label">事務職員残業時間</div>
+                </div>
+              </div>
+              <div class="c-case-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); font-size: 0.875rem; color: var(--color-text-secondary);">
+                「日割り計算が自動化され、ミスがなくなったことで、事務作業に集中できるようになりました。残業が劇的に減少し、職員の満足度も向上しました。」
+              </div>
+            </div>
+          </article>
+          
+          <!-- Case Study 2 -->
+          <article class="c-card c-case-card" data-facility="paid_elderly" data-challenges="accounting,invoice_system">
+            <img src="https://via.placeholder.com/400x200/1e40af/ffffff?text=有料老人ホーム+さくらレジデンス" alt="有料老人ホーム さくらレジデンス" class="c-case-card__image">
+            <div class="c-case-card__content">
+              <h3 class="c-case-card__title">有料老人ホーム　さくらレジデンス様</h3>
+              <p class="c-case-card__text">入居定員60名の有料老人ホーム。インボイス制度対応と会計ソフト連携が急務でした。</p>
+              <div class="c-case-card__result">
+                <div>
+                  <div class="c-case-card__metric">100%</div>
+                  <div class="c-case-card__label">適格請求書対応率</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">手作業ゼロ</div>
+                  <div class="c-case-card__label">会計ソフト転記作業</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">リアルタイム</div>
+                  <div class="c-case-card__label">請求データ確認</div>
+                </div>
+              </div>
+              <div class="c-case-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); font-size: 0.875rem; color: var(--color-text-secondary);">
+                「インボイス制度への対応が不安でしたが、あんしんなら自動で適格請求書形式に変換してくれるので安心です。会計ソフト連携もスムーズで、月次決算の負担が大幅に軽減されました。」
+              </div>
+            </div>
+          </article>
+          
+          <!-- Case Study 3 -->
+          <article class="c-card c-case-card" data-facility="group_home" data-challenges="multi_facility,staff_burden">
+            <img src="https://via.placeholder.com/400x200/1e40af/ffffff?text=グループホーム+あいの里" alt="グループホーム あいの里" class="c-case-card__image">
+            <div class="c-case-card__content">
+              <h3 class="c-case-card__title">グループホーム　あいの里様</h3>
+              <p class="c-case-card__text">5つのグループホームを運営する社会福祉法人。施設間のデータ統合と職員の負担軽減が課題でした。</p>
+              <div class="c-case-card__result">
+                <div>
+                  <div class="c-case-card__metric">5施設→1元管理</div>
+                  <div class="c-case-card__label">データ管理工数</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">90%↓</div>
+                  <div class="c-case-card__label">請求データ確認時間</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">ゼロ</div>
+                  <div class="c-case-card__label">施設間の請求ミス</div>
+                </div>
+              </div>
+              <div class="c-case-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); font-size: 0.875rem; color: var(--color-text-secondary);">
+                「複数施設を横断管理できるようになり、法人全体の請求データをリアルタイムで把握できるようになりました。施設間のデータ不整合もなくなり、経営判断のスピードが向上しました。」
+              </div>
+            </div>
+          </article>
+          
+          <!-- Case Study 4 -->
+          <article class="c-card c-case-card" data-facility="home_care" data-challenges="manual_work,staff_burden">
+            <img src="https://via.placeholder.com/400x200/1e40af/ffffff?text=訪問介護+かえでケア" alt="訪問介護 かえでケア" class="c-case-card__image">
+            <div class="c-case-card__content">
+              <h3 class="c-case-card__title">訪問介護　かえでケア様</h3>
+              <p class="c-case-card__text">訪問介護サービスを提供する事業所。日々の自費記録の手入力と、月次請求の手作業が大きな負担でした。</p>
+              <div class="c-case-card__result">
+                <div>
+                  <div class="c-case-card__metric">手入力ゼロ</div>
+                  <div class="c-case-card__label">日々の自費記録作業</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">5分→30秒</div>
+                  <div class="c-case-card__label">月次請求データ生成時間</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">100%</div>
+                  <div class="c-case-card__label">領収書自動発行</div>
+                </div>
+              </div>
+              <div class="c-case-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); font-size: 0.875rem; color: var(--color-text-secondary);">
+                「スマホで簡単に自費記録が入力できるようになり、事務作業が劇的に削減されました。訪問先での記録もスムーズで、サービス提供に専念できるようになりました。」
+              </div>
+            </div>
+          </article>
+          
+          <!-- Case Study 5 -->
+          <article class="c-card c-case-card" data-facility="medical_care" data-challenges="calc_errors,invoice_system">
+            <img src="https://via.placeholder.com/400x200/1e40af/ffffff?text=介護医療院+おうどクリニック" alt="介護医療院 おうどクリニック" class="c-case-card__image">
+            <div class="c-case-card__content">
+              <h3 class="c-case-card__title">介護医療院　おうどクリニック様</h3>
+              <p class="c-case-card__text">医療と介護を一体化した介護医療院。複雑な料金体系とインボイス制度対応が課題でした。</p>
+              <div class="c-case-card__result">
+                <div>
+                  <div class="c-case-card__metric">ゼロ</div>
+                  <div class="c-case-card__label">料金計算ミス</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">100%</div>
+                  <div class="c-case-card__label">適格請求書自動生成</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">リアルタイム</div>
+                  <div class="c-case-card__label">入金消込状況確認</div>
+                </div>
+              </div>
+              <div class="c-case-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); font-size: 0.875rem; color: var(--color-text-secondary);">
+                「医療と介護の混在した料金体系でも、あんしんなら正確に計算してくれます。インボイス制度対応も自動で、請求業務の不安が完全になくなりました。」
+              </div>
+            </div>
+          </article>
+          
+          <!-- Case Study 6 -->
+          <article class="c-card c-case-card" data-facility="special_nursing" data-challenges="manual_work,accounting">
+            <img src="https://via.placeholder.com/400x200/1e40af/ffffff?text=特別養護老人ホーム+あずさ苑" alt="特別養護老人ホーム あずさ苑" class="c-case-card__image">
+            <div class="c-case-card__content">
+              <h3 class="c-case-card__title">特別養護老人ホーム　あずさ苑様</h3>
+              <p class="c-case-card__text">入居定員120名の特別養護老人ホーム。請求書作成から会計連携までの一連のフローに時間がかかっていました。</p>
+              <div class="c-case-card__result">
+                <div>
+                  <div class="c-case-card__metric">30分→2分</div>
+                  <div class="c-case-card__label">請求書印刷・封入作業時間</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">ゼロ</div>
+                  <div class="c-case-card__label">会計ソフトへの転記ミス</div>
+                </div>
+                <div>
+                  <div class="c-case-card__metric">100%</div>
+                  <div class="c-case-card__label">月次請求の締め日遵守率</div>
+                </div>
+              </div>
+              <div class="c-case-card__footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); font-size: 0.875rem; color: var(--color-text-secondary);">
+                「請求書作成から会計連携までのフローが自動化され、月末の締め作業が劇的に楽になりました。職員の負担が軽減され、より質の高い介護サービスに集中できるようになりました。」
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="c-section c-section--light" style="text-align: center; padding: var(--space-20) 0; background-color: #f9fafb;">
+      <div class="c-container">
+        <h2 class="c-section-header__title" style="margin-bottom: var(--space-4);">あなたの施設でも、あんしんで請求業務を革新できます</h2>
+        <p style="max-width: 600px; margin: 0 auto var(--space-8); color: var(--color-text-secondary);">
+          導入施設150+の実績が、あんしんの信頼性を証明しています。まずは無料で資料をダウンロードし、詳細をご確認ください。
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: center;">
+          <a href="request/catalog.html" class="c-btn c-btn--primary c-btn--xl">
+            <svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-download"></use></svg>
+            資料をダウンロード（無料）
+          </a>
+          <a href="request/demo.html" class="c-btn c-btn--outline c-btn--xl">
+            <svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-play"></use></svg>
+            無料デモを体験
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="c-footer">
+    <div class="c-container">
+      <div class="c-footer__top">
+        <div class="c-footer__section">
+          <h3>あんしんについて</h3>
+          <ul>
+            <li><a href="index.html">トップページ</a></li>
+            <li><a href="product/index.html">製品情報</a></li>
+            <li><a href="index.html">導入事例</a></li>
+            <li><a href="product/pricing.html">料金プラン</a></li>
+          </ul>
+        </div>
+        <div class="c-footer__section">
+          <h3>サポート</h3>
+          <ul>
+            <li><a href="request/catalog.html">資料請求</a></li>
+            <li><a href="request/demo.html">無料デモ</a></li>
+            <li><a href="company/index.html">会社情報</a></li>
+            <li><a href="privacy.html">プライバシーポリシー</a></li>
+          </ul>
+        </div>
+        <div class="c-footer__section">
+          <h3>法人情報</h3>
+          <ul>
+            <li><a href="company/index.html">会社概要</a></li>
+            <li><a href="company/index.html">アクセス</a></li>
+            <li><a href="company/index.html">採用情報</a></li>
+            <li><a href="company/index.html">代表メッセージ</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="c-footer__bottom">
+        <div class="c-footer__copyright">
+          © 2026 アンシン株式会社. All Rights Reserved.
+        </div>
+        <div class="c-footer__social">
+          <a href="#" aria-label="Twitter"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.46 6c-.77.35-1.6.58-2.46.69a4.3 4.3 0 001.88-2.38 6.47 6.47 0 01-2.06 1.08A4.29 4.29 0 0012.71 5.09A4.29 4.29 0 005 8.29c0 1.41.45 2.61 1.17 3.56A5.9 5.9 0 011.08 7.91a5.89 5.89 0 006.58 4.91c4.08.04 7.72-2.14 9.54-5.21a6.29 6.29 0 00-.96-2.99 6.29 6.29 0 01-2.89-.8 6.29 6.29 0 005.43 3.2z" fill="currentColor"/></svg></a>
+          <a href="#" aria-label="Facebook"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.68 0H1.32c-.901 0-1.63.73-1.63 1.63v20.74c0 .901.73 1.63 1.63 1.63H7V12.38h3.26V9.69h-2.57v-2.36h2.57V6.64c0-2.48 1.42-4 3.18-4h2.4v2.08h-2c-.14 0-.25.11-.25.25v2.16h3.28l-.26 2.36h-3.02v2.88h4.18c.901 0 1.63-.73 1.63-1.63V1.65c0-.901-.72-1.63-1.63-1.63z" fill="currentColor"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 15l5-3-5-3v6zM21 2h-3.18a1 1 0 00-.87.41l-1.17 3.62C15.13 6.5 12.5 6.5 12.5 6.5s-2.63 0-3.69.56l-1.17-3.62A1 1 0 003.18 2H1c-.55 0-1 .45-1 1v18c0 .55.45 1 1 1h18c.55 0 1-.45-1-1V3c0-.55-.45-1-1-1z" fill="currentColor"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SVG Icons (inline for simplicity) -->
+  <svg style="display: none;" aria-hidden="true">
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M3 16l5-5 5 5H3zm5-14h8v2H8V2zM3 20h18v2H3v-2z" fill="currentColor"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16l2 2 4-4" fill="currentColor"/></symbol>
+  </svg>
+  
+  <!-- Filtering script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const facilityFilter = document.getElementById('facilityFilter');
+      const challengeFilter = document.getElementById('challengeFilter');
+      const caseStudiesContainer = document.getElementById('caseStudiesContainer');
+      const caseStudies = caseStudiesContainer.getElementsByClassName('c-case-card');
+      
+      function filterCaseStudies() {
+        const facilityValue = facilityFilter.value;
+        const challengeValue = challengeFilter.value;
+        
+        Array.from(caseStudies).forEach(card => {
+          const matchesFacility = facilityValue === 'all' || card.dataset.facility === facilityValue;
+          const matchesChallenge = challengeValue === 'all' || 
+            card.dataset.challenges.includes(challengeValue);
+          
+          if (matchesFacility && matchesChallenge) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      }
+      
+      facilityFilter.addEventListener('change', filterCaseStudies);
+      challengeFilter.addEventListener('change', filterCaseStudies);
+    });
+  </script>
+</body>
+</html>

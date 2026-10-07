@@ -33,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
     /**
      * DBから施設設定を読み込み、config にマージする
      * （マイグレーション実行時などDB未準備時はスキップ）
+     *
+     * 後方互換性のために施設設定をconfigにマージしますが、
+     * マルチファシリティ対応のサービスでは明示的にfacilityパラメータを受け取るようにしています。
      */
     protected function loadFacilityConfigFromDatabase(): void
     {

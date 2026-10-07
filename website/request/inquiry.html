@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>お問い合わせ・見積依頼 | 高齢者施設請求管理システム「あんしん」</title>
+  <meta name="description" content="あんしんへのお問い合わせ・見積依頼フォーム。施設の規模・課題・予算感などをお伺いし、最適なプランをご提案いたします。">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="c-header">
+    <div class="c-container">
+      <div class="c-header__content">
+        <h1 class="c-header__logo">
+          <a href="../index.html">あんしん</a>
+        </h1>
+        <nav class="c-header__nav">
+          <ul class="c-header__menu">
+            <li><a href="../index.html">トップ</a></li>
+            <li><a href="../product/index.html">製品情報</a></li>
+            <li><a href="../case-studies.html">導入事例</a></li>
+            <li><a href="../product/pricing.html">料金</a></li>
+            <li><a href="index.html" class="c-header__nav--active">お問い合わせ</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Page Header -->
+    <section class="c-section c-section--light" aria-labelledby="page-title">
+      <div class="c-container">
+        <header class="c-section-header" id="page-title">
+          <h2 class="c-section-header__title">お問い合わせ・見積依頼</h2>
+          <p class="c-section-header__text">
+            あんしんへのお問い合わせ・お見積り依頼を受け付けています。<br>
+            以下のフォームに必要情報をご入力ください。担当者より2営業日以内にご連絡いたします。
+          </p>
+        </header>
+      </div>
+    </section>
+
+    <!-- Form Section -->
+    <section class="c-section c-section--light" style="padding-bottom: var(--space-20);">
+      <div class="c-container">
+        <div class="c-card" style="max-width: 680px; margin: 0 auto;">
+          <div class="c-card__body">
+            <h3 class="c-card__title" style="text-align: center; margin-bottom: var(--space-6);">
+              お問い合わせ・見積依頼フォーム
+            </h3>
+            <p style="text-align: center; color: var(--color-text-secondary); margin-bottom: var(--space-8);">
+              営業電話は一切いたしません｜見積りは無料です
+            </p>
+
+            <form class="c-form" id="inquiryForm" action="#" method="POST">
+              <div class="c-form__row">
+                <label class="c-form__label" for="company">施設・法人名 <span class="c-form__required">必須</span></label>
+                <input type="text" id="company" name="company" class="c-form__input" placeholder="例：社会福祉法人○○会" required>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="name">ご担当者名 <span class="c-form__required">必須</span></label>
+                <input type="text" id="name" name="name" class="c-form__input" placeholder="例：山田 太郎" required>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="email">メールアドレス <span class="c-form__required">必須</span></label>
+                <input type="email" id="email" name="email" class="c-form__input" placeholder="例：yamada@example.com" required>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="phone">電話番号</label>
+                <input type="tel" id="phone" name="phone" class="c-form__input" placeholder="例：03-1234-5678">
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="inquiry_type">お問い合わせ種別 <span class="c-form__required">必須</span></label>
+                <select id="inquiry_type" name="inquiry_type" class="c-form__select" required>
+                  <option value="">選択してください</option>
+                  <option value="estimate">お見積り依頼</option>
+                  <option value="product">製品に関するお問い合わせ</option>
+                  <option value="intro">導入・移行に関するご相談</option>
+                  <option value="support">サポートに関するお問い合わせ</option>
+                  <option value="other">その他</option>
+                </select>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="facility_type">施設種別</label>
+                <select id="facility_type" name="facility_type" class="c-form__select">
+                  <option value="">選択してください</option>
+                  <option value="special_nursing">介護老人福祉施設（特養）</option>
+                  <option value="nursing_health">介護老人保健施設（老健）</option>
+                  <option value="medical_care">介護医療院</option>
+                  <option value="paid_elderly">有料老人ホーム・サ高住</option>
+                  <option value="group_home">グループホーム</option>
+                  <option value="home_care">訪問・通所系</option>
+                  <option value="other">その他</option>
+                </select>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="capacity">入居定員・利用者数</label>
+                <select id="capacity" name="capacity" class="c-form__select">
+                  <option value="">選択してください</option>
+                  <option value="under_30">30名未満</option>
+                  <option value="30_50">30〜50名</option>
+                  <option value="50_100">50〜100名</option>
+                  <option value="100_200">100〜200名</option>
+                  <option value="over_200">200名以上</option>
+                  <option value="unknown">不明・複数施設</option>
+                </select>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="budget">予算感</label>
+                <select id="budget" name="budget" class="c-form__select">
+                  <option value="">選択してください</option>
+                  <option value="under_10k">月額1万円未満</option>
+                  <option value="10k_30k">月額1〜3万円</option>
+                  <option value="30k_50k">月額3〜5万円</option>
+                  <option value="over_50k">月額5万円以上</option>
+                  <option value="undecided">未定・検討中</option>
+                </select>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="challenges">現在の課題（複数選択可）</label>
+                <div class="c-checkbox-group">
+                  <label><input type="checkbox" name="challenges[]" value="calc_errors"> 請求計算ミス・日割り計算の手間</label>
+                  <label><input type="checkbox" name="challenges[]" value="manual_work"> 手作業での請求書作成・PDF出力の負担</label>
+                  <label><input type="checkbox" name="challenges[]" value="accounting"> 会計ソフトへの転記・CSV作成の手間</label>
+                  <label><input type="checkbox" name="challenges[]" value="invoice_system"> インボイス制度・適格請求書への対応不安</label>
+                  <label><input type="checkbox" name="challenges[]" value="multi_facility"> 複数施設のデータ統合・一元管理</label>
+                  <label><input type="checkbox" name="challenges[]" value="staff_burden"> 事務職員の残業・属人化</label>
+                  <label><input type="checkbox" name="challenges[]" value="late_payments"> 入金消込の遅れ・漏れ</label>
+                  <label><input type="checkbox" name="challenges[]" value="audit_prep"> 監査・検査対応の負担</label>
+                  <label><input type="checkbox" name="challenges[]" value="other"> その他</label>
+                </div>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="trial_mode">無料トライアル（14日間）</label>
+                <div class="c-checkbox-group">
+                  <label><input type="checkbox" id="trial_mode" name="trial_mode"> トライアルを申し込む（施設・入居者データは自動で準備されます）</label>
+                  <label><input type="checkbox" id="seed_sample_data" name="seed_sample_data"> サンプルデータを投入してトライアルをすぐに開始する（推奨）</label>
+                </div>
+                <p style="font-size: 0.875rem; color: var(--color-text-secondary); margin-top: var(--space-2);">
+                  トライアル申し込みをチェックすると、施設名・ご担当者名・メールアドレス・施設種別・入居定員が必須となります。
+                </p>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="message">お問い合わせ内容 <span class="c-form__required">必須</span></label>
+                <textarea id="message" name="message" class="c-form__textarea" rows="6" placeholder="ご要望・ご質問などをお聞かせください" required></textarea>
+              </div>
+
+              <div class="c-form__privacy">
+                個人情報の取り扱いに同意の上、送信してください。<br>
+                <a href="../privacy.html" style="color: var(--color-primary); text-decoration: underline;">プライバシーポリシー</a>をご確認ください。
+              </div>
+
+              <button type="submit" class="c-btn c-btn--primary c-btn--lg c-btn--block">
+                <svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-check"></use></svg>
+                この内容で送信する
+              </button>
+
+              <p class="c-form__note" style="margin-top: var(--space-4); font-size: 0.875rem;">
+                送信後、自動返信メールでお問い合わせ内容の控えをお送りします<br>
+                （メールが届かない場合は迷惑メールフォルダをご確認ください）
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Info Section -->
+    <section class="c-section c-section--light" aria-labelledby="contact-info-title">
+      <div class="c-container">
+        <header class="c-section-header" id="contact-info-title">
+          <h2 class="c-section-header__title">お電話でのお問い合わせ</h2>
+          <p class="c-section-header__text">お急ぎの方は、お電話でも受け付けております。</p>
+        </header>
+        <div class="c-card" style="max-width: 600px; margin: 0 auto; text-align: center;">
+          <div class="c-card__body">
+            <div class="c-card__icon" aria-hidden="true" style="width: 48px; height: 48px; background: rgb(30 64 175 / 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-4); color: var(--color-primary);">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.81l2.2-2.27c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.17.74-.07 1.02l-2.28 2.2z" fill="%231E40AF"/></svg>
+            </div>
+            <p style="font-size: 1.5rem; font-weight: 700; color: var(--color-primary); margin-bottom: var(--space-2);">0120-XXX-XXX</p>
+            <p style="color: var(--color-text-secondary);">受付時間：平日 9:00〜18:00</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="c-section c-section--light" style="text-align: center; padding: var(--space-20) 0; background-color: #f9fafb;">
+      <div class="c-container">
+        <h2 class="c-section-header__title" style="margin-bottom: var(--space-4);">まずは資料で詳しく見る</h2>
+        <p style="max-width: 600px; margin: 0 auto var(--space-8); color: var(--color-text-secondary);">
+          請求業務の自動化で、貴施設の事務作業を大幅に削減。導入施設150+の実績と、会計ソフト3社連携の信頼性で、安心してご利用いただけます。
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: center;">
+          <a href="catalog.html" class="c-btn c-btn--outline c-btn--lg">
+            <svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-download"></use></svg>
+            資料をダウンロード
+          </a>
+          <a href="demo.html" class="c-btn c-btn--primary c-btn--lg">
+            <svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-play"></use></svg>
+            無料デモを体験
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="c-footer">
+    <div class="c-container">
+      <div class="c-footer__top">
+        <div class="c-footer__section">
+          <h3>あんしんについて</h3>
+          <ul>
+            <li><a href="../index.html">トップページ</a></li>
+            <li><a href="../product/index.html">製品情報</a></li>
+            <li><a href="../case-studies.html">導入事例</a></li>
+            <li><a href="../product/pricing.html">料金プラン</a></li>
+          </ul>
+        </div>
+        <div class="c-footer__section">
+          <h3>サポート</h3>
+          <ul>
+            <li><a href="catalog.html">資料請求</a></li>
+            <li><a href="demo.html">無料デモ</a></li>
+            <li><a href="../company/index.html">会社情報</a></li>
+            <li><a href="../privacy.html">プライバシーポリシー</a></li>
+          </ul>
+        </div>
+        <div class="c-footer__section">
+          <h3>法人情報</h3>
+          <ul>
+            <li><a href="../company/index.html">会社概要</a></li>
+            <li><a href="../company/index.html">アクセス</a></li>
+            <li><a href="../company/index.html">採用情報</a></li>
+            <li><a href="../company/index.html">代表メッセージ</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="c-footer__bottom">
+        <div class="c-footer__copyright">
+          © 2026 アンシン株式会社. All Rights Reserved.
+        </div>
+        <div class="c-footer__social">
+          <a href="#" aria-label="Twitter"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.46 6c-.77.35-1.6.58-2.46.69a4.3 4.3 0 001.88-2.38 6.47 6.47 0 01-2.06 1.08A4.29 4.29 0 0012.71 5.09A4.29 4.29 0 005 8.29c0 1.41.45 2.61 1.17 3.56A5.9 5.9 0 011.08 7.91a5.89 5.89 0 006.58 4.91c4.08.04 7.72-2.14 9.54-5.21a6.29 6.29 0 00-.96-2.99 6.29 6.29 0 01-2.89-.8 6.29 6.29 0 005.43 3.2z" fill="currentColor"/></svg></a>
+          <a href="#" aria-label="Facebook"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.68 0H1.32c-.901 0-1.63.73-1.63 1.63v20.74c0 .901.73 1.63 1.63 1.63H7V12.38h3.26V9.69h-2.57v-2.36h2.57V6.64c0-2.48 1.42-4 3.18-4h2.4v2.08h-2c-.14 0-.25.11-.25.25v2.16h3.28l-.26 2.36h-3.02v2.88h4.18c.901 0 1.63-.73 1.63-1.63V1.65c0-.901-.72-1.63-1.63-1.63z" fill="currentColor"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 15l5-3-5-3v6zM21 2h-3.18a1 1 0 00-.87.41l-1.17 3.62C15.13 6.5 12.5 6.5 12.5 6.5s-2.63 0-3.69.56l-1.17-3.62A1 1 0 003.18 2H1c-.55 0-1 .45-1 1v18c0 .55.45 1 1 1h18c0 .55.45 1 1 1v18c0 .55-.45-1-1-1z" fill="currentColor"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SVG Icons (inline for simplicity) -->
+  <svg style="display: none;" aria-hidden="true">
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M3 16l5-5 5 5H3zm5-14h8v2H8V2zM3 20h18v2H3v-2z" fill="currentColor"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16l2 2 4-4" fill="currentColor"/></symbol>
+    <symbol id="icon-phone" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.81l2.2-2.27c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.17.74-.07 1.02l-2.28 2.2z" fill="currentColor"/></symbol>
+  </svg>
+
+  <!-- Form handling: trial application via API, inquiry via placeholder -->
+  <script>
+    document.getElementById('inquiryForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var trialMode = document.getElementById('trial_mode').checked;
+
+      if (!trialMode) {
+        alert('お問い合わせありがとうございます！担当者より2営業日以内にご連絡いたします。');
+        this.reset();
+        return;
+      }
+
+      // トライアル申込：必須項目を検証
+      var required = {
+        company: '施設・法人名',
+        name: 'ご担当者名',
+        email: 'メールアドレス',
+        facility_type: '施設種別',
+        capacity: '入居定員・利用者数'
+      };
+      for (var field in required) {
+        var el = document.getElementById(field);
+        if (!el.value.trim()) {
+          alert('トライアル申し込みには「' + required[field] + '」が必須です。');
+          el.focus();
+          return;
+        }
+      }
+
+      var payload = {
+        company_name: document.getElementById('company').value.trim(),
+        contact_name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim() || null,
+        facility_type: document.getElementById('facility_type').value,
+        resident_capacity: document.getElementById('capacity').value,
+        seed_sample_data: document.getElementById('seed_sample_data').checked
+      };
+
+      var btn = this.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = '送信中...';
+
+      fetch('/api/trials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(function(res) {
+          return res.json().then(function(body) { return { status: res.status, body: body }; });
+        })
+        .then(function(result) {
+          if (result.status === 201) {
+            alert('トライアル環境を準備しました。\n\nトライアルID: ' + result.body.trial_id +
+                  '\n\nログイン情報をメールにてお送りします。\n（届かない場合は迷惑メールフォルダをご確認ください）');
+            document.getElementById('inquiryForm').reset();
+          } else if (result.status === 422 && result.body.errors) {
+            var messages = [];
+            Object.keys(result.body.errors).forEach(function(key) {
+              messages.push(result.body.errors[key].join(' '));
+            });
+            alert('入力内容を確認してください。\n\n' + messages.join('\n'));
+          } else {
+            alert('トライアル環境の準備中にエラーが発生しました。\nしばらく経ってからお試しください。');
+          }
+        })
+        .catch(function() {
+          alert('通信に失敗しました。しばらく経ってからお試しください。');
+        })
+        .finally(function() {
+          btn.disabled = false;
+          btn.innerHTML = '<svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-check"></use></svg> この内容で送信する';
+        });
+    });
+  </script>
+</body>
+</html>
