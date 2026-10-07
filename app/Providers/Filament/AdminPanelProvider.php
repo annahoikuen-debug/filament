@@ -40,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 Widgets\AccountWidget::class,
                 \App\Filament\Widgets\TrialOverview::class,
+                \App\Filament\Widgets\UnpaidInvoicesAlert::class,
             ])
             ->middleware([
                 EncryptCookies::class,

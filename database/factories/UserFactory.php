@@ -20,6 +20,7 @@ class UserFactory extends Factory
             'password' => Hash::make('password'),
             'remember_token' => Str::random(10),
             'is_admin' => true,
+            'role' => 'corporate_admin',
         ];
     }
 
@@ -27,6 +28,23 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_admin' => false,
+        ]);
+    }
+
+    public function corporateAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+            'role' => 'corporate_admin',
+            'facility_id' => null,
+        ]);
+    }
+
+    public function facilityAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+            'role' => 'facility_admin',
         ]);
     }
 }

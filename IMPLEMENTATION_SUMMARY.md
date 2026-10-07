@@ -104,3 +104,43 @@
 ### 回帰防止テスト
 - `tests/Feature/TrialApiTest.php` - 9ケース（プロビジョニング正常系/異常系、二重申込、ソフトデリート後再申込、既存ユーザー、施設分離、期限クランプ、期限切れ自動更新）
 - 既存テストスイート 124 passed（PDF関連16件の失敗は事前存在・本変更と無関係）
+
+## 残タスク実装完了（2026-10-07）
+
+詳細計画書: `IMPLEMENTATION_PLAN_REMAINING.md`
+
+### Phase A: メール送信基盤 ✅
+- `app/Services/MailService.php` - 設定検知＋未設定時はログへフォールバック（`mail.default` が log/null/array の場合）
+- `app/Mail/` - 7 Mailable（TrialProvisioningComplete / TrialExpiryWarning / TrialExpired / TrialNurture / Quote / BookingConfirmation / ContractCompleted）
+- `resources/views/emails/` - 7 Bladeテンプレート
+- `TrialProvisioningService` - 完了メール送信後、temp_password をクリア
+- `SendTrialExpiryNotification` - 警告/期限切れメールを送信
+
+### Phase B: トライアル→本契約移行 ✅
+- `database/migrations/2026_10_08_000006_create_subscriptions_table.php` - subscriptions テーブル
+- `app/Models/Subscription.php` - Subscription モデル
+- `app/Services/TrialConversionService.php` - 移行処理（施設昇格・サブスクリプション作成・電子契約同意記録）
+- `app/Http/Controllers/TrialConversionController.php` - `POST /api/trials/{trial}/convert`
+- プラン価格: starter ¥15,000 / standard ¥35,000 / enterprise 個別見積（quoted_price 必須）
+
+### Phase C: 営業プロセス自動化 ✅
+- **リードスコアリング** - `app/Services/LeadScoringService.php`、`trials.score` カラム（000007 マイグレーション）。施設種別/定員/課題/予算/サンプル希望で0〜100点、hot(>=80)/warm(>=50)/cold 判定を trial_config.lead_tier に保存
+- **メールシーケンス** - `app/Jobs/SendTrialNurtureEmails.php`（毎日10:00実行）。3日目=利用チェックイン、7日目=導入事例、10日目=移行案内。trial_config.emails_sent で重複防止
+- **デモ予約** - `bookings` テーブル（000008）、`BookingController`（`POST/GET /api/bookings`）、確認メール自動送
+- **見積書自動生成** - `app/Services/QuoteService.php`（定員→プラン推奨）、`QuoteController`（`GET /api/trials/{trial}/quote`、`POST .../quote/send`）
+
+### 重要な修正：スケジューラ登録
+- Laravel 11 は `App\Console\Kernel` を自動的に使用しない（`withKernels()` がフレームワーク Kernel をバインドするため）
+- `bootstrap/app.php` に `->withSchedule()` を追加し、期限チェック（09:00）とナーチャリングメール（10:00）を登録
+- 未修正前はスケジューラが空のままとなり、期限通知・ナーチャリングメールが自動送信されない状態だった
+- 不要となった `app/Console/Kernel.php` を削除（commands 読み込みは `withCommands()` と `withRouting(commands:)` が担当）
+
+### テスト
+- `tests/Feature/SalesAutomationTest.php` - 17ケース（スコアリング/見積/移行/予約/ナーチャリング/メール基盤）
+- 全スイート: 141 passed（PDF関連16件の失敗は事前存在・本変更と無関係）
+
+### 今後の拡張ポイント
+- 決済連携（Stripe等）: subscriptions テーブルに課金記録を追加
+- 外部カレンダー API 連携: bookings の confirmed ステータス更新
+- 電子契約サービス連携: contract_accepted_* を外部サービスの署名で置換
+- 本番メール送信: .env に MAIL_MAILER/MAIL_HOST を設定すると MailService が自動的に実送信に切り替わる

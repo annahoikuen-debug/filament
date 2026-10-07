@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Filament\Resources\MonthlyInvoiceResource\Pages;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
+use App\Services\InvoiceCsvExportService;
 use App\Services\InvoicePdfService;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -14,6 +15,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class MonthlyInvoiceResource extends Resource
 {
@@ -46,7 +49,18 @@ class MonthlyInvoiceResource extends Resource
                             ->relationship('resident')
                             ->getOptionLabelFromRecordUsing(fn (Resident $record) => $record->full_title)
                             ->searchable(['room_number', 'name'])
-                            ->required(),
+                            ->required()
+                            ->modifyQueryUsing(fn (Builder $query) => $query->when(
+                                Auth::user()?->isFacilityAdmin() && Auth::user()?->facility_id,
+                                fn ($q) => $q->where('facility_id', Auth::user()->facility_id)
+                            )),
+
+                        Forms\Components\Select::make('facility_id')
+                            ->label('施設')
+                            ->relationship('facility', 'name')
+                            ->required()
+                            ->visible(fn () => Auth::user()?->isCorporateAdmin())
+                            ->default(fn () => Auth::user()?->facility_id),
 
                         Forms\Components\Select::make('status')
                             ->label('請求ステータス')
@@ -280,6 +294,58 @@ class MonthlyInvoiceResource extends Resource
                         })
                         ->requiresConfirmation(),
 
+                    // CSVエクスポート: 請求・入金一覧
+                    Tables\Actions\BulkAction::make('exportMonthlyListCsv')
+                        ->label('請求・入金一覧CSV出力')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('info')
+                        ->form([
+                            Forms\Components\Select::make('year_month')
+                                ->label('請求年月')
+                                ->options(fn () => MonthlyInvoice::query()->distinct()->pluck('billing_year_month', 'billing_year_month')->toArray())
+                                ->required()
+                                ->default(now()->format('Y-m'))
+                                ->native(false),
+                        ])
+                        ->action(function (array $data) {
+                            $service = app(InvoiceCsvExportService::class);
+                            $csv = $service->exportMonthlyListCsv($data['year_month']);
+                            $fileName = "請求入金一覧_{$data['year_month']}.csv";
+
+                            return response()->streamDownload(
+                                fn () => print($csv),
+                                $fileName,
+                                ['Content-Type' => 'text/csv; charset=UTF-8']
+                            );
+                        })
+                        ->requiresConfirmation(),
+
+                    // CSVエクスポート: 会計仕訳CSV
+                    Tables\Actions\BulkAction::make('exportAccountingJournalCsv')
+                        ->label('会計仕訳CSV出力(弥生/freee/MF)')
+                        ->icon('heroicon-o-document-text')
+                        ->color('warning')
+                        ->form([
+                            Forms\Components\Select::make('year_month')
+                                ->label('請求年月')
+                                ->options(fn () => MonthlyInvoice::query()->distinct()->pluck('billing_year_month', 'billing_year_month')->toArray())
+                                ->required()
+                                ->default(now()->format('Y-m'))
+                                ->native(false),
+                        ])
+                        ->action(function (array $data) {
+                            $service = app(InvoiceCsvExportService::class);
+                            $csv = $service->exportAccountingJournalCsv($data['year_month']);
+                            $fileName = "会計仕訳_{$data['year_month']}.csv";
+
+                            return response()->streamDownload(
+                                fn () => print($csv),
+                                $fileName,
+                                ['Content-Type' => 'text/csv; charset=UTF-8']
+                            );
+                        })
+                        ->requiresConfirmation(),
+
                     // 削除バルクアクション: アーカイブ済みは対象外
                     Tables\Actions\DeleteBulkAction::make()
                         ->visible(fn (MonthlyInvoice $record) => $record->status && ! in_array($record->status, [InvoiceStatus::Paid, InvoiceStatus::Billed], true)
@@ -298,15 +364,17 @@ class MonthlyInvoiceResource extends Resource
     }
 
     /**
-     * フィルタに施設が選択されている場合は、その施設の入居者のみを対象にする
+     * 施設によるデータ分離
      */
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $query = parent::getEloquentQuery();
-        
-        // ファシリティフィルタが適用されているかチェック
-        // Filamentのフィルタシステムでは、リクエストパラメータから取得できる
-        // ここでは親のクエリを返し、個別のメソッドでフィルタ適用する
+
+        $user = Auth::user();
+        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+            $query->where('facility_id', $user->facility_id);
+        }
+
         return $query;
     }
 }

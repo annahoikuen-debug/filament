@@ -14,8 +14,7 @@ class ListDailyCharges extends ListRecords
     {
         return [
             Actions\CreateAction::make()
-                ->label('＋ 自費記録を登録')
-                ->icon('heroicon-o-plus'),
+                ->label('自費記録を追加'),
         ];
     }
 }

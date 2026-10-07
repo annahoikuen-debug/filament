@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <title>請求書 - {{ $invoice->billing_year_month }} - {{ $resident->name }} 様</title>
     <style>
-        @page {
-            margin: 12mm 15mm 15mm 15mm;
-            size: a4 portrait;
-        }
+        /* Margins and paper size set via InvoicePdfService */
         
         body {
             font-family: 'ipaexg', 'Noto Sans JP', 'Yu Mincho', 'YuMincho', 'Hiragino Mincho Pro', 'HGS明朝E', 'ＭＳ 明朝', serif;

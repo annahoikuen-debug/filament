@@ -10,6 +10,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class ResidentResource extends Resource
 {
@@ -74,6 +76,13 @@ class ResidentResource extends Resource
                                     ? 'after_or_equal:move_in_date'
                                     : null;
                             }),
+
+                        Forms\Components\Select::make('facility_id')
+                            ->label('施設')
+                            ->relationship('facility', 'name')
+                            ->required()
+                            ->visible(fn () => Auth::user()?->isCorporateAdmin())
+                            ->default(fn () => Auth::user()?->facility_id),
                     ])->columns([
                         'default' => 1,
                         'sm' => 2,
@@ -120,6 +129,13 @@ class ResidentResource extends Resource
                     ->description(fn (Resident $record): ?string => $record->name_kana)
                     ->searchable(['name', 'name_kana']),
 
+                Tables\Columns\TextColumn::make('facility.name')
+                    ->label('施設')
+                    ->badge()
+                    ->color('info')
+                    ->toggleable()
+                    ->visible(fn () => Auth::user()?->isCorporateAdmin()),
+
                 Tables\Columns\TextColumn::make('move_in_date')
                     ->label('入居日')
                     ->date('Y/m/d')
@@ -153,10 +169,29 @@ class ResidentResource extends Resource
                     ->label('ステータス')
                     ->options(ResidentStatus::class)
                     ->default(ResidentStatus::Active->value),
+
+                Tables\Filters\SelectFilter::make('facility_id')
+                    ->label('施設')
+                    ->relationship('facility', 'name')
+                    ->visible(fn () => Auth::user()?->isCorporateAdmin())
+                    ->preload()
+                    ->multiple(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $user = Auth::user();
+        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+            $query->where('facility_id', $user->facility_id);
+        }
+
+        return $query;
     }
 
     public static function getPages(): array

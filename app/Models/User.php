@@ -17,6 +17,8 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'is_admin',
+        'role',
+        'facility_id',
     ];
 
     protected $hidden = [
@@ -29,6 +31,30 @@ class User extends Authenticatable implements FilamentUser
         'password' => 'hashed',
         'is_admin' => 'boolean',
     ];
+
+    /**
+     * 所属施設
+     */
+    public function facility()
+    {
+        return $this->belongsTo(Facility::class);
+    }
+
+    /**
+     * 法人管理者かどうか
+     */
+    public function isCorporateAdmin(): bool
+    {
+        return $this->role === 'corporate_admin';
+    }
+
+    /**
+     * 施設管理者かどうか
+     */
+    public function isFacilityAdmin(): bool
+    {
+        return $this->role === 'facility_admin';
+    }
 
     /**
      * Filament管理画面へのアクセス認可
