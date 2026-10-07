@@ -1,4 +1,4 @@
-# 高齢者施設請求管理システム **あんしん ver1.1**
+﻿# 高齢者施設請求管理システム **あんしん ver1.1**
 
 高齢者施設の月次請求・領収書発行、入居者管理、日々の利用料管理を一元化するシステムです。Laravel 12 + Filament v3 で構築されています。
 
@@ -248,6 +248,41 @@ database/migrations/   入居者・請求項目・日次利用料・月次請求
 
 ---
 
+
+## 商用ウェブサイト (フェーズ1完成)
+
+商用展開に向けた公式ウェブサイトを website/ ディレクトリに構築しました。フェーズ1では以下のページを実装しています：
+
+### 主なページ
+- **トップページ** (website/index.html) - ヒーローセクション、課題提起、コア機能紹介、信頼性証明、導入事例、料金サマリー
+- **製品情報** (website/product/index.html) - 機能詳細、対応施設種別
+- **料金プラン** (website/product/pricing.html) - 3つのプラン（スターター・スタンダード・エンタープライズ）詳細比較
+- **導入事例** (website/case-studies.html) - 施設種別・課題別フィルタ機能付き事例一覧
+- **会社情報** (website/company/index.html) - 会社概要、代表メッセージ、アクセス、採用情報
+- **資料請求フォーム** (website/request/catalog.html) - L1コンバージョンポイント（3項目フォーム）
+- **お問い合わせフォーム** (website/request/inquiry.html) - L4コンバージョンポイント（多段階フォーム）
+- **プライバシーポリシー** (website/privacy.html)
+- **利用規約** (website/terms.html)
+
+### 特徴
+- 完全レスポンシブデザイン（モバイルファースト）
+- アクセシビリティ対応（セマンティックHTML、ARIAラベル）
+- SEO最適化（適切なメタタグ、見出し構造）
+- コンバージョン最適化（段階的フォームによる離脱率低減）
+- 信頼性証明（導入施設数・処理件数・連携実績の具体的数値表示）
+- カスタムプロパティベースのCSSによる保守性の高いスタイリング
+- バニラJavaScriptによる軽量なインタラクション
+
+### 技術スタック
+- HTML5
+- CSS3（CSSカスタムプロパティ使用）
+- バニラJavaScript（ES2022）
+
+### デプロイ方法
+静的サイトホスティングサービス（Netlify, Vercel, GitHub Pages等）または従来のWebサーバーにアップロードするだけで公開可能です。
+
+次なるフェーズでは、機能詳細ページの実装、デモ環境・体験版ページ、コンテンツマーケ用コラム・ニュースセクションの追加を予定しています。
+
 ## 変更履歴 v1.1 (2026-10-07)
 
 ### 新機能追加
@@ -297,3 +332,4 @@ All Rights Reserved.
 Copyright (c) 2026. All rights reserved.
 Unauthorized copying, modification, distribution, or use of this software, 
 via any medium, is strictly prohibited without prior written permission.
+
