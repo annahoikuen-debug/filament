@@ -1,0 +1,1 @@
+& "C:\Users\user\AppData\Local\Microsoft\WinGet\Packages\PHP.PHP.8.3_Microsoft.Winget.Source_8wekyb3d8bbwe\php.exe" artisan queue:listen --tries=1 --timeout=0
