@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 640" font-family="'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif">
+  <rect width="900" height="640" fill="#f8fafc"/>
+  <rect x="0" y="0" width="900" height="48" fill="#0f172a"/>
+  <text x="20" y="30" font-size="15" fill="#ffffff" font-weight="bold">請求管理システム</text>
+  <rect x="0" y="48" width="220" height="592" fill="#ffffff" stroke="#e2e8f0"/>
+  <rect x="0" y="96" width="220" height="36" fill="#f0f9ff"/>
+  <rect x="0" y="96" width="4" height="36" fill="#0284c7"/>
+  <text x="20" y="119" font-size="13" fill="#0369a1" font-weight="bold">入居者マスタ</text>
+
+  <text x="248" y="80" font-size="20" fill="#0f172a" font-weight="bold">新規入居者登録</text>
+
+  <!-- 基本情報セクション -->
+  <rect x="248" y="100" width="612" height="300" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="268" y="128" font-size="14" fill="#0f172a" font-weight="bold">基本情報</text>
+  <text x="268" y="146" font-size="11" fill="#94a3b8">入居者の居室および基本契約情報</text>
+
+  <text x="268" y="178" font-size="12" fill="#475569">部屋番号 *</text>
+  <rect x="268" y="186" width="280" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="280" y="209" font-size="13" fill="#94a3b8">例: 101</text>
+
+  <text x="580" y="178" font-size="12" fill="#475569">ステータス *</text>
+  <rect x="580" y="186" width="260" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="592" y="209" font-size="13" fill="#334155">入事中</text>
+  <text x="820" y="209" font-size="11" fill="#94a3b8">▼</text>
+
+  <text x="268" y="252" font-size="12" fill="#475569">氏名 *</text>
+  <rect x="268" y="260" width="280" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="280" y="283" font-size="13" fill="#94a3b8">例: 山田 太郎</text>
+
+  <text x="580" y="252" font-size="12" fill="#475569">フリガナ</text>
+  <rect x="580" y="260" width="260" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="592" y="283" font-size="13" fill="#94a3b8">例: ヤマダ タロウ</text>
+
+  <text x="268" y="326" font-size="12" fill="#475569">入居開始日 *</text>
+  <rect x="268" y="334" width="280" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="280" y="357" font-size="13" fill="#334155">2026/01/01</text>
+  <text x="530" y="357" font-size="14" fill="#94a3b8">📅</text>
+
+  <text x="580" y="326" font-size="12" fill="#475569">退去日 (未定は空欄)</text>
+  <rect x="580" y="334" width="260" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="592" y="357" font-size="12" fill="#94a3b8">入居日以降の日付を入力</text>
+
+  <!-- 月額基本料金セクション -->
+  <rect x="248" y="416" width="612" height="130" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="268" y="444" font-size="14" fill="#0f172a" font-weight="bold">月額基本料金</text>
+  <text x="268" y="462" font-size="11" fill="#94a3b8">毎月の請求基本額（税込み）</text>
+
+  <text x="268" y="494" font-size="12" fill="#475569">基本家賃(月額) *</text>
+  <rect x="268" y="502" width="280" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="280" y="525" font-size="13" fill="#334155">¥ 65000</text>
+
+  <text x="580" y="494" font-size="12" fill="#475569">基本管理費(月額) *</text>
+  <rect x="580" y="502" width="260" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="592" y="525" font-size="13" fill="#334155">¥ 30000</text>
+
+  <!-- 保存ボタン -->
+  <rect x="248" y="566" width="120" height="38" rx="6" fill="#0284c7"/>
+  <text x="308" y="590" font-size="13" fill="#fff" text-anchor="middle" font-weight="bold">保存</text>
+</svg>

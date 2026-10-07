@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" font-family="'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif">
+  <rect width="900" height="700" fill="#f8fafc"/>
+  <rect x="0" y="0" width="900" height="48" fill="#0f172a"/>
+  <text x="20" y="30" font-size="15" fill="#ffffff" font-weight="bold">請求管理システム</text>
+  <rect x="0" y="48" width="220" height="652" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="20" y="119" font-size="13" fill="#475569">入居者マスタ</text>
+  <text x="20" y="152" font-size="13" fill="#475569">自費品目マスタ</text>
+  <rect x="0" y="170" width="220" height="36" fill="#f0f9ff"/>
+  <rect x="0" y="170" width="4" height="36" fill="#0284c7"/>
+  <text x="20" y="193" font-size="13" fill="#0369a1" font-weight="bold">日々の自費記録</text>
+  <text x="20" y="226" font-size="13" fill="#475569">月次請求データ</text>
+
+  <text x="248" y="80" font-size="20" fill="#0f172a" font-weight="bold">日々の自費記録</text>
+  <rect x="700" y="64" width="160" height="34" rx="6" fill="#0284c7"/>
+  <text x="780" y="86" font-size="12" fill="#fff" text-anchor="middle" font-weight="bold">＋ 自費記録を登録</text>
+
+  <!-- 記録情報セクション -->
+  <rect x="248" y="110" width="612" height="470" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="268" y="138" font-size="14" fill="#0f172a" font-weight="bold">記録情報</text>
+  <text x="268" y="156" font-size="11" fill="#94a3b8">現場の介護・立替実績を入力します</text>
+
+  <text x="268" y="190" font-size="12" fill="#475569">日付 *</text>
+  <rect x="268" y="198" width="280" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="280" y="221" font-size="13" fill="#334155">2026/10/07</text>
+  <text x="530" y="221" font-size="14" fill="#94a3b8">📅</text>
+
+  <text x="580" y="190" font-size="12" fill="#475569">入居者 *</text>
+  <rect x="580" y="198" width="260" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="592" y="221" font-size="13" fill="#334155">[101] 佐藤 一郎</text>
+  <text x="820" y="221" font-size="11" fill="#94a3b8">▼</text>
+
+  <text x="268" y="264" font-size="12" fill="#475569">品目 *</text>
+  <rect x="268" y="272" width="280" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="280" y="295" font-size="13" fill="#334155">紙おむつ (パンツタイプ)</text>
+  <text x="530" y="295" font-size="11" fill="#94a3b8">▼</text>
+
+  <text x="580" y="264" font-size="12" fill="#475569">単価 *</text>
+  <rect x="580" y="272" width="260" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="592" y="295" font-size="13" fill="#334155">¥ 180</text>
+  <text x="580" y="322" font-size="10" fill="#94a3b8">品目選択時に自動反映されます。変更も可能です。</text>
+
+  <text x="268" y="356" font-size="12" fill="#475569">数量 *</text>
+  <rect x="268" y="364" width="280" height="36" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="280" y="387" font-size="13" fill="#334155">3</text>
+
+  <text x="580" y="356" font-size="12" fill="#475569">小計金額</text>
+  <rect x="580" y="364" width="260" height="36" rx="6" fill="#f0f9ff" stroke="#bae6fd"/>
+  <text x="592" y="387" font-size="15" fill="#0369a1" font-weight="bold">¥540</text>
+
+  <text x="268" y="428" font-size="12" fill="#475569">備考</text>
+  <rect x="268" y="436" width="572" height="70" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="280" y="458" font-size="12" fill="#94a3b8">例: 夜間交換分、理美容代立替、家族持参分など</text>
+
+  <rect x="268" y="522" width="120" height="38" rx="6" fill="#0284c7"/>
+  <text x="328" y="546" font-size="13" fill="#fff" text-anchor="middle" font-weight="bold">保存</text>
+
+  <!-- フッター注記 -->
+  <rect x="248" y="600" width="612" height="70" rx="8" fill="#fffbeb" stroke="#fde68a"/>
+  <text x="268" y="624" font-size="12" fill="#92400e" font-weight="bold">⚠ 入力時の注意</text>
+  <text x="268" y="644" font-size="11" fill="#92400e">・利用日が入居者の在籍期間外の場合、エラーになります（入居日〜退去日の範囲内で入力）。</text>
+  <text x="268" y="660" font-size="11" fill="#92400e">・入居者ドロップダウンには「入居中」の入居者のみ表示されます。</text>
+</svg>

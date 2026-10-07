@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif">
+  <rect width="1200" height="720" fill="#ffffff"/>
+  <text x="600" y="40" font-size="18" fill="#0f172a" text-anchor="middle" font-weight="bold">月次請求業務フロー（毎月の業務手順）</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <!-- Step 1: 日々の自費記録（毎日） -->
+  <rect x="40" y="80" width="240" height="90" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="2"/>
+  <text x="160" y="112" font-size="13" fill="#0369a1" text-anchor="middle" font-weight="bold">① 日々の自費記録</text>
+  <text x="160" y="134" font-size="11" fill="#475569" text-anchor="middle">（毎日・随時）</text>
+  <text x="160" y="154" font-size="10" fill="#64748b" text-anchor="middle">紙おむつ・理美容代などの</text>
+  <text x="160" y="168" font-size="10" fill="#64748b" text-anchor="middle">利用実績を入力</text>
+
+  <!-- Step 2: 月次一括生成 -->
+  <rect x="340" y="80" width="240" height="90" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2"/>
+  <text x="460" y="112" font-size="13" fill="#1e40af" text-anchor="middle" font-weight="bold">② 月次請求データ一括生成</text>
+  <text x="460" y="134" font-size="11" fill="#475569" text-anchor="middle">（翌月1日〜）</text>
+  <text x="460" y="154" font-size="10" fill="#64748b" text-anchor="middle">家賃・管理費の日割り計算</text>
+  <text x="460" y="168" font-size="10" fill="#64748b" text-anchor="middle">＋ 自費記録の合算を自動実行</text>
+
+  <!-- Step 3: 金額確認 -->
+  <rect x="640" y="80" width="240" height="90" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+  <text x="760" y="112" font-size="13" fill="#92400e" text-anchor="middle" font-weight="bold">③ 金額確認</text>
+  <text x="760" y="134" font-size="11" fill="#475569" text-anchor="middle">（生成後すぐ）</text>
+  <text x="760" y="154" font-size="10" fill="#64748b" text-anchor="middle">一覧で合計請求額を確認</text>
+  <text x="760" y="168" font-size="10" fill="#64748b" text-anchor="middle">異常があれば再生成（強制更新）</text>
+
+  <!-- Step 4: PDF出力 -->
+  <rect x="940" y="80" width="220" height="90" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+  <text x="1050" y="112" font-size="13" fill="#0369a1" text-anchor="middle" font-weight="bold">④ 請求書PDF出力</text>
+  <text x="1050" y="134" font-size="11" fill="#475569" text-anchor="middle">（確認後）</text>
+  <text x="1050" y="154" font-size="10" fill="#64748b" text-anchor="middle">個別PDF or 全員分ZIP</text>
+  <text x="1050" y="168" font-size="10" fill="#64748b" text-anchor="middle">入居者へ送付</text>
+
+  <!-- Step 5: 一括請求済 -->
+  <rect x="40" y="300" width="240" height="90" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+  <text x="160" y="332" font-size="13" fill="#0369a1" text-anchor="middle" font-weight="bold">⑤ 一括「請求済」に変更</text>
+  <text x="160" y="354" font-size="11" fill="#475569" text-anchor="middle">（送付後）</text>
+  <text x="160" y="374" font-size="10" fill="#64748b" text-anchor="middle">チェックボックスで全選択</text>
+  <text x="160" y="388" font-size="10" fill="#64748b" text-anchor="middle">→ ステータス確定（編集不可）</text>
+
+  <!-- Step 6: 入金消込 -->
+  <rect x="340" y="300" width="240" height="90" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+  <text x="460" y="332" font-size="13" fill="#15803d" text-anchor="middle" font-weight="bold">⑥ 入金消込</text>
+  <text x="460" y="354" font-size="11" fill="#475569" text-anchor="middle">（入金確認後）</text>
+  <text x="460" y="374" font-size="10" fill="#64748b" text-anchor="middle">入金日・入金区分を入力</text>
+  <text x="460" y="388" font-size="10" fill="#64748b" text-anchor="middle">→ 領収書番号が自動発行</text>
+
+  <!-- Step 7: 領収書PDF -->
+  <rect x="640" y="300" width="240" height="90" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+  <text x="760" y="332" font-size="13" fill="#92400e" text-anchor="middle" font-weight="bold">⑦ 領収書PDF出力</text>
+  <text x="760" y="354" font-size="11" fill="#475569" text-anchor="middle">（入金済のみ）</text>
+  <text x="760" y="154" font-size="10" fill="#64748b" text-anchor="middle" opacity="0">.</text>
+  <text x="760" y="374" font-size="10" fill="#64748b" text-anchor="middle">入居者へ領収書を交付</text>
+  <text x="760" y="388" font-size="10" fill="#64748b" text-anchor="middle">（入金済レコードにのみ表示）</text>
+
+  <!-- Step 8: 会計CSV -->
+  <rect x="940" y="300" width="220" height="90" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+  <text x="1050" y="332" font-size="13" fill="#334155" text-anchor="middle" font-weight="bold">⑧ 会計CSV出力</text>
+  <text x="1050" y="354" font-size="11" fill="#475569" text-anchor="middle">（月末・締め時）</text>
+  <text x="1050" y="374" font-size="10" fill="#64748b" text-anchor="middle">会計ソフトに取り込み</text>
+  <text x="1050" y="388" font-size="10" fill="#64748b" text-anchor="middle">（仕訳CSV / 台帳CSV）</text>
+
+  <!-- 矢印 -->
+  <line x1="280" y1="125" x2="336" y2="125" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="580" y1="125" x2="636" y2="125" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="880" y1="125" x2="936" y2="125" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M1050,170 L1050,240 L160,240 L160,296" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="280" y1="345" x2="336" y2="345" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="580" y1="345" x2="636" y2="345" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="880" y1="345" x2="936" y2="345" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- タイミング帯 -->
+  <rect x="40" y="440" width="1120" height="220" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="60" y="470" font-size="13" fill="#0f172a" font-weight="bold">業務タイミングの目安</text>
+  <g font-size="11" fill="#475569">
+    <rect x="60" y="486" width="120" height="26" rx="5" fill="#dbeafe"/>
+    <text x="120" y="504" text-anchor="middle" fill="#1e40af" font-weight="bold">毎日</text>
+    <text x="196" y="504">① 自費記録の入力（現場で発生した都度）</text>
+
+    <rect x="60" y="522" width="120" height="26" rx="5" fill="#dbeafe"/>
+    <text x="120" y="540" text-anchor="middle" fill="#1e40af" font-weight="bold">翌月1日〜</text>
+    <text x="196" y="540">② 月次請求データの一括生成 → ③ 金額確認</text>
+
+    <rect x="60" y="558" width="120" height="26" rx="5" fill="#dbeafe"/>
+    <text x="120" y="576" text-anchor="middle" fill="#1e40af" font-weight="bold">請求書発行日</text>
+    <text x="196" y="576">④ 請求書PDF出力・送付 → ⑤ 一括「請求済」に変更</text>
+
+    <rect x="60" y="594" width="120" height="26" rx="5" fill="#dbeafe"/>
+    <text x="120" y="612" text-anchor="middle" fill="#1e40af" font-weight="bold">入金確認時</text>
+    <text x="196" y="612">⑥ 入金消込 → ⑦ 領収書PDF出力・交付</text>
+
+    <rect x="60" y="630" width="120" height="26" rx="5" fill="#dbeafe"/>
+    <text x="120" y="648" text-anchor="middle" fill="#1e40af" font-weight="bold">月末・締め</text>
+    <text x="196" y="648">⑧ 会計CSV出力 → 会計ソフトへ取り込み</text>
+  </g>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" font-family="'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif">
+  <rect width="800" height="520" fill="#f8fafc"/>
+  <!-- ブラウザ風フレーム -->
+  <rect x="20" y="16" width="760" height="488" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <rect x="20" y="16" width="760" height="34" rx="8" fill="#f1f5f9"/>
+  <circle cx="42" cy="33" r="5" fill="#ef4444"/>
+  <circle cx="60" cy="33" r="5" fill="#f59e0b"/>
+  <circle cx="78" cy="33" r="5" fill="#22c55e"/>
+  <rect x="100" y="24" width="560" height="18" rx="9" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="112" y="37" font-size="11" fill="#64748b">http://localhost:8000/admin</text>
+
+  <!-- ロゴ -->
+  <rect x="330" y="90" width="60" height="60" rx="12" fill="#0284c7"/>
+  <text x="360" y="130" font-size="30" fill="#ffffff" text-anchor="middle" font-weight="bold">¥</text>
+  <text x="400" y="190" font-size="22" fill="#0f172a" text-anchor="middle" font-weight="bold">請求管理システム</text>
+  <text x="400" y="212" font-size="12" fill="#64748b" text-anchor="middle">高齢者施設請求管理システム「あんしん」</text>
+
+  <!-- ログインカード -->
+  <rect x="250" y="240" width="300" height="210" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="275" y="272" font-size="12" fill="#475569">メールアドレス</text>
+  <rect x="275" y="280" width="250" height="36" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="287" y="303" font-size="13" fill="#94a3b8">admin@care-himawari.example.jp</text>
+  <text x="275" y="340" font-size="12" fill="#475569">パスワード</text>
+  <rect x="275" y="348" width="250" height="36" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="287" y="371" font-size="13" fill="#94a3b8">••••••••••</text>
+  <rect x="275" y="400" width="250" height="38" rx="6" fill="#0284c7"/>
+  <text x="400" y="424" font-size="14" fill="#ffffff" text-anchor="middle" font-weight="bold">ログイン</text>
+
+  <text x="400" y="486" font-size="10" fill="#94a3b8" text-anchor="middle">管理者権限（is_admin）を持つアカウントのみアクセスできます</text>
+</svg>

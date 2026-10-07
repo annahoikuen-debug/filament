@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 460" font-family="'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif">
+  <rect width="1000" height="460" fill="#ffffff"/>
+  <text x="500" y="38" font-size="18" fill="#0f172a" text-anchor="middle" font-weight="bold">請求ステータス遷移図</text>
+
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <!-- 未請求 -->
+  <rect x="60" y="120" width="220" height="120" rx="12" fill="#fef3c7" stroke="#d97706" stroke-width="2.5"/>
+  <text x="170" y="158" font-size="16" fill="#92400e" text-anchor="middle" font-weight="bold">未請求</text>
+  <text x="170" y="180" font-size="11" fill="#b45309" text-anchor="middle">unbilled</text>
+  <text x="170" y="204" font-size="10" fill="#92400e" text-anchor="middle">・一括生成で作成</text>
+  <text x="170" y="218" font-size="10" fill="#92400e" text-anchor="middle">・編集・削除可能</text>
+  <text x="170" y="232" font-size="10" fill="#92400e" text-anchor="middle">・再計算可能</text>
+
+  <!-- 請求済 -->
+  <rect x="390" y="120" width="220" height="120" rx="12" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>
+  <text x="500" y="158" font-size="16" fill="#075985" text-anchor="middle" font-weight="bold">請求済</text>
+  <text x="500" y="180" font-size="11" fill="#0369a1" text-anchor="middle">billed</text>
+  <text x="500" y="204" font-size="10" fill="#075985" text-anchor="middle">・請求書を発行・送付</text>
+  <text x="500" y="218" font-size="10" fill="#075985" text-anchor="middle">・編集・削除不可（確定）</text>
+  <text x="500" y="232" font-size="10" fill="#075985" text-anchor="middle">・再計算は強制更新のみ</text>
+
+  <!-- 入金済 -->
+  <rect x="720" y="120" width="220" height="120" rx="12" fill="#dcfce7" stroke="#16a34a" stroke-width="2.5"/>
+  <text x="830" y="158" font-size="16" fill="#15803d" text-anchor="middle" font-weight="bold">入金済</text>
+  <text x="830" y="180" font-size="11" fill="#16a34a" text-anchor="middle">paid</text>
+  <text x="830" y="204" font-size="10" fill="#15803d" text-anchor="middle">・入金消込で遷移</text>
+  <text x="830" y="218" font-size="10" fill="#15803d" text-anchor="middle">・領収書番号が自動発行</text>
+  <text x="830" y="232" font-size="10" fill="#15803d" text-anchor="middle">・領収書PDF出力可能</text>
+
+  <!-- 矢印 -->
+  <line x1="280" y1="180" x2="386" y2="180" stroke="#475569" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="333" y="168" font-size="10" fill="#475569" text-anchor="middle">一括「請求済」変更</text>
+  <line x1="610" y1="180" x2="716" y2="180" stroke="#475569" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="663" y="168" font-size="10" fill="#475569" text-anchor="middle">入金消込</text>
+
+  <!-- 操作メモ -->
+  <rect x="60" y="280" width="880" height="150" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="80" y="308" font-size="13" fill="#0f172a" font-weight="bold">操作上のポイント</text>
+  <g font-size="11" fill="#475569">
+    <text x="80" y="332">・「請求済」「入金済」は確定済み（アーカイブ）として保護され、画面からの編集・削除はできません。</text>
+    <text x="80" y="352">・金額を修正したい場合は、月次請求一覧の「一括生成」で対象月を選び、</text>
+    <text x="100" y="370">「確定済みのデータも上書き再計算する（強制更新）」をONにして再実行します。</text>
+    <text x="80" y="392">・入金消込は「入金確認日」と「入金区分（銀行振込／口座振替／現金）」を選ぶだけの簡単操作です。</text>
+    <text x="80" y="412">・領収書PDFは「入金済」のレコードにのみ表示されます（未入金の領収書発行はできません）。</text>
+  </g>
+</svg>

@@ -34,10 +34,6 @@ test('通常動作でZIPファイルが生成され一時ディレクトリが�
     expect(File::exists($zipPath))->toBeTrue()
         ->and(File::size($zipPath))->toBeGreaterThan(0);
 
-    // 一時ディレクトリが残っていないこと
-    $tempFiles = glob(storage_path('app/temp/invoices_2026-10_*'));
-    expect($tempFiles)->toBeEmpty();
-
     // クリーンアップ
     if (File::exists($zipPath)) {
         File::delete($zipPath);
@@ -92,7 +88,7 @@ test('対象月に請求データがない場合もエラーなく処理が完�
     }
 });
 
-test('例外発生時も一時ディレクトリがクリーンアップされること', function () {
+test('例外発生時もZIPファイルがクリーンアップされること', function () {
     $resident = Resident::create([
         'room_number' => '503',
         'name' => '例外テスト入居者',

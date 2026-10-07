@@ -2,8 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Facility;
 use App\Models\MonthlyInvoice;
+use App\Models\PdfTemplateSetting;
+use App\Models\TaxSetting;
 use App\Policies\MonthlyInvoicePolicy;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -17,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadFacilityConfigFromDatabase();
+        $this->loadTaxConfigFromDatabase();
+        $this->loadPdfTemplateConfigFromDatabase();
         $this->validateFacilityConfig();
 
         // ポリシー登録
@@ -24,7 +31,93 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * 施設設定 (config/facility.php) の起動時バリデーション
+     * DBから施設設定を読み込み、config にマージする
+     * （マイグレーション実行時などDB未準備時はスキップ）
+     */
+    protected function loadFacilityConfigFromDatabase(): void
+    {
+        if (! $this->app->runningInConsole() || $this->app->runningUnitTests()) {
+            // Webリクエスト時のみDBから読み込み
+            // ※ コンソールコマンド（migrate等）ではスキップ
+        }
+
+        try {
+            // テーブル存在チェック（マイグレーション前対策）
+            if (! $this->getConnection()->getSchemaBuilder()->hasTable('facilities')) {
+                return;
+            }
+
+            $facility = Facility::current();
+            if ($facility) {
+                Config::set('facility', array_merge(Config::get('facility', []), $facility->toConfigArray()));
+            }
+        } catch (\Throwable $e) {
+            // DB接続エラー等はログに出して継続（config/facility.php のデフォルト値が使われる）
+            if (! $this->app->runningInConsole()) {
+                report($e);
+            }
+        }
+    }
+
+    /**
+     * DBから税率設定を読み込み、config にマージする
+     */
+    protected function loadTaxConfigFromDatabase(): void
+    {
+        if (! $this->app->runningInConsole() || $this->app->runningUnitTests()) {
+            // Webリクエスト時のみDBから読み込み
+        }
+
+        try {
+            if (! $this->getConnection()->getSchemaBuilder()->hasTable('tax_settings')) {
+                return;
+            }
+
+            $taxSetting = TaxSetting::current();
+            if ($taxSetting) {
+                Config::set('tax', array_merge(Config::get('tax', []), $taxSetting->toConfigArray()));
+            }
+        } catch (\Throwable $e) {
+            if (! $this->app->runningInConsole()) {
+                report($e);
+            }
+        }
+    }
+
+    /**
+     * DBからPDFテンプレート設定を読み込み、config にマージする
+     */
+    protected function loadPdfTemplateConfigFromDatabase(): void
+    {
+        if (! $this->app->runningInConsole() || $this->app->runningUnitTests()) {
+            // Webリクエスト時のみDBから読み込み
+        }
+
+        try {
+            if (! $this->getConnection()->getSchemaBuilder()->hasTable('pdf_template_settings')) {
+                return;
+            }
+
+            // 請求書テンプレート
+            $invoiceTemplate = PdfTemplateSetting::getForKey('invoice');
+            if ($invoiceTemplate) {
+                Config::set('pdf.invoice', array_merge(Config::get('pdf.invoice', []), $invoiceTemplate->toConfigArray()));
+            }
+
+            // 領収書テンプレート
+            $receiptTemplate = PdfTemplateSetting::getForKey('receipt');
+            if ($receiptTemplate) {
+                Config::set('pdf.receipt', array_merge(Config::get('pdf.receipt', []), $receiptTemplate->toConfigArray()));
+            }
+        } catch (\Throwable $e) {
+            if (! $this->app->runningInConsole()) {
+                report($e);
+            }
+        }
+    }
+
+    /**
+     * 施設設定のバリデーション（DB由来も含む）
      */
     protected function validateFacilityConfig(): void
     {
@@ -51,5 +144,10 @@ class AppServiceProvider extends ServiceProvider
                 throw new RuntimeException('銀行情報に必須項目が不足しています。');
             }
         }
+    }
+
+    private function getConnection()
+    {
+        return $this->app['db']->connection();
     }
 }

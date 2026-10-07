@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" font-family="'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif">
+  <rect width="1000" height="620" fill="#f8fafc"/>
+  <!-- トップバー -->
+  <rect x="0" y="0" width="1000" height="48" fill="#0f172a"/>
+  <rect x="16" y="10" width="28" height="28" rx="6" fill="#0284c7"/>
+  <text x="30" y="30" font-size="15" fill="#fff" text-anchor="middle" font-weight="bold">¥</text>
+  <text x="54" y="30" font-size="15" fill="#ffffff" font-weight="bold">請求管理システム</text>
+  <circle cx="952" cy="24" r="14" fill="#0284c7"/>
+  <text x="952" y="29" font-size="11" fill="#fff" text-anchor="middle">管</text>
+
+  <!-- サイドバー -->
+  <rect x="0" y="48" width="220" height="572" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="18" y="82" font-size="12" fill="#94a3b8">メニュー</text>
+  <rect x="0" y="96" width="220" height="36" fill="#f0f9ff"/>
+  <rect x="0" y="96" width="4" height="36" fill="#0284c7"/>
+  <text x="20" y="119" font-size="13" fill="#0369a1" font-weight="bold">入居者マスタ</text>
+  <text x="20" y="152" font-size="13" fill="#475569">自費品目マスタ</text>
+  <text x="20" y="186" font-size="13" fill="#475569">日々の自費記録</text>
+  <text x="20" y="220" font-size="13" fill="#475569">月次請求データ</text>
+  <text x="20" y="254" font-size="13" fill="#475569">施設</text>
+  <line x1="0" y1="280" x2="220" y2="280" stroke="#e2e8f0"/>
+  <text x="20" y="306" font-size="12" fill="#94a3b8">ユーザー</text>
+  <text x="20" y="330" font-size="13" fill="#475569">施設管理者</text>
+
+  <!-- メインエリア -->
+  <text x="248" y="80" font-size="20" fill="#0f172a" font-weight="bold">入居者一覧</text>
+  <!-- タブ -->
+  <rect x="248" y="96" width="90" height="32" rx="6" fill="#0f172a"/>
+  <text x="293" y="117" font-size="12" fill="#fff" text-anchor="middle">入居中 25</text>
+  <rect x="346" y="96" width="90" height="32" rx="6" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="391" y="117" font-size="12" fill="#475569" text-anchor="middle">すべて 25</text>
+  <rect x="444" y="96" width="90" height="32" rx="6" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="489" y="117" font-size="12" fill="#475569" text-anchor="middle">退去済 0</text>
+
+  <!-- 検索と新規ボタン -->
+  <rect x="248" y="144" width="240" height="34" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="262" y="166" font-size="12" fill="#94a3b8">部屋番号・氏名・フリガナで検索…</text>
+  <rect x="700" y="144" width="160" height="34" rx="6" fill="#0284c7"/>
+  <text x="780" y="166" font-size="12" fill="#fff" text-anchor="middle" font-weight="bold">＋ 新規入居者登録</text>
+
+  <!-- テーブル -->
+  <rect x="248" y="192" width="712" height="380" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <rect x="248" y="192" width="712" height="38" rx="8" fill="#f8fafc"/>
+  <text x="262" y="216" font-size="11" fill="#64748b" font-weight="bold">部屋番号</text>
+  <text x="360" y="216" font-size="11" fill="#64748b" font-weight="bold">氏名</text>
+  <text x="520" y="216" font-size="11" fill="#64748b" font-weight="bold">入居日</text>
+  <text x="620" y="216" font-size="11" fill="#64748b" font-weight="bold">家賃</text>
+  <text x="700" y="216" font-size="11" fill="#64748b" font-weight="bold">管理費</text>
+  <text x="780" y="216" font-size="11" fill="#64748b" font-weight="bold">月額固定計</text>
+  <text x="890" y="216" font-size="11" fill="#64748b" font-weight="bold">ステータス</text>
+  <line x1="248" y1="230" x2="960" y2="230" stroke="#e2e8f0"/>
+
+  <!-- データ行 -->
+  <g font-size="12" fill="#334155">
+    <rect x="262" y="244" width="46" height="22" rx="11" fill="#dbeafe"/>
+    <text x="285" y="259" font-size="11" fill="#1d4ed8" text-anchor="middle">101</text>
+    <text x="360" y="259">佐藤 一郎</text>
+    <text x="520" y="259">2025/04/01</text>
+    <text x="620" y="259">¥65,000</text>
+    <text x="700" y="259">¥30,000</text>
+    <text x="780" y="259" font-weight="bold">¥95,000</text>
+    <rect x="890" y="244" width="52" height="22" rx="11" fill="#dcfce7"/>
+    <text x="916" y="259" font-size="11" fill="#15803d" text-anchor="middle">入居中</text>
+
+    <rect x="262" y="288" width="46" height="22" rx="11" fill="#dbeafe"/>
+    <text x="285" y="303" font-size="11" fill="#1d4ed8" text-anchor="middle">102</text>
+    <text x="360" y="303">鈴木 ハナ</text>
+    <text x="520" y="303">2025/04/01</text>
+    <text x="620" y="303">¥60,000</text>
+    <text x="700" y="303">¥30,000</text>
+    <text x="780" y="303" font-weight="bold">¥90,000</text>
+    <rect x="890" y="288" width="52" height="22" rx="11" fill="#dcfce7"/>
+    <text x="916" y="303" font-size="11" fill="#15803d" text-anchor="middle">入居中</text>
+
+    <rect x="262" y="332" width="46" height="22" rx="11" fill="#dbeafe"/>
+    <text x="285" y="347" font-size="11" fill="#1d4ed8" text-anchor="middle">103</text>
+    <text x="360" y="347">高橋 健二</text>
+    <text x="520" y="347">2025/04/01</text>
+    <text x="620" y="347">¥65,000</text>
+    <text x="700" y="347">¥30,000</text>
+    <text x="780" y="347" font-weight="bold">¥95,000</text>
+    <rect x="890" y="332" width="52" height="22" rx="11" fill="#dcfce7"/>
+    <text x="916" y="347" font-size="11" fill="#15803d" text-anchor="middle">入居中</text>
+
+    <rect x="262" y="376" width="46" height="22" rx="11" fill="#dbeafe"/>
+    <text x="285" y="391" font-size="11" fill="#1d4ed8" text-anchor="middle">104</text>
+    <text x="360" y="391">田中 トメ</text>
+    <text x="520" y="391">2025/04/01</text>
+    <text x="620" y="391">¥60,000</text>
+    <text x="700" y="391">¥30,000</text>
+    <text x="780" y="391" font-weight="bold">¥90,000</text>
+    <rect x="890" y="376" width="52" height="22" rx="11" fill="#dcfce7"/>
+    <text x="916" y="391" font-size="11" fill="#15803d" text-anchor="middle">入居中</text>
+
+    <rect x="262" y="420" width="46" height="22" rx="11" fill="#dbeafe"/>
+    <text x="285" y="435" font-size="11" fill="#1d4ed8" text-anchor="middle">105</text>
+    <text x="360" y="435">伊藤 清</text>
+    <text x="520" y="435">2025/04/01</text>
+    <text x="620" y="435">¥70,000</text>
+    <text x="700" y="435">¥35,000</text>
+    <text x="780" y="435" font-weight="bold">¥105,000</text>
+    <rect x="890" y="420" width="52" height="22" rx="11" fill="#dcfce7"/>
+    <text x="916" y="435" font-size="11" fill="#15803d" text-anchor="middle">入居中</text>
+  </g>
+  <text x="262" y="470" font-size="11" fill="#94a3b8">…（25名分表示）</text>
+
+  <!-- 編集アイコン列 -->
+  <text x="930" y="216" font-size="11" fill="#64748b" font-weight="bold">編集</text>
+  <text x="936" y="259" font-size="14" fill="#0284c7">✎</text>
+  <text x="936" y="303" font-size="14" fill="#0284c7">✎</text>
+  <text x="936" y="347" font-size="14" fill="#0284c7">✎</text>
+  <text x="936" y="391" font-size="14" fill="#0284c7">✎</text>
+  <text x="936" y="435" font-size="14" fill="#0284c7">✎</text>
+
+  <!-- フッター -->
+  <text x="248" y="596" font-size="11" fill="#94a3b8">表示: 1-5 / 25件　※ステータスバッジ：緑=入居中／グレー=退去</text>
+</svg>

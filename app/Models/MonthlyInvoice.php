@@ -53,11 +53,12 @@ class MonthlyInvoice extends Model
                 + (int) $invoice->management_fee_subtotal
                 + (int) $invoice->service_subtotal;
 
-            // 消費税関連の計算
-            $invoice->tax_rate = 10; // 固定で10%（将来的に設定可能に）
+            // 消費税関連の計算（設定から税率を取得、デフォルト10%）
+            $taxRate = config('tax.standard_rate', 10);
+            $invoice->tax_rate = $taxRate;
             $invoice->taxable_amount = (int) $invoice->management_fee_subtotal
                 + (int) $invoice->service_subtotal;
-            $invoice->tax_amount = (int) round($invoice->taxable_amount * ($invoice->tax_rate / 100));
+            $invoice->tax_amount = (int) round($invoice->taxable_amount * ($taxRate / 100));
 
             // 楽観ロック: 更新時のみバージョンをインクリメント
             // $invoice->exists は新規作成時は false、既存レコード更新時は true

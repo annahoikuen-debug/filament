@@ -42,6 +42,8 @@ class InvoicePdfService
      */
     public function generatePdfFromInvoice(MonthlyInvoice $invoice, string $type = 'invoice'): DomPdfInstance
     {
+        @ini_set('memory_limit', '512M');
+
         $invoice->load([
             'resident.dailyCharges' => function ($query) use ($invoice) {
                 $query->forYearMonth($invoice->billing_year_month)
@@ -51,6 +53,9 @@ class InvoicePdfService
         ]);
 
         $view = $type === 'invoice' ? 'invoices.pdf' : 'invoices.receipt';
+
+        // テンプレート設定を取得
+        $templateConfig = $this->getTemplateConfig($type);
 
         $pdf = Pdf::loadView($view, [
             'invoice' => $invoice,
@@ -65,38 +70,114 @@ class InvoicePdfService
                 'tax_amount' => $invoice->tax_amount,
                 'total_with_tax' => $invoice->total_with_tax,
             ],
+            // テンプレート設定（CSS変数等用）
+            'template' => $templateConfig,
         ]);
 
-        $pdf->setPaper('a4', 'portrait');
-
         // 日本語フォント設定を適用
-        $this->applyJapaneseFontSettings($pdf);
+        $this->applyJapaneseFontSettings($pdf, $templateConfig);
+
+        // 余白・用紙設定を適用
+        $this->applyMargins($pdf, $templateConfig);
 
         return $pdf;
     }
 
     /**
-     * 日本語フォント設定を適用
-     *
-     * Windows標準フォント（YuMincho, MS Gothic, Meiryo）を優先し、
-     * プロジェクト同梱のNoto Sans JPをフォールバックとして使用
+     * テンプレート設定を取得（config からマージ）
      */
-    private function applyJapaneseFontSettings(DomPdfInstance $pdf): void
+    private function getTemplateConfig(string $type): array
+    {
+        $baseConfig = [
+            'paper_size' => 'a4',
+            'paper_orientation' => 'portrait',
+            'margin_top' => 15,
+            'margin_right' => 15,
+            'margin_bottom' => 15,
+            'margin_left' => 15,
+            'font_family' => 'YuMincho, "MS Gothic", "Meiryo", "Noto Sans JP", sans-serif',
+            'font_size' => 11,
+            'line_height' => 1.6,
+            'primary_color' => '#1f2937',
+            'secondary_color' => '#4b5563',
+            'accent_color' => '#dc2626',
+            'background_color' => '#ffffff',
+            'text_color' => '#111827',
+            'border_color' => '#d1d5db',
+            'header_bg_color' => '#f9fafb',
+            'total_bg_color' => '#fef3c7',
+            'tax_table_header_bg' => '#f3f4f6',
+            'show_facility_logo' => false,
+            'facility_logo_path' => null,
+            'show_facility_info' => true,
+            'show_tax_breakdown' => true,
+            'show_daily_charges_detail' => true,
+            'show_qr_code' => false,
+            'qr_code_data' => null,
+            'header_html' => null,
+            'footer_html' => null,
+            'show_page_numbers' => true,
+            'table_header_bg' => '#f9fafb',
+            'table_row_even_bg' => '#ffffff',
+            'table_row_odd_bg' => '#f9fafb',
+            'table_border_color' => '#e5e7eb',
+        ];
+
+        $configKey = $type === 'invoice' ? 'pdf.invoice' : 'pdf.receipt';
+        $templateConfig = config($configKey, []);
+
+        return array_merge($baseConfig, $templateConfig);
+    }
+
+    /**
+     * 日本語フォント設定を適用
+     */
+    private function applyJapaneseFontSettings(DomPdfInstance $pdf, array $templateConfig): void
     {
         // Noto Sans JPフォントディレクトリを優先（存在する場合）
         $notoFontDir = resource_path('fonts/'.self::NOTO_SANS_JP_DIR);
         $fontDir = File::exists($notoFontDir) ? $notoFontDir : storage_path('fonts');
 
+        $fontFamily = $templateConfig['font_family'] ?? 'YuMincho, "MS Gothic", "Meiryo", "Noto Sans JP", sans-serif';
+        $fontSize = $templateConfig['font_size'] ?? 11;
+        $lineHeight = $templateConfig['line_height'] ?? 1.6;
+
         $options = [
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => true,
-            'fontHeightRatio' => 1.25,
+            'fontHeightRatio' => (float) $lineHeight,
             'defaultFont' => 'YuMincho', // Windows標準フォントをデフォルトに
             'font_dir' => $fontDir,
             'font_cache' => storage_path('fonts'),
         ];
 
         $pdf->setOptions($options);
+    }
+
+    /**
+     * 余白設定を適用
+     */
+    private function applyMargins(DomPdfInstance $pdf, array $templateConfig): void
+    {
+        $marginTop = ($templateConfig['margin_top'] ?? 15) . 'mm';
+        $marginRight = ($templateConfig['margin_right'] ?? 15) . 'mm';
+        $marginBottom = ($templateConfig['margin_bottom'] ?? 15) . 'mm';
+        $marginLeft = ($templateConfig['margin_left'] ?? 15) . 'mm';
+
+        // DomPDFのマージン設定はsetPaperで指定
+        // setPaper(size, orientation, margins)
+        $paperSize = $templateConfig['paper_size'] ?? 'a4';
+        $paperOrientation = $templateConfig['paper_orientation'] ?? 'portrait';
+        $pdf->setPaper(
+            $paperSize,
+            $paperOrientation,
+            [
+                (float) str_replace('mm', '', $marginLeft),
+                (float) str_replace('mm', '', $marginTop),
+                (float) str_replace('mm', '', $marginRight),
+                (float) str_replace('mm', '', $marginBottom),
+            ]
+        );
     }
 
     /**
@@ -203,21 +284,20 @@ class InvoicePdfService
             ->forYearMonth($yearMonth)
             ->get();
 
-        $tempDir = storage_path('app/temp/invoices_'.$yearMonth.'_'.uniqid());
         $zipPath = storage_path("app/temp/請求書一括_{$yearMonth}.zip");
 
+        File::ensureDirectoryExists(dirname($zipPath));
+
+        if (File::exists($zipPath)) {
+            File::delete($zipPath);
+        }
+
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new \RuntimeException('ZIPファイルの作成に失敗しました。');
+        }
+
         try {
-            File::ensureDirectoryExists($tempDir);
-
-            if (File::exists($zipPath)) {
-                File::delete($zipPath);
-            }
-
-            $zip = new ZipArchive;
-            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-                throw new \RuntimeException('ZIPファイルの作成に失敗しました。');
-            }
-
             foreach ($invoices as $invoice) {
                 $pdf = $this->generateInvoicePdf($invoice);
                 $fileName = sprintf(
@@ -233,11 +313,12 @@ class InvoicePdfService
             $zip->close();
 
             return $zipPath;
-        } finally {
-            // 例外発生時も含めて一時ディレクトリをクリーンアップ
-            if (File::exists($tempDir)) {
-                File::deleteDirectory($tempDir);
+        } catch (\Throwable $e) {
+            $zip->close();
+            if (File::exists($zipPath)) {
+                File::delete($zipPath);
             }
+            throw $e;
         }
     }
 }

@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1000" font-family="'Hiragino Mincho ProN','Yu Mincho','MS Gothic',serif">
+  <rect width="760" height="1000" fill="#ffffff"/>
+  <rect x="0" y="0" width="760" height="1000" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- ヘッダー -->
+  <text x="380" y="70" font-size="30" fill="#111827" text-anchor="middle" font-weight="bold" letter-spacing="8">御 請 求 書</text>
+  <line x1="60" y1="90" x2="700" y2="90" stroke="#1f2937" stroke-width="2"/>
+
+  <!-- 宛先 -->
+  <text x="60" y="130" font-size="13" fill="#374151">居室: <tspan font-weight="bold">101 号室</tspan></text>
+  <text x="60" y="160" font-size="20" fill="#111827" font-weight="bold" text-decoration="underline">佐藤 一郎 様</text>
+  <text x="60" y="182" font-size="11" fill="#6b7280">(サトウ イチロウ)</text>
+  <text x="60" y="215" font-size="12" fill="#374151">平素は格別のご愛顧を賜り、厚く御礼申し上げます。</text>
+  <text x="60" y="235" font-size="12" fill="#374151">2026年10月度のご利用料金を下記の通りご請求申し上げます。</text>
+
+  <!-- 発行者 -->
+  <g font-size="10" fill="#374151" text-anchor="end">
+    <text x="700" y="120">請求番号: INV-202610-001</text>
+    <text x="700" y="138">発行日: 2026年10月31日</text>
+    <text x="700" y="162" font-size="13" font-weight="bold" fill="#111827">ケアレジデンス ひまわり</text>
+    <text x="700" y="178">株式会社ひまわりケア</text>
+    <text x="700" y="194">〒123-4567 東京都〇〇区〇〇町 1-2-3</text>
+    <text x="700" y="210">TEL: 03-1234-5678 / FAX: 03-1234-5679</text>
+    <text x="700" y="230" font-weight="bold" fill="#1e40af">登録番号: T1234567890123</text>
+  </g>
+
+  <!-- 合計ボックス -->
+  <rect x="60" y="260" width="640" height="56" rx="4" fill="#f3f4f6" stroke="#374151" stroke-width="2"/>
+  <text x="380" y="296" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold">ご請求金額 (税込)：</text>
+  <text x="380" y="296" font-size="24" fill="#111827" text-anchor="middle" font-weight="bold" dx="180">¥95,540 -</text>
+
+  <!-- 請求サマリー -->
+  <rect x="60" y="336" width="6" height="20" fill="#2563eb"/>
+  <text x="74" y="352" font-size="13" fill="#111827" font-weight="bold">【ご請求サマリー】</text>
+  <g font-size="11">
+    <rect x="60" y="366" width="640" height="30" fill="#f9fafb" stroke="#d1d5db"/>
+    <text x="70" y="386" font-weight="bold">項目</text>
+    <text x="330" y="386" font-weight="bold">金額 (税抜)</text>
+    <text x="480" y="386" font-weight="bold">税率</text>
+    <text x="620" y="386" font-weight="bold">消費税額</text>
+    <line x1="60" y1="396" x2="700" y2="396" stroke="#d1d5db"/>
+    <text x="70" y="420">基本家賃</text>
+    <text x="330" y="420" text-anchor="end">¥65,000</text>
+    <text x="480" y="420" text-anchor="middle">非課税</text>
+    <text x="620" y="420" text-anchor="end">¥0</text>
+    <line x1="60" y1="432" x2="700" y2="432" stroke="#e5e7eb"/>
+    <text x="70" y="456">基本管理費＋自費サービス</text>
+    <text x="330" y="456" text-anchor="end">¥30,540</text>
+    <text x="480" y="456" text-anchor="middle">10%</text>
+    <text x="620" y="456" text-anchor="end">¥3,054</text>
+    <line x1="60" y1="468" x2="700" y2="468" stroke="#d1d5db"/>
+    <rect x="60" y="470" width="640" height="30" fill="#f3f4f6"/>
+    <text x="70" y="490" font-weight="bold">合計</text>
+    <text x="330" y="490" text-anchor="end" font-weight="bold">¥95,540</text>
+    <text x="620" y="490" text-anchor="end" font-weight="bold">¥3,054</text>
+  </g>
+
+  <!-- 自費明細 -->
+  <rect x="60" y="520" width="6" height="20" fill="#2563eb"/>
+  <text x="74" y="536" font-size="13" fill="#111827" font-weight="bold">【日々の自費サービス利用明細】</text>
+  <g font-size="10">
+    <rect x="60" y="550" width="640" height="28" fill="#f9fafb" stroke="#d1d5db"/>
+    <text x="70" y="568" font-weight="bold">利用日</text>
+    <text x="180" y="568" font-weight="bold">品目名</text>
+    <text x="400" y="568" font-weight="bold">単価</text>
+    <text x="480" y="568" font-weight="bold">数量</text>
+    <text x="560" y="568" font-weight="bold">小計</text>
+    <text x="660" y="568" font-weight="bold">備考</text>
+    <line x1="60" y1="578" x2="700" y2="578" stroke="#d1d5db"/>
+    <text x="70" y="600" text-anchor="middle">10/03</text>
+    <text x="180" y="600">紙おむつ (パンツタイプ)</text>
+    <text x="400" y="600" text-anchor="end">¥180</text>
+    <text x="480" y="600" text-anchor="middle">3</text>
+    <text x="560" y="600" text-anchor="end">¥540</text>
+    <text x="660" y="600" font-size="8" fill="#6b7280">夜間交換分</text>
+  </g>
+
+  <!-- お支払い案内 -->
+  <rect x="60" y="650" width="640" height="110" rx="4" fill="none" stroke="#9ca3af" stroke-dasharray="4,3"/>
+  <text x="76" y="676" font-size="11" fill="#4b5563" font-weight="bold">【お支払いについてのご案内】</text>
+  <text x="76" y="700" font-size="11" fill="#4b5563">お支払期限：<tspan font-weight="bold">2026年11月30日</tspan></text>
+  <text x="76" y="722" font-size="11" fill="#4b5563">お振込先：〇〇銀行 〇〇支店 普通 1234567</text>
+  <text x="76" y="742" font-size="11" fill="#4b5563">口座名義：カ）ヒマワリケア</text>
+  <text x="76" y="762" font-size="10" fill="#6b7280">※口座振替をご利用の方は、翌月27日にお引き落としとなります。</text>
+
+  <text x="380" y="960" font-size="10" fill="#94a3b8" text-anchor="middle">— 請求書PDFの様式（A4縦・dompdf生成）—</text>
+</svg>
