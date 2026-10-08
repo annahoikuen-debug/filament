@@ -1,14 +1,14 @@
 @page { margin: 15mm; }
 
 body {
-    font-family: 'YuMincho', 'YuGothic', 'Meiryo', 'msgothic', 'Noto Sans JP', sans-serif;
+    font-family: 'ipaexg', 'YuMincho', 'YuGothic', 'Meiryo', 'msgothic', 'Noto Sans JP', sans-serif;
     font-size: 10.5pt;
     line-height: 1.6;
     color: #111827;
 }
 
 .tabular-nums {
-    font-family: 'YuGothic', 'Meiryo', 'msgothic', sans-serif;
+    font-family: 'ipaexg', 'YuGothic', 'Meiryo', 'msgothic', sans-serif;
 }
 
 /* レイアウト: floatベース（DomPDFはflex非対応） */

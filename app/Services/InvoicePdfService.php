@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MonthlyInvoice;
+use App\Services\Pdf\Contracts\FontRegistryInterface;
 use App\Services\Pdf\InvoicePdfGenerator;
 use App\Services\Pdf\TemplateSettingsService;
 use Barryvdh\DomPDF\PDF as DomPdfInstance;
@@ -14,6 +15,7 @@ class InvoicePdfService
     public function __construct(
         private InvoicePdfGenerator $generator,
         private TemplateSettingsService $templateSettings,
+        private FontRegistryInterface $fontRegistry,
     ) {}
 
     /**
@@ -22,7 +24,9 @@ class InvoicePdfService
     public function generateInvoicePdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
         $html = $this->generator->previewInvoice($invoice, $facility);
-        return Pdf::loadHTML($html);
+        $pdf = Pdf::loadHTML($html);
+        $this->fontRegistry->register($pdf->getDomPDF());
+        return $pdf;
     }
 
     /**
@@ -83,7 +87,9 @@ class InvoicePdfService
     public function generateReceiptPdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
         $html = $this->generator->previewReceipt($invoice, $facility);
-        return Pdf::loadHTML($html);
+        $pdf = Pdf::loadHTML($html);
+        $this->fontRegistry->register($pdf->getDomPDF());
+        return $pdf;
     }
 
     /**

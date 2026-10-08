@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class PdfTemplateSettingsResource extends Resource
 {
@@ -370,7 +371,7 @@ class PdfTemplateSettingsResource extends Resource
                     ->dateTime('Y/m/d H:i')
                     ->sortable(),
             ])
-            ->defaultSort(['key' => 'asc', 'locale' => 'asc', 'theme' => 'asc', 'is_default' => 'desc', 'version' => 'desc'])
+            ->defaultSort('key', 'asc')
             ->filters([
                 Tables\Filters\SelectFilter::make('key')
                     ->label('種別')
@@ -443,7 +444,11 @@ class PdfTemplateSettingsResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->modifyQueryUsing(fn ($query) => $query->where('is_default', false))
+                        ->before(function (Tables\Actions\DeleteBulkAction $action, \Illuminate\Database\Eloquent\Collection $records) {
+                            $records->filter(fn ($record) => $record->is_default)->each->delete();
+                            $records = $records->filter(fn ($record) => !$record->is_default);
+                            return $records;
+                        })
                         ->requiresConfirmation(),
                 ]),
             ]);

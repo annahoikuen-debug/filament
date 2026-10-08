@@ -28,7 +28,7 @@ class PdfServiceProvider extends ServiceProvider
                 'isHtml5ParserEnabled' => true,
                 'isRemoteEnabled' => true,
                 'fontHeightRatio' => $config['line_height'] ?? 1.6,
-                'defaultFont' => 'YuMincho',
+                'defaultFont' => 'ipaexg',
             ]);
         });
 

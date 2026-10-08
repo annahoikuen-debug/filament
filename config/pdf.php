@@ -23,9 +23,9 @@ return [
         'margin_bottom' => 15,
         'margin_left' => 15,
 
-        // Font settings (Windows標準フォント優先、Noto Sans JPはフォールバック)
-        'font_family' => "'Yu Mincho', 'YuMincho', 'Yu Gothic', 'YuGothic', 'Meiryo', 'MS Gothic', 'Noto Sans JP', sans-serif",
-        'font_family_numbers' => "'Yu Gothic', 'YuGothic', 'Meiryo', 'MS Gothic', 'Noto Sans JP', sans-serif",
+        // Font settings (ipaexg、Windows標準フォント優先、Noto Sans JPはフォールバック)
+        'font_family' => "'ipaexg', 'Yu Mincho', 'YuMincho', 'Yu Gothic', 'YuGothic', 'Meiryo', 'MS Gothic', 'Noto Sans JP', sans-serif",
+        'font_family_numbers' => "'ipaexg', 'Yu Gothic', 'YuGothic', 'Meiryo', 'MS Gothic', 'Noto Sans JP', sans-serif",
         'font_size' => 10.5,
         'line_height' => 1.6,
 
@@ -48,7 +48,7 @@ return [
 
         // Typography
         'typography' => [
-            'font_family' => "'Yu Mincho', 'YuMincho', 'Yu Gothic', 'YuGothic', 'Meiryo', 'MS Gothic', 'Noto Sans JP', sans-serif",
+            'font_family' => "'ipaexg', 'Yu Mincho', 'YuMincho', 'Yu Gothic', 'YuGothic', 'Meiryo', 'MS Gothic', 'Noto Sans JP', sans-serif",
             'font_size_base' => 10.5,
             'font_size_sm' => 9,
             'font_size_lg' => 12,

@@ -2,26 +2,30 @@
 
 use App\Models\ChargeItem;
 use App\Models\ChargeItemPrice;
+use App\Enums\TaxType;
 use Carbon\Carbon;
 
 test('fillableフィールドが設定されること（ただしguardedなのでid以外は設定可能）', function () {
     $chargeItem = ChargeItem::create([
+        'name' => 'テスト品目',
         'default_price' => 1000,
         'is_active' => true,
-        'tax_type' => 1, // Assuming 1 is a valid TaxType value
+        'tax_type' => TaxType::Standard,
     ]);
 
     expect($chargeItem->exists)->toBeTrue()
         ->and($chargeItem->default_price)->toBe(1000)
-        ->and($chargeItem->is_active)->toBeTrue();
+        ->and($chargeItem->is_active)->toBeTrue()
+        ->and($chargeItem->tax_type)->toBe(TaxType::Standard);
 });
 
 test('guardedがidのみで他のフィールドは一括代入可能であること', function () {
     $chargeItem = ChargeItem::create([
         'id' => 99999,
+        'name' => 'テスト品目',
         'default_price' => 1000,
         'is_active' => true,
-        'tax_type' => 1,
+        'tax_type' => TaxType::Standard,
     ]);
 
     expect($chargeItem->id)->not->toBe(99999);
@@ -29,9 +33,10 @@ test('guardedがidのみで他のフィールドは一括代入可能である�
 
 test('不正なフィールド名での一括代入は無視されること', function () {
     $chargeItem = ChargeItem::create([
+        'name' => 'テスト品目',
         'default_price' => 1000,
         'is_active' => true,
-        'tax_type' => 1,
+        'tax_type' => TaxType::Standard,
         'unknown_field' => 'テスト',
     ]);
 
@@ -41,14 +46,15 @@ test('不正なフィールド名での一括代入は無視されること', fu
 
 test('キャストが正しく動作すること', function () {
     $chargeItem = ChargeItem::create([
+        'name' => 'テスト品目',
         'default_price' => '1500',
         'is_active' => 'true',
-        'tax_type' => '1',
+        'tax_type' => 'standard', // string value for enum
     ]);
 
     expect($chargeItem->default_price)->toBe(1500)
         ->and($chargeItem->is_active)->toBeTrue()
-        ->and($chargeItem->tax_type)->toBe(1); // Assuming tax_type casts to int or enum
+        ->and($chargeItem->tax_type)->toBe(TaxType::Standard);
 });
 
 test('dailyChargesリレーションが正しく動作すること', function () {
@@ -128,10 +134,12 @@ test('getEffectivePriceメソッドがデフォルト単価が0より大きい�
     $chargeItem = ChargeItem::factory()->create([
         'default_price' => 1500,
     ]);
+    // 明示的に有効期限なしの現在有効な価格を作成
     ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
         'price' => 2000,
         'effective_from' => Carbon::today()->subDay(),
+        'effective_until' => null,
     ]);
 
     expect($chargeItem->getEffectivePrice())->toBe(2000);
@@ -160,11 +168,13 @@ test('getEffectivePriceメソッドが価格履歴がない場合とデフォル
 
 test('scopeActiveメソッドが現在有効な品目のみ取得すること', function () {
     $active = ChargeItem::create([
+        'name' => 'アクティブ品目',
         'default_price' => 1000,
         'is_active' => true,
     ]);
 
     $inactive = ChargeItem::create([
+        'name' => '非アクティブ品目',
         'default_price' => 1000,
         'is_active' => false,
     ]);

@@ -60,6 +60,10 @@ class ChargeItem extends Model
      */
     public function getEffectivePrice(): ?int
     {
+        // デフォルト単価が0以下の場合は無効（無料品目として扱う）
+        if ($this->default_price <= 0) {
+            return null;
+        }
         return $this->currentPrice() > 0 ? $this->currentPrice() : null;
     }
 

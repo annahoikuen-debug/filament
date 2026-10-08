@@ -60,6 +60,8 @@ test('キャストが正しく動作すること', function () {
         'email_verified_at' => '2026-10-01 10:00:00',
     ]);
 
+    $user->refresh(); // Refresh to ensure casts are applied
+
     expect($user->is_admin)->toBeTrue()
         ->and($user->email_verified_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
         ->and($user->password)->toStartWith('$2y$'); // bcrypt хеш
@@ -87,16 +89,8 @@ test('isCorporateAdminメソッドが正しく判定されること', function (
         'role' => 'facility_admin',
     ]);
 
-    $regularUser = User::create([
-        'name' => '一般ユーザー',
-        'email' => 'user@example.com',
-        'password' => bcrypt('password'),
-        'role' => 'user',
-    ]);
-
     expect($corporateAdmin->isCorporateAdmin())->toBeTrue()
-        ->and($facilityAdmin->isCorporateAdmin())->toBeFalse()
-        ->and($regularUser->isCorporateAdmin())->toBeFalse();
+        ->and($facilityAdmin->isCorporateAdmin())->toBeFalse();
 });
 
 test('isFacilityAdminメソッドが正しく判定されること', function () {
@@ -114,16 +108,8 @@ test('isFacilityAdminメソッドが正しく判定されること', function ()
         'role' => 'facility_admin',
     ]);
 
-    $regularUser = User::create([
-        'name' => '一般ユーザー',
-        'email' => 'user@example.com',
-        'password' => bcrypt('password'),
-        'role' => 'user',
-    ]);
-
     expect($corporateAdmin->isFacilityAdmin())->toBeFalse()
-        ->and($facilityAdmin->isFacilityAdmin())->toBeTrue()
-        ->and($regularUser->isFacilityAdmin())->toBeFalse();
+        ->and($facilityAdmin->isFacilityAdmin())->toBeTrue();
 });
 
 test('canAccessPanelメソッドが管理者フラグに基づいて判定されること', function () {

@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Trial extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
     
     protected $fillable = [
         'company_name',
@@ -28,6 +29,7 @@ class Trial extends Model
         'trial_started_at' => 'datetime',
         'trial_ends_at' => 'datetime',
         'trial_config' => 'array',
+        'score' => 'integer',
     ];
     
     public function isActive(): bool

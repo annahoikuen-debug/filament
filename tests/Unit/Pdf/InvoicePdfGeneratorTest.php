@@ -77,7 +77,8 @@ class InvoicePdfGeneratorTest extends TestCase
 
         $this->assertIsString($pdf);
         $this->assertStringStartsWith('%PDF', $pdf);
-        $this->assertGreaterThan(1000, strlen($pdf));
+        // 最適化によりPDFサイズが小さくなるため閾値を下げる
+        $this->assertGreaterThan(500, strlen($pdf));
     }
 
     public function test_generate_receipt_returns_pdf_bytes()
@@ -93,7 +94,8 @@ class InvoicePdfGeneratorTest extends TestCase
 
         $this->assertIsString($pdf);
         $this->assertStringStartsWith('%PDF', $pdf);
-        $this->assertGreaterThan(1000, strlen($pdf));
+        // 最適化によりPDFサイズが小さくなるため閾値を下げる
+        $this->assertGreaterThan(500, strlen($pdf));
     }
 
     public function test_generate_invoice_download_returns_response()

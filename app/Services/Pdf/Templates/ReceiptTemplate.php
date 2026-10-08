@@ -38,15 +38,15 @@ class ReceiptTemplate implements TemplateInterface
 
     public function getRequiredFonts(): array
     {
-        return ['YuMincho', 'YuGothic', 'Meiryo', 'msgothic'];
+        return ['ipaexg', 'YuMincho', 'YuGothic', 'Meiryo', 'msgothic'];
     }
 
     private function getDefaultCss(): string
     {
         return <<<'CSS'
 @page { margin: 15mm; }
-body { font-family: 'YuMincho', 'YuGothic', 'Meiryo', 'msgothic', 'Noto Sans JP', sans-serif; font-size: 10.5pt; line-height: 1.6; color: #111827; }
-.tabular-nums { font-family: 'YuGothic', 'Meiryo', 'msgothic', sans-serif; }
+body { font-family: 'ipaexg', 'YuMincho', 'YuGothic', 'Meiryo', 'msgothic', 'Noto Sans JP', sans-serif; font-size: 10.5pt; line-height: 1.6; color: #111827; }
+.tabular-nums { font-family: 'ipaexg', 'YuGothic', 'Meiryo', 'msgothic', sans-serif; }
 .two-col { overflow: hidden; }
 .col-left { float: left; width: 47%; }
 .col-right { float: right; width: 47%; }

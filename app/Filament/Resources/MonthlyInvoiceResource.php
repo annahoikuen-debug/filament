@@ -35,6 +35,8 @@ class MonthlyInvoiceResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    protected static ?string $navigationGroup = '請求管理';
+
     public static function form(Form $form): Form
     {
         return $form

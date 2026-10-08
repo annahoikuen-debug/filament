@@ -20,6 +20,37 @@ class WindowsFontRegistry implements FontRegistryInterface
     {
         $fontMapper = $pdf->getFontMetrics();
 
+        // 1. ipaexg（確実な日本語フォント）を優先登録
+        $ipaFontDir = storage_path('fonts');
+        $normalTtf = $ipaFontDir . '/ipaexg_normal_0ec7c40eaabbd5656858c88c69d1e606.ttf';
+        $boldTtf = $ipaFontDir . '/ipaexg_bold_0ec7c40eaabbd5656858c88c69d1e606.ttf';
+        if (file_exists($normalTtf)) {
+            try {
+                $fontMapper->getFont('ipaexg', 'normal');
+            } catch (\Throwable) {
+                try {
+                    $fontMapper->registerFont([
+                        'family' => 'ipaexg',
+                        'weight' => 'normal',
+                        'style' => 'normal',
+                    ], $normalTtf);
+                } catch (\Throwable) {}
+            }
+        }
+        if (file_exists($boldTtf)) {
+            try {
+                $fontMapper->getFont('ipaexg', 'bold');
+            } catch (\Throwable) {
+                try {
+                    $fontMapper->registerFont([
+                        'family' => 'ipaexg',
+                        'weight' => 'bold',
+                        'style' => 'normal',
+                    ], $boldTtf);
+                } catch (\Throwable) {}
+            }
+        }
+
         foreach (self::FONTS as $familyName => [$normal, $bold]) {
             // 既に登録済みかチェック
             try {
@@ -45,6 +76,6 @@ class WindowsFontRegistry implements FontRegistryInterface
 
     public function getFontFamilies(): array
     {
-        return array_keys(self::FONTS);
+        return array_merge(['ipaexg'], array_keys(self::FONTS));
     }
 }
