@@ -7,8 +7,10 @@ use App\Services\Pdf\Contracts\FontRegistryInterface;
 use App\Services\Pdf\InvoicePdfGenerator;
 use App\Services\Pdf\TemplateSettingsService;
 use Barryvdh\DomPDF\PDF as DomPdfInstance;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Contracts\View\Factory as ViewFactory;
 
 class InvoicePdfService
 {
@@ -24,8 +26,39 @@ class InvoicePdfService
     public function generateInvoicePdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
         $html = $this->generator->previewInvoice($invoice, $facility);
-        $pdf = Pdf::loadHTML($html);
-        $this->fontRegistry->register($pdf->getDomPDF());
+        return $this->createDomPdfInstance($html);
+    }
+
+    /**
+     * 領収書PDFを生成する
+     */
+    public function generateReceiptPdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
+    {
+        $html = $this->generator->previewReceipt($invoice, $facility);
+        return $this->createDomPdfInstance($html);
+    }
+
+    private function createDomPdfInstance(string $html): DomPdfInstance
+    {
+        $options = new \Dompdf\Options([
+            'font_dir' => storage_path('fonts'),
+            'font_cache' => storage_path('fonts'),
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'defaultFont' => 'ipaexg',
+        ]);
+        $dompdf = new \Dompdf\Dompdf($options);
+        $this->fontRegistry->register($dompdf);
+        $dompdf->loadHtml($html);
+        $dompdf->render();
+
+        $pdf = new \Barryvdh\DomPDF\PDF(
+            $dompdf,
+            app(ConfigRepository::class),
+            app(Filesystem::class),
+            app(ViewFactory::class)
+        );
+
         return $pdf;
     }
 
@@ -79,17 +112,6 @@ class InvoicePdfService
 
         return response($html)
             ->header('Content-Type', 'text/html; charset=UTF-8');
-    }
-
-    /**
-     * 領収書PDFを生成する
-     */
-    public function generateReceiptPdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
-    {
-        $html = $this->generator->previewReceipt($invoice, $facility);
-        $pdf = Pdf::loadHTML($html);
-        $this->fontRegistry->register($pdf->getDomPDF());
-        return $pdf;
     }
 
     /**
@@ -214,7 +236,7 @@ class InvoicePdfService
         }
 
         $html = $this->generator->previewInvoice($invoice, $facility);
-        $pdf = Pdf::loadHTML($html);
+        $pdf = $this->createDomPdfInstance($html);
         $pdfContent = $pdf->output();
 
         // アトミック書き込み: 一時ファイルに書いてから rename（POSIXでアトミック）
@@ -250,10 +272,12 @@ class InvoicePdfService
     }
 
     /**
-     * チャンク処理でPDFを生成し、コールバックで処理する（メモリ効率化版）
+     * チャンク処理でPDFを生成し、コールバックで処理する（メモリ効率化版・非推奨）
      *
+     * @deprecated Use InvoicePdfGenerator::generateMonthlyBatchStream() instead for memory-efficient streaming.
      * @param  string  $yearMonth  'YYYY-MM'
      * @param  callable  $callback  function(MonthlyInvoice $invoice, string $pdfContent): void
+     * @param  int  $facilityId 施設ID
      * @param  int  $chunkSize  チャンクサイズ
      */
     public function chunkGeneratePdfs(
@@ -284,14 +308,15 @@ class InvoicePdfService
     }
 
     /**
-     * ビュー名とテンプレートデータを組み立てる（後方互換性用）
+     * ビュー名とテンプレートデータを組み立てる（後方互換性用・非推奨）
      *
+     * @deprecated Use InvoicePdfGenerator::previewInvoice() or previewReceipt() instead.
      * @return array{0: string, 1: array} [ビュー名, データ]
      */
     public function prepareViewData(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): array
     {
         $dataProvider = app(\App\Services\Pdf\DataProviders\InvoiceDataProvider::class);
-        
+
         if ($type === 'invoice') {
             $data = $dataProvider->getInvoiceData($invoice, $facility);
         } else {
@@ -329,8 +354,9 @@ class InvoicePdfService
     }
 
     /**
-     * 共通PDF生成メソッド（請求書・領収書を統合・後方互換性用）
+     * 共通PDF生成メソッド（請求書・領収書を統合・後方互換性用・非推奨）
      *
+     * @deprecated Use InvoicePdfGenerator::generateInvoice() or generateReceipt() instead.
      * @param  string  $type  'invoice' または 'receipt'
      */
     public function generatePdfFromInvoice(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): DomPdfInstance
@@ -338,13 +364,14 @@ class InvoicePdfService
         $html = $type === 'invoice' 
             ? $this->generator->previewInvoice($invoice, $facility)
             : $this->generator->previewReceipt($invoice, $facility);
-        
-        return Pdf::loadHTML($html);
+
+        return $this->createDomPdfInstance($html);
     }
 
     /**
-     * 振込用QRコードデータを生成（後方互換性用）
+     * 振込用QRコードデータを生成（後方互換性用・非推奨）
      *
+     * @deprecated Use InvoicePdfGenerator or a dedicated QR code service instead.
      * @param MonthlyInvoice $invoice 請求書データ
      * @param array $facility 施設情報
      * @return string QRコード用データ文字列
@@ -365,13 +392,14 @@ class InvoicePdfService
             str_replace('-', '', $invoice->billing_year_month),
             str_pad($invoice->resident->id, 3, '0', STR_PAD_LEFT)
         );
-        
+
         return str_replace(["\r\n", "\n", "\r"], '', $data);
     }
 
     /**
-     * 領収書用検証QRコードデータを生成（後方互換性用）
+     * 領収書用検証QRコードデータを生成（後方互換性用・非推奨）
      *
+     * @deprecated Use InvoicePdfGenerator or a dedicated QR code service instead.
      * @param MonthlyInvoice $invoice 領収書データ
      * @return string QRコード用データ文字列
      */
@@ -392,11 +420,13 @@ class InvoicePdfService
     }
 
     /**
-     * QRコードを生成するヘルパーメソッド（キャッシュ対応・後方互換性用）
+     * QRコードを生成するヘルパーメソッド（キャッシュ対応・後方互換性用・非推奨）
      *
+     * @deprecated Use a dedicated QR code service (e.g., BaconQrCode directly) instead.
      * @param string $data エンコードするデータ
      * @param string|null $cacheKey キャッシュキー（指定時はキャッシュから取得・保存）
      * @return string base64エンコードされたSVGデータURI
+     * @throws \RuntimeException QRコード生成に失敗した場合
      */
     public function generatePaymentQrCode(string $data, ?string $cacheKey = null): string
     {
@@ -425,8 +455,16 @@ class InvoicePdfService
 
             return $result;
         } catch (\Throwable $e) {
-            // QRコード生成に失敗してもPDF生成は続行
-            return '';
+            // QRコード生成失敗をログ出力（デバッグ用）
+            \Illuminate\Support\Facades\Log::error('QRコード生成に失敗しました', [
+                'data_length' => strlen($data),
+                'cache_key' => $cacheKey,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // 例外を再スローして呼び出し元でハンドリングできるようにする
+            throw new \RuntimeException('QRコードの生成に失敗しました: ' . $e->getMessage(), 0, $e);
         }
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\DTOs\Pdf;
 
+use App\Services\FacilityConfigService;
+
 readonly class FacilityPdfData
 {
     public function __construct(
@@ -21,19 +23,21 @@ readonly class FacilityPdfData
 
     public static function fromConfig(?array $facility = null, ?int $facilityId = null): self
     {
-        $facility = $facility ?? config('facility');
-        $bank = $facility['bank'] ?? config('facility.bank', []);
-        $billing = $facility['billing'] ?? config('facility.billing', []);
+        // FacilityConfigService を使用して統一的に取得
+        $configService = app(FacilityConfigService::class);
+        $config = $facility ?? $configService->getConfig($facilityId);
+        $bank = $config['bank'] ?? [];
+        $billing = $config['billing'] ?? [];
 
         return new self(
-            id: $facilityId ?? $facility['id'] ?? 1,
-            name: $facility['name'] ?? config('facility.name', ''),
-            operator: $facility['operator'] ?? config('facility.operator', ''),
-            postalCode: $facility['postal_code'] ?? config('facility.postal_code', ''),
-            address: $facility['address'] ?? config('facility.address', ''),
-            phone: $facility['phone'] ?? config('facility.phone', ''),
-            fax: $facility['fax'] ?? config('facility.fax'),
-            invoiceRegistrationNumber: $facility['invoice_registration_number'] ?? config('facility.invoice_registration_number'),
+            id: $facilityId ?? $config['id'] ?? 1,
+            name: $config['name'] ?? '',
+            operator: $config['operator'] ?? '',
+            postalCode: $config['postal_code'] ?? '',
+            address: $config['address'] ?? '',
+            phone: $config['phone'] ?? '',
+            fax: $config['fax'] ?? null,
+            invoiceRegistrationNumber: $config['invoice_registration_number'] ?? null,
             bank: [
                 'name' => $bank['name'] ?? '',
                 'branch_name' => $bank['branch_name'] ?? '',
@@ -44,8 +48,8 @@ readonly class FacilityPdfData
             billing: [
                 'direct_debit_day' => $billing['direct_debit_day'] ?? 27,
             ],
-            logoPath: $facility['logo_path'] ?? null,
-            sealPath: $facility['seal_path'] ?? null,
+            logoPath: $config['logo_path'] ?? null,
+            sealPath: $config['seal_path'] ?? null,
         );
     }
 

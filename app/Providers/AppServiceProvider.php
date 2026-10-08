@@ -2,11 +2,11 @@
 
 namespace App\Providers;
 
-use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\PdfTemplateSetting;
 use App\Models\TaxSetting;
 use App\Policies\MonthlyInvoicePolicy;
+use App\Services\FacilityConfigService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -16,12 +16,12 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // FacilityConfigService をシングルトンとして登録
+        $this->app->singleton(FacilityConfigService::class);
     }
 
     public function boot(): void
     {
-        $this->loadFacilityConfigFromDatabase();
         $this->loadTaxConfigFromDatabase();
         $this->loadPdfTemplateConfigFromDatabase();
         $this->validateFacilityConfig();
@@ -31,11 +31,10 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * DBから施設設定を読み込み、config にマージする
-     * （マイグレーション実行時などDB未準備時はスキップ）
+     * DBから施設設定を読み込み、config にマージする（後方互換性用・非推奨）
      *
-     * 後方互換性のために施設設定をconfigにマージしますが、
-     * マルチファシリティ対応のサービスでは明示的にfacilityパラメータを受け取るようにしています。
+     * @deprecated Use FacilityConfigService instead. This method is kept for backward compatibility
+     *             during transition period. config('facility') will be removed in future versions.
      */
     protected function loadFacilityConfigFromDatabase(): void
     {
@@ -50,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
-            $facility = Facility::current();
+            $facility = \App\Models\Facility::current();
             if ($facility) {
                 Config::set('facility', array_merge(Config::get('facility', []), $facility->toConfigArray()));
             }

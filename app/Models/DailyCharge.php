@@ -24,8 +24,11 @@ class DailyCharge extends Model
     {
         static::creating(function (DailyCharge $charge) {
             // charge_item_id が指定されていて unit_price が未設定（または0）の場合、価格履歴から自動取得
-            if ($charge->charge_item_id && (empty($charge->unit_price) || $charge->unit_price === 0)) {
-                $chargeItem = ChargeItem::find($charge->charge_item_id);
+            // NULL、0、空文字列のいずれもガード
+            $chargeItemId = $charge->charge_item_id;
+            if ($chargeItemId !== null && $chargeItemId !== '' && $chargeItemId !== 0
+                && (empty($charge->unit_price) || $charge->unit_price === 0)) {
+                $chargeItem = ChargeItem::find($chargeItemId);
                 if ($chargeItem && $charge->date) {
                     $charge->unit_price = $chargeItem->getPriceForDate($charge->date) ?? 0;
                 }
@@ -34,8 +37,9 @@ class DailyCharge extends Model
 
         static::saving(function (DailyCharge $charge) {
             // 入居者が指定されている場合、利用日が入居期間内であるか検証
-            if ($charge->resident_id && $charge->date) {
-                $resident = $charge->resident ?? Resident::find($charge->resident_id);
+            $residentId = $charge->resident_id;
+            if ($residentId !== null && $residentId !== '' && $residentId !== 0 && $charge->date) {
+                $resident = $charge->resident ?? Resident::find($residentId);
                 if ($resident && ! $resident->isLivingAt($charge->date)) {
                     $moveIn = $resident->move_in_date?->format('Y/m/d') ?? '未設定';
                     $moveOut = $resident->move_out_date?->format('Y/m/d') ?? '退去日未定';

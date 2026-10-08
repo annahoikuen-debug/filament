@@ -3,14 +3,15 @@ require __DIR__.'/vendor/autoload.php';
 $app = require_once __DIR__.'/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
-$facility = App\Models\Facility::current();
+$configService = app(App\Services\FacilityConfigService::class);
+$facility = $configService->getFacility();
 if ($facility) {
     echo 'Found facility: ' . $facility->id . PHP_EOL;
     echo 'Bank raw: ' . var_dump($facility->getAttribute('bank')) . PHP_EOL;
     echo 'Bank attribute: ' . var_dump($facility->bank) . PHP_EOL;
     
     // Let's check the validation logic manually
-    $facilityConfig = config('facility');
+    $facilityConfig = $configService->getConfig();
     if (!empty($facilityConfig['bank'])) {
         $bank = $facilityConfig['bank'];
         echo 'Config bank: ' . var_dump($bank) . PHP_EOL;

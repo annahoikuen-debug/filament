@@ -78,7 +78,7 @@ class DomPdfRenderer implements RendererInterface
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => true,
             'fontHeightRatio' => $this->defaultOptions['fontHeightRatio'] ?? 1.6,
-            'defaultFont' => $this->defaultOptions['defaultFont'] ?? 'YuMincho',
+            'defaultFont' => $this->defaultOptions['defaultFont'] ?? 'ipaexg',
             'font_dir' => storage_path('fonts'),
             'font_cache' => storage_path('fonts'),
             'tempDir' => storage_path('app/temp/dompdf'),

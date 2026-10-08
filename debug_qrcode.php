@@ -5,6 +5,7 @@ $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 use App\Models\MonthlyInvoice;
 use App\Services\InvoicePdfService;
+use App\Services\FacilityConfigService;
 use App\Enums\PaymentMethod;
 
 // Create a test resident and invoice if none exists
@@ -29,29 +30,31 @@ if (!$invoice) {
     ]);
 }
 
-echo "Testing QR code generation...\\n";
+echo "Testing QR code generation...\n";
 
-$pdfService = new InvoicePdfService();
+$pdfService = app(InvoicePdfService::class);
+$configService = app(FacilityConfigService::class);
 
 // Test the QR code generation methods directly
-echo "\\n=== Testing QR Code Generation Methods ===\\n";
+echo "\n=== Testing QR Code Generation Methods ===\n";
 try {
     // Test generatePaymentQrCode
     $testData = "TEST DATA";
     $qrCode = $pdfService->generatePaymentQrCode($testData);
     if (!empty($qrCode) && strpos($qrCode, 'data:image/svg+xml;base64,') === 0) {
-        echo "✓ generatePaymentQrCode works correctly\\n";
+        echo "✓ generatePaymentQrCode works correctly\n";
     } else {
-        echo "✗ generatePaymentQrCode failed: " . var_export($qrCode, true) . "\\n";
+        echo "✗ generatePaymentQrCode failed: " . var_export($qrCode, true) . "\n";
     }
     
     // Test getBankTransferQrCodeData
-    $bankData = $pdfService->getBankTransferQrCodeData($invoice, config('facility'));
+    $facilityConfig = $configService->getConfig();
+    $bankData = $pdfService->getBankTransferQrCodeData($invoice, $facilityConfig);
     if (!empty($bankData)) {
-        echo "✓ getBankTransferQrCodeData works correctly\\n";
-        echo "  Data length: " . strlen($bankData) . "\\n";
+        echo "✓ getBankTransferQrCodeData works correctly\n";
+        echo "  Data length: " . strlen($bankData) . "\n";
     } else {
-        echo "✗ getBankTransferQrCodeData failed: " . var_export($bankData, true) . "\\n";
+        echo "✗ getBankTransferQrCodeData failed: " . var_export($bankData, true) . "\n";
     }
     
     // Test getReceiptVerificationQrCodeData
@@ -60,41 +63,40 @@ try {
     $invoiceCopy->markAsPaid(PaymentMethod::BankTransfer);
     $receiptData = $pdfService->getReceiptVerificationQrCodeData($invoiceCopy);
     if (!empty($receiptData)) {
-        echo "✓ getReceiptVerificationQrCodeData works correctly\\n";
-        echo "  Data length: " . strlen($receiptData) . "\\n";
+        echo "✓ getReceiptVerificationQrCodeData works correctly\n";
+        echo "  Data length: " . strlen($receiptData) . "\n";
     } else {
-        echo "✗ getReceiptVerificationQrCodeData failed: " . var_export($receiptData, true) . "\\n";
+        echo "✗ getReceiptVerificationQrCodeData failed: " . var_export($receiptData, true) . "\n";
     }
     
 } catch (Exception $e) {
-    echo "✗ Error testing QR code methods: " . $e->getMessage() . "\\n";
-    echo "Trace: " . $e->getTraceAsString() . "\\n";
+    echo "✗ Error testing QR code methods: " . $e->getMessage() . "\n";
+    echo "Trace: " . $e->getTraceAsString() . "\n";
 }
 
 // Test QR code integration in PDF generation
-echo "\\n=== Testing QR Code Integration in PDF ===\\n";
+echo "\n=== Testing QR Code Integration in PDF ===\n";
 try {
     // Enable QR code
     config(['pdf.invoice.show_qr_code' => true]);
     
-    $pdf = $pdfService->generateInvoicePdf($invoice);
+    $facilityConfig = $configService->getConfig();
+    $pdf = $pdfService->generateInvoicePdf($invoice, $facilityConfig);
     $content = $pdf->output();
     
     if (strpos($content, 'data:image/svg+xml;base64,') !== false) {
-        echo "✓ QR code data found in generated PDF\\n";
+        echo "✓ QR code data found in generated PDF\n";
     } else {
-        echo "✗ QR code data NOT found in generated PDF\\n";
-        // Let's check if there are any errors in the QR code generation by temporarily removing the try/catch
-        // We'll do this by calling the methods directly and seeing if they throw
+        echo "✗ QR code data NOT found in generated PDF\n";
     }
     
     // Reset config
     config(['pdf.invoice.show_qr_code' => false]);
     
 } catch (Exception $e) {
-    echo "✗ Error testing QR code in PDF: " . $e->getMessage() . "\\n";
-    echo "Trace: " . $e->getTraceAsString() . "\\n";
+    echo "✗ Error testing QR code in PDF: " . $e->getMessage() . "\n";
+    echo "Trace: " . $e->getTraceAsString() . "\n";
 }
 
-echo "\\n=== QR Code Debug Complete ===\\n";
+echo "\n=== QR Code Debug Complete ===\n";
 ?>

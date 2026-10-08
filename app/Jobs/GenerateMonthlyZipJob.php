@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\MonthlyInvoice;
 use App\Services\InvoicePdfService;
 use App\Services\Pdf\InvoicePdfGenerator;
+use App\Services\FacilityConfigService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -29,7 +30,7 @@ class GenerateMonthlyZipJob implements ShouldQueue
         public string $jobId = '',
     ) {}
 
-    public function handle(InvoicePdfService $pdfService): void
+    public function handle(InvoicePdfService $pdfService, FacilityConfigService $configService): void
     {
         $generator = app(InvoicePdfGenerator::class);
         $this->jobId = $this->jobId ?: $this->getJobId();
@@ -115,6 +116,7 @@ class GenerateMonthlyZipJob implements ShouldQueue
     private function buildZipWithChunks(
         \Illuminate\Database\Eloquent\Builder $query,
         InvoicePdfService $pdfService,
+        FacilityConfigService $configService,
         string $progressKey,
         int $totalInvoices
     ): string {
@@ -135,12 +137,13 @@ class GenerateMonthlyZipJob implements ShouldQueue
             $chunkSize = 10;
 
             $query->orderBy('id')
-                ->chunkById($chunkSize, function ($invoices) use ($zip, $pdfService, $progressKey, $totalInvoices, &$processed) {
+                ->chunkById($chunkSize, function ($invoices) use ($zip, $pdfService, $configService, $progressKey, $totalInvoices, &$processed) {
                     foreach ($invoices as $invoice) {
                         $pdfPath = $this->getCachedPdfPath($invoice);
 
                         if (! File::exists($pdfPath)) {
-                            $pdf = $pdfService->generateInvoicePdf($invoice, $this->facilityId ? config('facility') : null);
+                            $facilityConfig = $this->facilityId ? $configService->getConfig($this->facilityId) : null;
+                            $pdf = $pdfService->generateInvoicePdf($invoice, $facilityConfig);
                             $pdfContent = $pdf->output();
 
                             File::ensureDirectoryExists(dirname($pdfPath));

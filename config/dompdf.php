@@ -11,15 +11,11 @@ return [
     |
     */
 
-    'font_dir' => [
-        resource_path('fonts/noto-sans-jp'),
-        storage_path('fonts'),
-        base_path('vendor/dompdf/dompdf/lib/fonts'),
-    ],
+    'font_dir' => storage_path('fonts'),
 
     'font_cache' => storage_path('fonts'),
 
-    'default_font' => 'NotoSansJP',
+    'default_font' => 'ipaexg',
 
     'font_height_ratio' => 1.25,
 

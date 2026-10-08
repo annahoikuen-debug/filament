@@ -1,21 +1,26 @@
 <?php
 require __DIR__ . '/../vendor/autoload.php';
+$app = require_once __DIR__ . '/../bootstrap/app.php';
+$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 use Dompdf\Dompdf;
-use Dompdf\FontMetrics;
+use Dompdf\Options;
 
 echo "IPAフォントをDomPDFに登録します...\n";
 
-$fontDir = __DIR__ . '/../storage/fonts';
+$fontDir = storage_path('fonts');
 if (!is_dir($fontDir)) {
     echo "フォントディレクトリが存在しません: {$fontDir}\n";
     exit(1);
 }
 
-$dompdf = new Dompdf();
+$options = new Options();
+$options->set('font_dir', $fontDir);
+$options->set('font_cache', $fontDir);
+
+$dompdf = new Dompdf($options);
 $fontMetrics = $dompdf->getFontMetrics();
 
-// IPAexゴシックを登録
 $fonts = [
     [
         'family' => 'ipaexg',
@@ -42,14 +47,14 @@ foreach ($fonts as $font) {
     }
     
     try {
-        // フォントを登録（正しいキー名で）
         $style = [
             'family' => $font['family'],
             'weight' => $font['weight'],
             'style' => $font['style'],
         ];
         
-        $fontMetrics->registerFont($style, $fontPath);
+        $url = 'file:///' . str_replace('\\', '/', $fontPath);
+        $fontMetrics->registerFont($style, $url);
         
         echo "登録完了: {$font['family']} {$font['weight']} ({$font['src']})\n";
         $registered++;
@@ -61,14 +66,13 @@ foreach ($fonts as $font) {
 // 登録確認
 echo "\n=== 登録後の確認 ===\n";
 $fontFamilies = $fontMetrics->getFontFamilies();
-echo "全フォントファミリー:\n";
+echo "登録されたフォントファミリー:\n";
 foreach ($fontFamilies as $family => $styles) {
     echo "  {$family}: " . implode(', ', array_keys($styles)) . "\n";
 }
 
 if ($registered > 0) {
     echo "\nフォント登録完了！\n";
-    echo "注意: テンプレートの font-family に 'ipaexg' を追加してください。\n";
 } else {
     echo "\nフォント登録に失敗しました。\n";
 }

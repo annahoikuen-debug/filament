@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\MonthlyInvoice;
 use App\Services\InvoicePdfService;
+use App\Services\FacilityConfigService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -28,7 +29,7 @@ class GenerateInvoicePdfJob implements ShouldQueue
         public string $jobId = '',
     ) {}
 
-    public function handle(InvoicePdfService $pdfService): void
+    public function handle(InvoicePdfService $pdfService, FacilityConfigService $configService): void
     {
         $invoice = MonthlyInvoice::with('resident')->find($this->invoiceId);
 
@@ -47,7 +48,8 @@ class GenerateInvoicePdfJob implements ShouldQueue
         }
 
         try {
-            $pdf = $pdfService->generateInvoicePdf($invoice, $this->facilityId ? config('facility') : null);
+            $facilityConfig = $this->facilityId ? $configService->getConfig($this->facilityId) : null;
+            $pdf = $pdfService->generateInvoicePdf($invoice, $facilityConfig);
             $pdfContent = $pdf->output();
 
             File::ensureDirectoryExists(dirname($cachePath));
