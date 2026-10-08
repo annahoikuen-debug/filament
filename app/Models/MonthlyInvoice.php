@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use App\Models\TaxSetting;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -48,20 +49,27 @@ class MonthlyInvoice extends Model
     protected static function booted(): void
     {
         static::saving(function (MonthlyInvoice $invoice) {
-            // 合計金額の計算
+            // 合計金額の計算（税抜き小計）
             $invoice->total_amount = (int) $invoice->rent_subtotal
                 + (int) $invoice->management_fee_subtotal
                 + (int) $invoice->service_subtotal;
 
-            // 消費税関連の計算（設定から税率を取得、デフォルト10%）
-            $taxRate = config('tax.standard_rate', 10);
-            $invoice->tax_rate = $taxRate;
-            $invoice->taxable_amount = (int) $invoice->management_fee_subtotal
-                + (int) $invoice->service_subtotal;
-            $invoice->tax_amount = (int) round($invoice->taxable_amount * ($taxRate / 100));
+            // 消費税関連の計算は InvoiceCalculationService で行うため、ここではスキップ
+            // ただし、税額関連フィールドが未設定（0またはnull）の場合はフォールバック計算を行う
+            if (empty($invoice->taxable_amount) || empty($invoice->tax_amount)) {
+                $taxRate = $invoice->tax_rate ?? 0;
+                if ($taxRate === 0 && $invoice->billing_year_month) {
+                    $billingDate = Carbon::createFromFormat('Y-m', $invoice->billing_year_month)->startOfMonth();
+                    $taxRate = TaxSetting::getRateForDate($billingDate);
+                }
+                $invoice->tax_rate = $taxRate ?: 10;
+
+                $invoice->taxable_amount = (int) $invoice->management_fee_subtotal
+                    + (int) $invoice->service_subtotal;
+                $invoice->tax_amount = (int) round($invoice->taxable_amount * ($invoice->tax_rate / 100));
+            }
 
             // 楽観ロック: 更新時のみバージョンをインクリメント
-            // $invoice->exists は新規作成時は false、既存レコード更新時は true
             if ($invoice->exists && $invoice->isDirty()) {
                 $invoice->version = ($invoice->version ?? 0) + 1;
             }
@@ -97,7 +105,7 @@ class MonthlyInvoice extends Model
      */
     public function getTaxableAmountAttribute(): int
     {
-        return $this->management_fee_subtotal + $this->service_subtotal;
+        return $this->taxable_amount ?? ($this->management_fee_subtotal + $this->service_subtotal);
     }
 
     /**
@@ -105,7 +113,7 @@ class MonthlyInvoice extends Model
      */
     public function getTaxAmountAttribute(): int
     {
-        return (int) round($this->taxable_amount * ($this->tax_rate / 100));
+        return $this->tax_amount ?? (int) round($this->taxable_amount * ($this->tax_rate / 100));
     }
 
     /**

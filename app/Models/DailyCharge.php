@@ -22,6 +22,16 @@ class DailyCharge extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (DailyCharge $charge) {
+            // charge_item_id が指定されていて unit_price が未設定（または0）の場合、価格履歴から自動取得
+            if ($charge->charge_item_id && (empty($charge->unit_price) || $charge->unit_price === 0)) {
+                $chargeItem = ChargeItem::find($charge->charge_item_id);
+                if ($chargeItem && $charge->date) {
+                    $charge->unit_price = $chargeItem->getPriceForDate($charge->date) ?? 0;
+                }
+            }
+        });
+
         static::saving(function (DailyCharge $charge) {
             // 入居者が指定されている場合、利用日が入居期間内であるか検証
             if ($charge->resident_id && $charge->date) {

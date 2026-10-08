@@ -105,27 +105,17 @@ test('QRコード生成メソッドが有効なデータURIを返すこと', fun
 });
 
 test('QRコードが有効な場合でもPDFが一度しか生成されないこと', function () {
-    // Mock Pdf facade to intercept loadView calls
-    $mockPdf = Mockery::mock(\Barryvdh\DomPDF\Facade\Pdf::class);
-    $mockPdfInstance = Mockery::mock(\Barryvdh\DomPDF\PDF::class);
-    $mockPdf->shouldReceive('loadView')->andReturn($mockPdfInstance)->once();
+    $mockInstance = Mockery::mock(\Barryvdh\DomPDF\PDF::class);
+    $mockInstance->shouldReceive('setOptions')->andReturnSelf();
+    $mockInstance->shouldReceive('setPaper')->andReturnSelf();
 
-    // Temporarily replace the Pdf facade with our mock
-    $originalPdf = Facade::getFacadeResolver()->resolve('pdf');
-    Facade::swap('pdf', $mockPdf);
+    // Facadeモック（Pdfファサードを経由してloadViewを1回だけ呼び出す）
+    \Barryvdh\DomPDF\Facade\Pdf::shouldReceive('loadView')->once()->andReturn($mockInstance);
+
+    // QRコードを有効化（getTemplateConfig はconfig参照のため Config::set で対応）
+    Config::set('pdf.invoice.show_qr_code', true);
 
     $pdfService = new InvoicePdfService();
-
-    // Mock getTemplateConfig to return config with QR code enabled
-    $mockTemplateConfig = array_merge(
-        $pdfService->getTemplateConfig('invoice'), // get base config
-        ['show_qr_code' => true]
-    );
-    // We need to mock the getTemplateConfig method to return our config
-    $pdfService = Mockery::mock(InvoicePdfService::class)->makePartial();
-    $pdfService->shouldReceive('getTemplateConfig')->andReturn($mockTemplateConfig);
-
-    // Call the method
     $pdfService->generatePdfFromInvoice($this->invoice, 'invoice', null);
 
     // Assertions already done via mock expectations

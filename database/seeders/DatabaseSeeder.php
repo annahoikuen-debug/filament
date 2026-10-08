@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             FacilityBillingSeeder::class,
             PdfTemplateSettingsSeeder::class,
+            AccountingExportSeeder::class,
             DemoDataSeeder::class,
         ]);
     }

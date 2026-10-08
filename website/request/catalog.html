@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>資料ダウンロード | 高齢者施設請求管理システム「あんしん」</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="高齢者施設請求管理システム「あんしん」">
+  <meta property="og:title" content="資料ダウンロード | 高齢者施設請求管理システム「あんしん」">
+  <meta property="og:description" content="あんしんの製品資料を無料でダウンロードできます。機能詳細・料金プラン・導入事例などを掲載した総合カタログをご提供。">
+  <meta property="og:url" content="https://anshin.example.com/request/catalog.html">
+  <meta property="og:image" content="https://anshin.example.com/assets/images/ogp.png">
+  <meta property="og:locale" content="ja_JP">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="../assets/images/favicon.ico" sizes="32x32">
+  <link rel="icon" href="../assets/images/favicon.svg" type="image/svg+xml">
   <meta name="description" content="あんしんの製品資料を無料でダウンロードできます。機能詳細・料金プラン・導入事例などを掲載した総合カタログをご提供。">
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -259,15 +269,44 @@
     <symbol id="icon-arrow-right" viewBox="0 0 24 24"><path d="M8 12l6-6 6 6H16V4H8v8z" fill="currentColor"/></symbol>
   </svg>
   
-  <!-- Simple form handling (in real implementation, this would connect to a backend) -->
+  <!-- Form submission (Laravel API) -->
   <script>
-    document.getElementById('catalogRequestForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      // In a real implementation, this would send data to a backend
-      // For this demo, we'll show a success message
-      alert('資料請求ありがとうございます！自動返信メールを送信いたしました。');
-      this.reset();
-    });
+    (function () {
+      var API_BASE = window.FORM_API_BASE || '';
+      var form = document.getElementById('catalogRequestForm');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        var data = {};
+        new FormData(form).forEach(function (value, key) {
+          if (key.slice(-2) === '[]') {
+            key = key.slice(0, -2);
+            if (!Array.isArray(data[key])) data[key] = [];
+            data[key].push(value);
+          } else {
+            data[key] = value;
+          }
+        });
+        fetch(API_BASE + '/api/site-forms/catalog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(data)
+        }).then(function (res) {
+          return res.json().then(function (json) { return { ok: res.ok, json: json }; });
+        }).then(function (res) {
+          if (res.ok && res.json.success) {
+            window.location.href = 'complete.html?type=catalog';
+          } else {
+            alert('送信に失敗しました。入力内容をご確認ください。');
+            btn.disabled = false;
+          }
+        }).catch(function () {
+          alert('ネットワークエラーが発生しました。しばらく経ってからお試しください。');
+          btn.disabled = false;
+        });
+      });
+    })();
   </script>
 </body>
 </html>

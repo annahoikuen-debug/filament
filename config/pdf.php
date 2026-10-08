@@ -30,6 +30,7 @@ return [
         'line_height' => 1.6,
 
         // Colors
+        'primary_color' => '#1e3a8a',
         'colors' => [
             'primary' => '#1e3a8a',
             'primary_light' => '#3b82f6',
@@ -47,6 +48,7 @@ return [
 
         // Typography
         'typography' => [
+            'font_family' => "'Noto Sans JP', 'Yu Mincho', 'YuMincho', 'Hiragino Mincho Pro', 'HGS明朝E', 'ＭＳ 明朝', serif",
             'font_size_base' => 10.5,
             'font_size_sm' => 9,
             'font_size_lg' => 12,
@@ -61,6 +63,7 @@ return [
 
         // Spacing (mm)
         'spacing' => [
+            'page_margin' => 15,
             'xs' => 2,
             'sm' => 4,
             'md' => 6,

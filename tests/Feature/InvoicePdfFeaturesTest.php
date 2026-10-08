@@ -3,10 +3,14 @@
 use App\Services\InvoicePdfService;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class InvoicePdfFeaturesTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -68,6 +72,18 @@ class InvoicePdfFeaturesTest extends TestCase
         $this->assertTrue($config['invoice_compliance']['show_tax_breakdown_by_rate']);
     }
     
+    /**
+     * PDFの代わりにBladeビューをレンダリングし、HTML文字列を返す
+     * （PDFバイナリは圧縮されるため、レイアウト検証はHTMLで行う）
+     */
+    protected function renderPdfHtml($invoice, string $type): string
+    {
+        $service = new InvoicePdfService();
+        [$view, $data] = $service->prepareViewData($invoice, $type);
+
+        return view($view, $data)->render();
+    }
+
     public function test_qr_code_generation_methods_exist()
     {
         $service = new InvoicePdfService();
@@ -83,15 +99,9 @@ class InvoicePdfFeaturesTest extends TestCase
         // QRコードを有効にするために、一時的に設定をオーバーライド
         config(['pdf.invoice.show_qr_code' => true]);
         
-        $service = new InvoicePdfService();
-        $pdf = $service->generateInvoicePdf($this->invoice);
-        
-        $this->assertNotNull($pdf);
-        $output = $pdf->output();
-        $this->assertIsString($output);
-        
-        // QRコードデータが含まれていることを確認（データURIのプレフィックスをチェック）
-        $this->assertStringContainsString('data:image/svg+xml;base64,', $output);
+        // BladeビューのHTMLにQRコードのデータURIが含まれることを確認
+        $html = $this->renderPdfHtml($this->invoice, 'invoice');
+        $this->assertStringContainsString('data:image/svg+xml;base64,', $html);
         
         // 設定を元に戻す
         config(['pdf.invoice.show_qr_code' => false]);
@@ -105,15 +115,9 @@ class InvoicePdfFeaturesTest extends TestCase
         // QRコードを有効にするために、一時的に設定をオーバーライド
         config(['pdf.receipt.show_qr_code' => true]);
         
-        $service = new InvoicePdfService();
-        $pdf = $service->generateReceiptPdf($this->invoice);
-        
-        $this->assertNotNull($pdf);
-        $output = $pdf->output();
-        $this->assertIsString($output);
-        
-        // QRコードデータが含まれていることを確認（データURIのプレフィックスをチェック）
-        $this->assertStringContainsString('data:image/svg+xml;base64,', $output);
+        // BladeビューのHTMLにQRコードのデータURIが含まれることを確認
+        $html = $this->renderPdfHtml($this->invoice, 'receipt');
+        $this->assertStringContainsString('data:image/svg+xml;base64,', $html);
         
         // 設定を元に戻す
         config(['pdf.receipt.show_qr_code' => false]);
@@ -125,7 +129,7 @@ class InvoicePdfFeaturesTest extends TestCase
         
         $zipPath = $service->generateMonthlyZip('2026-10');
         
-        $this->assertString($zipPath);
+        $this->assertIsString($zipPath);
         $this->assertTrue(file_exists($zipPath));
         $this->assertGreaterThan(0, filesize($zipPath));
         
@@ -140,16 +144,13 @@ class InvoicePdfFeaturesTest extends TestCase
         // 登録番号の目立つ表示を有効にする
         config(['pdf.invoice.invoice_compliance.show_registration_number_prominently' => true]);
         
-        $service = new InvoicePdfService();
-        $pdf = $service->generateInvoicePdf($this->invoice);
-        $output = $pdf->output();
+        // 施設の登録番号を設定
+        Config::set('facility.invoice_registration_number', 'T1234567890123');
         
-        $this->assertNotNull($pdf);
-        $this->assertIsString($output);
-        
-        // 登録番号がヘッダー部分に目立つ形で表示されていることを確認
+        // BladeビューのHTMLに登録番号が目立つ形で表示されていることを確認
+        $html = $this->renderPdfHtml($this->invoice, 'invoice');
         $registrationNumber = config('facility.invoice_registration_number', 'T1234567890123');
-        $this->assertStringContainsString('登録番号: '.$registrationNumber, $output);
+        $this->assertStringContainsString('登録番号: '.$registrationNumber, $html);
         
         // 設定を元に戻す
         config(['pdf.invoice.invoice_compliance.show_registration_number_prominently' => true]); // デフォルトはtrueなので戻す必要はないが、明示的に

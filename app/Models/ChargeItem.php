@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\TaxType;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +18,7 @@ class ChargeItem extends Model
     protected $casts = [
         'default_price' => 'integer',
         'is_active' => 'boolean',
+        'tax_type' => TaxType::class,
     ];
 
     /**
@@ -27,11 +30,37 @@ class ChargeItem extends Model
     }
 
     /**
+     * 単価履歴一覧
+     */
+    public function priceHistory(): HasMany
+    {
+        return $this->hasMany(ChargeItemPrice::class)->orderBy('effective_from', 'desc');
+    }
+
+    /**
+     * 現在有効な価格を取得
+     */
+    public function currentPrice(): ?int
+    {
+        $current = $this->priceHistory()->current()->first();
+        return $current?->price ?? $this->default_price;
+    }
+
+    /**
+     * 指定日の有効な価格を取得
+     */
+    public function getPriceForDate(Carbon $date): ?int
+    {
+        $price = $this->priceHistory()->forDate($date)->orderBy('effective_from', 'desc')->first();
+        return $price?->price ?? $this->default_price;
+    }
+
+    /**
      * 実効価格を取得する（デフォルト単価が0より大きい場合のみ有効）
      */
     public function getEffectivePrice(): ?int
     {
-        return $this->default_price > 0 ? $this->default_price : null;
+        return $this->currentPrice() > 0 ? $this->currentPrice() : null;
     }
 
     /**

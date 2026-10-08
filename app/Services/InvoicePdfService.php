@@ -7,6 +7,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdfInstance;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Cache;
 use ZipArchive;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -44,7 +45,13 @@ class InvoicePdfService
      *
      * @param  string  $type  'invoice' または 'receipt'
      */
-    public function generatePdfFromInvoice(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): DomPdfInstance
+    /**
+     * ビュー名とテンプレートデータを組み立てる
+     * （テストからBladeビューを直接レンダリングしてレイアウト検証できるように公開）
+     *
+     * @return array{0: string, 1: array} [ビュー名, データ]
+     */
+    public function prepareViewData(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): array
     {
         @ini_set('memory_limit', '512M');
 
@@ -74,7 +81,7 @@ class InvoicePdfService
             }
         }
 
-        $pdf = Pdf::loadView($view, [
+        $data = [
             'invoice' => $invoice,
             'resident' => $invoice->resident,
             'dailyCharges' => $type === 'invoice' ? $invoice->resident->dailyCharges : null,
@@ -89,13 +96,22 @@ class InvoicePdfService
             ],
             // テンプレート設定（CSS変数等用）
             'template' => $templateConfig,
-        ]);
+        ];
+
+        return [$view, $data];
+    }
+
+    public function generatePdfFromInvoice(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): DomPdfInstance
+    {
+        [$view, $data] = $this->prepareViewData($invoice, $type, $facility);
+
+        $pdf = Pdf::loadView($view, $data);
 
         // 日本語フォント設定を適用
-        $this->applyJapaneseFontSettings($pdf, $templateConfig);
+        $this->applyJapaneseFontSettings($pdf, $data['template']);
 
         // 余白・用紙設定を適用
-        $this->applyMargins($pdf, $templateConfig);
+        $this->applyMargins($pdf, $data['template']);
 
         return $pdf;
     }
@@ -106,7 +122,7 @@ class InvoicePdfService
     /**
      * テンプレート設定を取得（config からマージ）
      */
-    private function getTemplateConfig(string $type): array
+    public function getTemplateConfig(string $type): array
     {
         $baseConfig = config('pdf.default', []);
         $typeConfig = config("pdf.{$type}", []);
@@ -221,7 +237,8 @@ class InvoicePdfService
             $imageBackEnd = new \BaconQrCode\Renderer\Image\SvgImageBackEnd();
             $renderer = new \BaconQrCode\Renderer\ImageRenderer($rendererStyle, $imageBackEnd);
             $writer = new \BaconQrCode\Writer($renderer);
-            $svg = $writer->writeString($data);
+            // 日本語を含むデータを扱うため UTF-8 を指定（既定の ISO-8859-1 では多バイト文字のエンコードに失敗する）
+            $svg = $writer->writeString($data, 'UTF-8');
             
             return 'data:image/svg+xml;base64,'.base64_encode($svg);
         } catch (\Throwable $e) {
@@ -330,17 +347,28 @@ class InvoicePdfService
         return $this->generatePdfFromInvoice($invoice, 'receipt', $facility);
     }
 
-    /**
-     * 指定年月の全入居者分請求書PDFを一括ZIPファイルにアーカイブする
+/**
+     * 指定年月の全入居者分請求書PDFを一括ZIPファイルにアーカイブする（同期版・互換性維持）
      *
      * @param  string  $yearMonth  'YYYY-MM'
      * @return string 作成されたZIPファイルの一時パス
      */
     public function generateMonthlyZip(string $yearMonth, ?int $facilityId = null): string
     {
+        return $this->generateMonthlyZipSync($yearMonth, $facilityId);
+    }
+
+    /**
+     * 指定年月の全入居者分請求書PDFを一括ZIPファイルにアーカイブする（同期版・内部実装）
+     *
+     * @param  string  $yearMonth  'YYYY-MM'
+     * @return string 作成されたZIPファイルの一時パス
+     */
+    public function generateMonthlyZipSync(string $yearMonth, ?int $facilityId = null): string
+    {
         $query = MonthlyInvoice::with('resident')
             ->forYearMonth($yearMonth);
-            
+
         if ($facilityId) {
             $query->whereHas('resident', function ($q) use ($facilityId) {
                 $q->where('facility_id', $facilityId);
@@ -385,5 +413,126 @@ class InvoicePdfService
             }
             throw $e;
         }
+    }
+
+    /**
+     * 非同期で月次ZIP生成ジョブをディスパッチする
+     *
+     * @param  string  $yearMonth  'YYYY-MM'
+     * @return string ジョブID
+     */
+    public function generateMonthlyZipAsync(string $yearMonth, ?int $facilityId = null): string
+    {
+        $jobId = 'zip_' . $yearMonth . '_' . ($facilityId ?? 'all') . '_' . uniqid();
+        \App\Jobs\GenerateMonthlyZipJob::dispatch($yearMonth, $facilityId, $jobId);
+
+        return $jobId;
+    }
+
+    /**
+     * 非同期ジョブの進捗を取得する
+     *
+     * @return array{percent: int, status: string, message: string, updated_at: string}|null
+     */
+    public function getZipProgress(string $jobId): ?array
+    {
+        return \App\Jobs\GenerateMonthlyZipJob::getProgress($jobId);
+    }
+
+    /**
+     * 非同期ジョブの結果（ZIPファイルパス）を取得する
+     */
+    public function getZipResult(string $jobId): ?string
+    {
+        return \App\Jobs\GenerateMonthlyZipJob::getResult($jobId);
+    }
+
+    /**
+     * 進捗キャッシュをクリアする
+     */
+    public function clearZipProgress(string $jobId): void
+    {
+        \App\Jobs\GenerateMonthlyZipJob::clearProgress($jobId);
+    }
+
+    /**
+     * キャッシュされたPDFパスを取得する
+     */
+    public function getCachedPdfPath(string $yearMonth, int $invoiceId): string
+    {
+        return storage_path("app/invoices/{$yearMonth}/invoice_{$invoiceId}.pdf");
+    }
+
+    /**
+     * PDFがキャッシュされているか確認する
+     */
+    public function hasCachedPdf(string $yearMonth, int $invoiceId): bool
+    {
+        return File::exists($this->getCachedPdfPath($yearMonth, $invoiceId));
+    }
+
+    /**
+     * キャッシュされたPDFを取得する（存在しない場合は生成してキャッシュ）
+     */
+    public function getOrGenerateCachedPdf(MonthlyInvoice $invoice, ?array $facility = null): string
+    {
+        $yearMonth = $invoice->billing_year_month;
+        $cachePath = $this->getCachedPdfPath($yearMonth, $invoice->id);
+
+        if (File::exists($cachePath)) {
+            return File::get($cachePath);
+        }
+
+        $pdf = $this->generateInvoicePdf($invoice, $facility);
+        $pdfContent = $pdf->output();
+
+        File::ensureDirectoryExists(dirname($cachePath));
+        File::put($cachePath, $pdfContent);
+
+        return $pdfContent;
+    }
+
+    /**
+     * 指定年月のキャッシュを全削除する
+     */
+    public function clearInvoiceCache(string $yearMonth): void
+    {
+        $cacheDir = storage_path("app/invoices/{$yearMonth}");
+        if (File::exists($cacheDir)) {
+            File::deleteDirectory($cacheDir);
+        }
+    }
+
+    /**
+     * チャンク処理でPDFを生成し、コールバックで処理する（メモリ効率化版）
+     *
+     * @param  string  $yearMonth  'YYYY-MM'
+     * @param  callable  $callback  function(MonthlyInvoice $invoice, string $pdfContent): void
+     * @param  int  $chunkSize  チャンクサイズ
+     */
+    public function chunkGeneratePdfs(
+        string $yearMonth,
+        callable $callback,
+        ?int $facilityId = null,
+        int $chunkSize = 10
+    ): void {
+        $query = MonthlyInvoice::with('resident')
+            ->forYearMonth($yearMonth);
+
+        if ($facilityId) {
+            $query->whereHas('resident', function ($q) use ($facilityId) {
+                $q->where('facility_id', $facilityId);
+            });
+        }
+
+        $query->orderBy('id')
+            ->chunkById($chunkSize, function ($invoices) use ($callback, $facility) {
+                foreach ($invoices as $invoice) {
+                    $pdf = $this->generateInvoicePdf($invoice, $facility);
+                    $callback($invoice, $pdf->output());
+                }
+
+                return true;
+            });
     }
 }

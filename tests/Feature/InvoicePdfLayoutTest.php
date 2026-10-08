@@ -3,10 +3,13 @@
 use App\Services\InvoicePdfService;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class InvoicePdfLayoutTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -27,22 +30,27 @@ class InvoicePdfLayoutTest extends TestCase
         ]);
     }
     
-    public function test_invoice_pdf_contains_expected_layout_elements()
+    /**
+     * PDFの代わりにBladeビューをレンダリングし、HTML文字列を返す
+     * （PDFバイナリは圧縮されるため、レイアウト検証はHTMLで行う）
+     */
+    protected function renderPdfHtml($invoice, string $type): string
     {
         $service = new InvoicePdfService();
-        $pdf = $service->generateInvoicePdf($this->invoice);
-        $output = $pdf->output();
-        
-        // PDFが生成されていることを確認
-        $this->assertNotNull($pdf);
-        $this->assertIsString($output);
-        $this->assertGreaterThan(2000, strlen($output));
+        [$view, $data] = $service->prepareViewData($invoice, $type);
+
+        return view($view, $data)->render();
+    }
+
+    public function test_invoice_pdf_contains_expected_layout_elements()
+    {
+        $html = $this->renderPdfHtml($this->invoice, 'invoice');
         
         // 基本的な文字列が含まれていることを確認
-        $this->assertStringContainsString('御 請 求 書', $output);
-        $this->assertStringContainsString($this->resident->name, $output);
-        $this->assertStringContainsString('ご請求金額', $output);
-        $this->assertStringContainsString('ご請求サマリー', $output);
+        $this->assertStringContainsString('御 請 求 書', $html);
+        $this->assertStringContainsString($this->resident->name, $html);
+        $this->assertStringContainsString('ご請求金額', $html);
+        $this->assertStringContainsString('ご請求サマリー', $html);
     }
     
     public function test_receipt_pdf_contains_expected_layout_elements()
@@ -50,119 +58,91 @@ class InvoicePdfLayoutTest extends TestCase
         // 入金済み状態にする
         $this->invoice->markAsPaid(PaymentMethod::BankTransfer);
         
-        $service = new InvoicePdfService();
-        $pdf = $service->generateReceiptPdf($this->invoice);
-        $output = $pdf->output();
-        
-        // PDFが生成されていることを確認
-        $this->assertNotNull($pdf);
-        $this->assertIsString($output);
-        $this->assertGreaterThan(2000, strlen($output));
+        $html = $this->renderPdfHtml($this->invoice, 'receipt');
         
         // 基本的な文字列が含まれていることを確認
-        $this->assertStringContainsString('領　収　証', $output);
-        $this->assertStringContainsString($this->resident->name, $output);
-        $this->assertStringContainsString('領収金額', $output);
-        $this->assertStringContainsString('内訳明細', $output);
+        $this->assertStringContainsString('領　収　証', $html);
+        $this->assertStringContainsString($this->resident->name, $html);
+        $this->assertStringContainsString('領収金額', $html);
+        $this->assertStringContainsString('内訳明細', $html);
     }
     
     public function test_consistent_styling_between_invoice_and_receipt()
     {
-        $service = new InvoicePdfService();
+        // 請求書HTML
+        $invoiceHtml = $this->renderPdfHtml($this->invoice, 'invoice');
         
-        // 請求書PDF
-        $invoicePdf = $service->generateInvoicePdf($this->invoice);
-        $invoiceOutput = $invoicePdf->output();
-        
-        // 領収書PDF（入金済みにしてから）
+        // 領収書HTML（入金済みにしてから）
         $this->invoice->markAsPaid(PaymentMethod::BankTransfer);
-        $receiptPdf = $service->generateReceiptPdf($this->invoice);
-        $receiptOutput = $receiptPdf->output();
-        
-        // 両方とも正常に生成されることを確認
-        $this->assertNotNull($invoicePdf);
-        $this->assertNotNull($receiptPdf);
-        $this->assertIsString($invoiceOutput);
-        $this->assertIsString($receiptOutput);
+        $receiptHtml = $this->renderPdfHtml($this->invoice, 'receipt');
         
         // 共通のスタイル要素が含まれていることを確認
         $commonElements = [
             'Noto Sans JP',
-            '施設名', // Note: This is a placeholder - in actual implementation we'd check for the specific facility name
+            $this->resident->name,
         ];
         
         foreach ($commonElements as $element) {
             $this->assertStringContainsString(
                 $element, 
-                $invoiceOutput, 
-                "Invoice PDF should contain {$element}"
+                $invoiceHtml, 
+                "Invoice HTML should contain {$element}"
             );
             $this->assertStringContainsString(
                 $element, 
-                $receiptOutput, 
-                "Receipt PDF should contain {$element}"
+                $receiptHtml, 
+                "Receipt HTML should contain {$element}"
             );
         }
     }
     
     public function test_amount_formatting_consistency()
     {
-        $service = new InvoicePdfService();
+        // 請求書HTML
+        $invoiceHtml = $this->renderPdfHtml($this->invoice, 'invoice');
         
-        // 請求書PDF
-        $invoicePdf = $service->generateInvoicePdf($this->invoice);
-        $invoiceOutput = $invoicePdf->output();
-        
-        // 領収書PDF（入金済みにしてから）
+        // 領収書HTML（入金済みにしてから）
         $this->invoice->markAsPaid(PaymentMethod::BankTransfer);
-        $receiptPdf = $service->generateReceiptPdf($this->invoice);
-        $receiptOutput = $receiptPdf->output();
+        $receiptHtml = $this->renderPdfHtml($this->invoice, 'receipt');
         
-        // 金額フォーマットの一貫性を確認（実際の金額が含まれていることをチェック）
-        $expectedAmount = number_format(
-            $this->invoice->rent_subtotal + 
-            $this->invoice->management_fee_subtotal + 
-            $this->invoice->service_subtotal + 
-            round(($this->invoice->management_fee_subtotal + $this->invoice->service_subtotal) * ($this->invoice->tax_rate / 100))
+        // 金額フォーマットの一貫性を確認（税込合計金額が含まれていることをチェック）
+        $expectedAmount = '¥' . number_format($this->invoice->total_with_tax);
+        
+        $this->assertStringContainsString(
+            $expectedAmount, 
+            $invoiceHtml,
+            "Invoice HTML should contain formatted total amount"
         );
         
         $this->assertStringContainsString(
-            '¥' . $expectedAmount, 
-            $invoiceOutput,
-            "Invoice PDF should contain formatted total amount"
-        );
-        
-        $this->assertStringContainsString(
-            '¥' . $expectedAmount, 
-            $receiptOutput,
-            "Receipt PDF should contain formatted total amount"
+            $expectedAmount, 
+            $receiptHtml,
+            "Receipt HTML should contain formatted total amount"
         );
     }
     
     public function test_page_break_present_when_details_exist()
     {
-        // 明細データを追加
-        $dailyCharge = \App\Models\DailyCharge::create([
+        // 明細データを追加（先に品目マスタを作成: FK制約のため）
+        $chargeItem = \App\Models\ChargeItem::create([
+            'name' => 'テスト品目',
+            'default_price' => 1000,
+            'is_active' => true,
+        ]);
+        
+        \App\Models\DailyCharge::create([
             'resident_id' => $this->resident->id,
             'date' => '2026-10-01',
-            'charge_item_id' => 1, // Assuming charge item exists
+            'charge_item_id' => $chargeItem->id,
             'unit_price' => 1000,
             'quantity' => 1,
-            'subtotal' => 1000,
             'note' => 'テスト明細'
         ]);
         
-        $service = new InvoicePdfService();
-        $pdf = $service->generateInvoicePdf($this->invoice);
-        $output = $pdf->output();
+        $html = $this->renderPdfHtml($this->invoice, 'invoice');
         
-        // PDFが生成されていることを確認
-        $this->assertNotNull($pdf);
-        $this->assertIsString($output);
-        
-        // ページブレークが存在することを確認（実際のPDF内部構造をチェックするのは複雑なので、
-        // 代わりに明細が存在する場合に適切なマークアップが生成されていることを確認）
-        $this->assertStringContainsString('日々の自費サービス利用明細', $output);
-        $this->assertStringContainsString('テスト明細', $output);
+        // 明細が存在する場合に適切なマークアップが生成されていることを確認
+        $this->assertStringContainsString('日々の自費サービス利用明細', $html);
+        $this->assertStringContainsString('テスト明細', $html);
     }
 }

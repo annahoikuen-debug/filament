@@ -1,10 +1,13 @@
 <?php
 
 use App\Services\InvoicePdfService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class InvoicePdfDesignSystemTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_design_tokens_are_available_in_template_config()
     {
         $service = new InvoicePdfService();

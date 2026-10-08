@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>見込み客フォーム | 高齢者施設請求管理システム「あんしん」</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="高齢者施設請求管理システム「あんしん」">
+  <meta property="og:title" content="見込み客フォーム | 高齢者施設請求管理システム「あんしん」">
+  <meta property="og:description" content="あんしんの見込み客フォームを詳しく解説。施設への入居を検討している利用者・家族からの情報を収集し、施設側からの資料送付や連絡を効率化します。">
+  <meta property="og:url" content="https://anshin.example.com/request/prospect.html">
+  <meta property="og:image" content="https://anshin.example.com/assets/images/ogp.png">
+  <meta property="og:locale" content="ja_JP">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="../assets/images/favicon.ico" sizes="32x32">
+  <link rel="icon" href="../assets/images/favicon.svg" type="image/svg+xml">
   <meta name="description" content="あんしんの見込み客フォームを詳しく解説。施設への入居を検討している利用者・家族からの情報を収集し、施設側からの資料送付や連絡を効率化します。">
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,6 +57,98 @@
             施設側からの資料送付や連絡、また施設見学の予約などに活用できます。
           </p>
         </header>
+      </div>
+    </section>
+
+    <!-- Form Section -->
+    <section class="c-section c-section--light" aria-labelledby="prospect-form-title">
+      <div class="c-container">
+        <div class="c-card" style="max-width: 600px; margin: 0 auto;">
+          <div class="c-card__body">
+            <h3 class="c-card__title" id="prospect-form-title" style="text-align: center; margin-bottom: var(--space-6);">
+              入居相談・資料請求フォーム
+            </h3>
+            <p style="text-align: center; color: var(--color-text-secondary); margin-bottom: var(--space-8);">
+              入力後、施設より資料の送付・ご連絡を差し上げます
+            </p>
+
+            <form class="c-form" id="prospectForm" action="#" method="POST">
+              <div class="c-form__row">
+                <label class="c-form__label" for="name">お名前 <span class="c-form__required">必須</span></label>
+                <input type="text" id="name" name="name" class="c-form__input" placeholder="例：山田 太郎" required>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="furigana">ふりがな</label>
+                <input type="text" id="furigana" name="furigana" class="c-form__input" placeholder="例：やまだ たろう">
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="phone">電話番号 <span class="c-form__required">必須</span></label>
+                <input type="tel" id="phone" name="phone" class="c-form__input" placeholder="例：03-1234-5678" required>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="email">メールアドレス</label>
+                <input type="email" id="email" name="email" class="c-form__input" placeholder="例：yamada@example.com">
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="current_status">現在のご状況</label>
+                <select id="current_status" name="current_status" class="c-form__select">
+                  <option value="">選択してください</option>
+                  <option value="home">自宅</option>
+                  <option value="hospital">病院</option>
+                  <option value="facility">介護施設</option>
+                  <option value="other">その他</option>
+                </select>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="desired_timing">希望入居時期</label>
+                <select id="desired_timing" name="desired_timing" class="c-form__select">
+                  <option value="">選択してください</option>
+                  <option value="asap">すぐにでも</option>
+                  <option value="3_months">3ヶ月以内</option>
+                  <option value="6_months">6ヶ月以内</option>
+                  <option value="within_year">1年以内</option>
+                  <option value="considering">様子見・検討中</option>
+                </select>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="care_level">介護度</label>
+                <select id="care_level" name="care_level" class="c-form__select">
+                  <option value="">選択してください</option>
+                  <option value="independent">自立</option>
+                  <option value="support_1">要支援1</option>
+                  <option value="support_2">要支援2</option>
+                  <option value="care_1">要介護1</option>
+                  <option value="care_2">要介護2</option>
+                  <option value="care_3">要介護3</option>
+                  <option value="care_4">要介護4</option>
+                  <option value="care_5">要介護5</option>
+                  <option value="unknown">未取得・不明</option>
+                </select>
+              </div>
+
+              <div class="c-form__row">
+                <label class="c-form__label" for="message">ご要望・ご質問</label>
+                <textarea id="message" name="message" class="c-form__textarea" rows="4" placeholder="見学のご希望やご質問などをお聞かせください"></textarea>
+              </div>
+
+              <div class="c-form__privacy">
+                個人情報の取り扱いに同意の上、送信してください。<br>
+                <a href="../privacy.html" style="color: var(--color-primary); text-decoration: underline;">プライバシーポリシー</a>をご確認ください。
+              </div>
+
+              <button type="submit" class="c-btn c-btn--primary c-btn--lg c-btn--block">
+                <svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-check"></use></svg>
+                この内容で送信する
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -324,10 +426,44 @@
 
   <!-- SVG Icons (inline for simplicity) -->
   <svg style="display: none;" aria-hidden="true">
-    <symbol id="icon-download" viewBox="0 0 24 24><path d="M3 16l5-5 5 5H3zm5-14h8v2H8V2zM3 20h18v2H3v-2z" fill="currentColor"/></symbol>
-    <symbol id="icon-play" viewBox="0 0 24 24><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
-    <symbol id="icon-check" viewBox="0 0 24 24><path d="M9 16l2 2 4-4" fill="currentColor"/></symbol>
-    <symbol id="icon-phone" viewBox="0 0 24 24><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.35 6.35l2.2-2.2a.79.79 0 00.01-1.09l-2.34-2.34a1.99 1.99 0 00-2.81 0l-1.83 1.83a6.06 6.06 0 01-7.76-2.75zM18.98 13.4l-1.83-1.83a6.06 6.06 0 01-2.75-7.76l1.83-1.83a.79.79 0 001.09.01l2.2 2.2c2.83 1.44 5.14 3.76 6.35 6.35l1.22 1.22a.79.79 0 001.09 0l2.34-2.34a1 1 0 000-1.41l-2.46-2.46a1.99 1.99 0 000-2.81 0l-1.83 1.83c-1.44 2.83-3.76 5.14-6.35 6.35l-1.22 1.22a.79.79 0 00-1.09 0l-2.34 2.34a1 1 0 000 1.41l2.46 2.46a2 2 0 002.81 0l1.83-1.83z" fill="currentColor"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M3 16l5-5 5 5H3zm5-14h8v2H8V2zM3 20h18v2H3v-2z" fill="currentColor"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16l2 2 4-4" fill="currentColor"/></symbol>
+    <symbol id="icon-phone" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.35 6.35l2.2-2.2a.79.79 0 00.01-1.09l-2.34-2.34a1.99 1.99 0 00-2.81 0l-1.83 1.83a6.06 6.06 0 01-7.76-2.75zM18.98 13.4l-1.83-1.83a6.06 6.06 0 01-2.75-7.76l1.83-1.83a.79.79 0 001.09.01l2.2 2.2c2.83 1.44 5.14 3.76 6.35 6.35l1.22 1.22a.79.79 0 001.09 0l2.34-2.34a1 1 0 000-1.41l-2.46-2.46a1.99 1.99 0 000-2.81 0l-1.83 1.83c-1.44 2.83-3.76 5.14-6.35 6.35l-1.22 1.22a.79.79 0 00-1.09 0l-2.34 2.34a1 1 0 000 1.41l2.46 2.46a2 2 0 002.81 0l1.83-1.83z" fill="currentColor"/></symbol>
   </svg>
+
+  <!-- Form submission (Laravel API) -->
+  <script>
+    (function () {
+      var API_BASE = window.FORM_API_BASE || '';
+      var form = document.getElementById('prospectForm');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        var data = {};
+        new FormData(form).forEach(function (value, key) {
+          data[key] = value;
+        });
+        fetch(API_BASE + '/api/site-forms/prospect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(data)
+        }).then(function (res) {
+          return res.json().then(function (json) { return { ok: res.ok, json: json }; });
+        }).then(function (res) {
+          if (res.ok && res.json.success) {
+            window.location.href = 'complete.html?type=prospect';
+          } else {
+            alert('送信に失敗しました。入力内容をご確認ください。');
+            btn.disabled = false;
+          }
+        }).catch(function () {
+          alert('ネットワークエラーが発生しました。しばらく経ってからお試しください。');
+          btn.disabled = false;
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

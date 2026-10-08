@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>送信完了 | 高齢者施設請求管理システム「あんしん」</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="高齢者施設請求管理システム「あんしん」">
+  <meta property="og:title" content="送信完了 | 高齢者施設請求管理システム「あんしん」">
+  <meta property="og:description" content="お問い合わせの送信が完了しました。担当者より2営業日以内にご連絡いたします。">
+  <meta property="og:url" content="https://anshin.example.com/request/complete.html">
+  <meta property="og:image" content="https://anshin.example.com/assets/images/ogp.png">
+  <meta property="og:locale" content="ja_JP">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="../assets/images/favicon.ico" sizes="32x32">
+  <link rel="icon" href="../assets/images/favicon.svg" type="image/svg+xml">
+  <meta name="description" content="お問い合わせの送信が完了しました。担当者より2営業日以内にご連絡いたします。">
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="c-header">
+    <div class="c-container">
+      <div class="c-header__content">
+        <h1 class="c-header__logo">
+          <a href="../index.html">あんしん</a>
+        </h1>
+        <nav class="c-header__nav">
+          <ul class="c-header__menu">
+            <li><a href="../index.html">トップ</a></li>
+            <li><a href="../product/index.html">製品情報</a></li>
+            <li><a href="index.html">お問い合わせ</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <section class="c-section c-section--light" aria-labelledby="complete-title">
+      <div class="c-container">
+        <div class="c-card" style="max-width: 600px; margin: 0 auto; text-align: center;">
+          <div class="c-card__body">
+            <div class="c-card__icon" aria-hidden="true" style="width: 72px; height: 72px; background: rgb(16 185 129 / 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-6); color: #10b981;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 16.2l-3.5-3.5 1.4-1.4L9 13.4l7.1-7.1 1.4 1.4L9 16.2z" fill="currentColor"/></svg>
+            </div>
+            <h2 class="c-section-header__title" id="complete-title" style="margin-bottom: var(--space-4);">送信が完了しました</h2>
+            <p class="c-section-header__text" style="margin-bottom: var(--space-8);">
+              お問い合わせありがとうございます。<br>
+              <span id="complete-message">担当者より2営業日以内にご連絡いたします。</span>
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: center;">
+              <a href="../index.html" class="c-btn c-btn--primary c-btn--lg">トップページへ戻る</a>
+              <a href="index.html" class="c-btn c-btn--outline c-btn--lg">お問い合わせフォーム一覧へ</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="c-footer">
+    <div class="c-container">
+      <div class="c-footer__bottom">
+        <div class="c-footer__copyright">
+          © 2026 アンシン株式会社. All Rights Reserved.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var messages = {
+        catalog: '自動返信メールでダウンロードURLをお送りします。（届かない場合は迷惑メールフォルダをご確認ください）',
+        demo: '担当者よりデモ日時のご連絡を差し上げます。',
+        diagnosis: '診断書フォームのダウンロードURLをメールでお送りします。',
+        prospect: '資料の送付・ご連絡を順次対応いたします。',
+        inquiry: '担当者より2営業日以内にご連絡いたします。'
+      };
+      var type = new URLSearchParams(window.location.search).get('type');
+      if (type && messages[type]) {
+        document.getElementById('complete-message').textContent = messages[type];
+      }
+    })();
+  </script>
+</body>
+</html>

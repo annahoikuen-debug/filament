@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Filament\Resources\MonthlyInvoiceResource\Pages;
+use App\Models\AccountingExportProfile;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\InvoiceCsvExportService;
@@ -320,9 +321,9 @@ class MonthlyInvoiceResource extends Resource
                         })
                         ->requiresConfirmation(),
 
-                    // CSVエクスポート: 会計仕訳CSV
+                    // CSVエクスポート: 会計仕訳CSV (プロファイル対応版)
                     Tables\Actions\BulkAction::make('exportAccountingJournalCsv')
-                        ->label('会計仕訳CSV出力(弥生/freee/MF)')
+                        ->label('会計仕訳CSV出力(弥生/freee/MF/勘定奉行)')
                         ->icon('heroicon-o-document-text')
                         ->color('warning')
                         ->form([
@@ -332,10 +333,109 @@ class MonthlyInvoiceResource extends Resource
                                 ->required()
                                 ->default(now()->format('Y-m'))
                                 ->native(false),
+
+                            Forms\Components\Select::make('software_type')
+                                ->label('会計ソフト')
+                                ->options([
+                                    AccountingExportProfile::SOFTWARE_FREEE => 'freee',
+                                    AccountingExportProfile::SOFTWARE_MF => 'MFクラウド会計',
+                                    AccountingExportProfile::SOFTWARE_YAYOI => '弥生会計',
+                                    AccountingExportProfile::SOFTWARE_KANJOBUGYO => '勘定奉行',
+                                ])
+                                ->default(AccountingExportProfile::SOFTWARE_FREEE)
+                                ->required()
+                                ->native(false)
+                                ->live()
+                                ->afterStateUpdated(fn (Forms\Set $set) => $set('profile_id', null)),
+
+                            Forms\Components\Select::make('profile_id')
+                                ->label('エクスポートプロファイル')
+                                ->options(function (Forms\Get $get) {
+                                    $softwareType = $get('software_type') ?? AccountingExportProfile::SOFTWARE_FREEE;
+                                    $facilityId = auth()->user()?->facility_id;
+                                    if (!$facilityId) {
+                                        return [];
+                                    }
+                                    $profiles = AccountingExportProfile::where('facility_id', $facilityId)
+                                        ->where('software_type', $softwareType)
+                                        ->where('is_active', true)
+                                        ->get();
+                                    return $profiles->pluck('name', 'id')->toArray();
+                                })
+                                ->searchable()
+                                ->native(false)
+                                ->placeholder('デフォルトプロファイルを使用')
+                                ->helperText('未選択時はデフォルトプロファイルが使用されます'),
                         ])
-                        ->action(function (array $data) {
-                            $service = app(InvoiceCsvExportService::class);
-                            $csv = $service->exportAccountingJournalCsv($data['year_month']);
+                        ->action(function (array $data, InvoiceCsvExportService $service) {
+                            $csv = $service->exportAccountingJournalCsv(
+                                $data['year_month'],
+                                facilityId: auth()->user()?->facility_id,
+                                softwareType: $data['software_type'],
+                                profileId: $data['profile_id'] ?? null
+                            );
+                            $fileName = "会計仕訳_{$data['year_month']}.csv";
+
+                            return response()->streamDownload(
+                                fn () => print($csv),
+                                $fileName,
+                                ['Content-Type' => 'text/csv; charset=UTF-8']
+                            );
+                        })
+                        ->requiresConfirmation(),
+
+                    // 仕訳プレビューアクション
+                    Tables\Actions\BulkAction::make('previewAccountingJournal')
+                        ->label('会計仕訳プレビュー')
+                        ->icon('heroicon-o-eye')
+                        ->color('info')
+                        ->form([
+                            Forms\Components\Select::make('year_month')
+                                ->label('請求年月')
+                                ->options(fn () => MonthlyInvoice::query()->distinct()->pluck('billing_year_month', 'billing_year_month')->toArray())
+                                ->required()
+                                ->default(now()->format('Y-m'))
+                                ->native(false),
+
+                            Forms\Components\Select::make('software_type')
+                                ->label('会計ソフト')
+                                ->options([
+                                    AccountingExportProfile::SOFTWARE_FREEE => 'freee',
+                                    AccountingExportProfile::SOFTWARE_MF => 'MFクラウド会計',
+                                    AccountingExportProfile::SOFTWARE_YAYOI => '弥生会計',
+                                    AccountingExportProfile::SOFTWARE_KANJOBUGYO => '勘定奉行',
+                                ])
+                                ->default(AccountingExportProfile::SOFTWARE_FREEE)
+                                ->required()
+                                ->native(false)
+                                ->live()
+                                ->afterStateUpdated(fn (Forms\Set $set) => $set('profile_id', null)),
+
+                            Forms\Components\Select::make('profile_id')
+                                ->label('エクスポートプロファイル')
+                                ->options(function (Forms\Get $get) {
+                                    $softwareType = $get('software_type') ?? AccountingExportProfile::SOFTWARE_FREEE;
+                                    $facilityId = auth()->user()?->facility_id;
+                                    if (!$facilityId) {
+                                        return [];
+                                    }
+                                    $profiles = AccountingExportProfile::where('facility_id', $facilityId)
+                                        ->where('software_type', $softwareType)
+                                        ->where('is_active', true)
+                                        ->get();
+                                    return $profiles->pluck('name', 'id')->toArray();
+                                })
+                                ->searchable()
+                                ->native(false)
+                                ->placeholder('デフォルトプロファイルを使用'),
+                        ])
+                        ->action(function (array $data, InvoiceCsvExportService $service) {
+                            $csv = $service->exportAccountingJournalCsv(
+                                $data['year_month'],
+                                facilityId: auth()->user()?->facility_id,
+                                softwareType: $data['software_type'],
+                                profileId: $data['profile_id'] ?? null
+                            );
                             $fileName = "会計仕訳_{$data['year_month']}.csv";
 
                             return response()->streamDownload(

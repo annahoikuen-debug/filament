@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>お問い合わせ・見積依頼 | 高齢者施設請求管理システム「あんしん」</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="高齢者施設請求管理システム「あんしん」">
+  <meta property="og:title" content="お問い合わせ・見積依頼 | 高齢者施設請求管理システム「あんしん」">
+  <meta property="og:description" content="あんしんへのお問い合わせ・見積依頼フォーム。施設の規模・課題・予算感などをお伺いし、最適なプランをご提案いたします。">
+  <meta property="og:url" content="https://anshin.example.com/request/inquiry.html">
+  <meta property="og:image" content="https://anshin.example.com/assets/images/ogp.png">
+  <meta property="og:locale" content="ja_JP">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="../assets/images/favicon.ico" sizes="32x32">
+  <link rel="icon" href="../assets/images/favicon.svg" type="image/svg+xml">
   <meta name="description" content="あんしんへのお問い合わせ・見積依頼フォーム。施設の規模・課題・予算感などをお伺いし、最適なプランをご提案いたします。">
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -274,16 +284,48 @@
     <symbol id="icon-phone" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.81l2.2-2.27c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.17.74-.07 1.02l-2.28 2.2z" fill="currentColor"/></symbol>
   </svg>
 
-  <!-- Form handling: trial application via API, inquiry via placeholder -->
+  <!-- Form handling: trial application via API, inquiry via site-forms API -->
   <script>
-    document.getElementById('inquiryForm').addEventListener('submit', function(e) {
+    (function () {
+      var API_BASE = window.FORM_API_BASE || '';
+      var form = document.getElementById('inquiryForm');
+      form.addEventListener('submit', function(e) {
       e.preventDefault();
 
       var trialMode = document.getElementById('trial_mode').checked;
 
       if (!trialMode) {
-        alert('お問い合わせありがとうございます！担当者より2営業日以内にご連絡いたします。');
-        this.reset();
+        var data = {};
+        new FormData(form).forEach(function (value, key) {
+          if (key.slice(-2) === '[]') {
+            key = key.slice(0, -2);
+            if (!Array.isArray(data[key])) data[key] = [];
+            data[key].push(value);
+          } else {
+            data[key] = value;
+          }
+        });
+        if (data.seed_sample_data) data.seed_sample_data = true;
+        if (data.trial_mode) data.trial_mode = true;
+        var inquiryBtn = form.querySelector('button[type="submit"]');
+        inquiryBtn.disabled = true;
+        fetch(API_BASE + '/api/site-forms/inquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(data)
+        }).then(function (res) {
+          return res.json().then(function (json) { return { ok: res.ok, json: json }; });
+        }).then(function (res) {
+          if (res.ok && res.json.success) {
+            window.location.href = 'complete.html?type=inquiry';
+          } else {
+            alert('送信に失敗しました。入力内容をご確認ください。');
+            inquiryBtn.disabled = false;
+          }
+        }).catch(function () {
+          alert('ネットワークエラーが発生しました。しばらく経ってからお試しください。');
+          inquiryBtn.disabled = false;
+        });
         return;
       }
 
@@ -349,6 +391,7 @@
           btn.innerHTML = '<svg class="c-btn__icon" aria-hidden="true"><use xlink:href="#icon-check"></use></svg> この内容で送信する';
         });
     });
+    })();
   </script>
 </body>
 </html>

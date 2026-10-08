@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="300" viewBox="0 0 500 300">
+  <rect width="500" height="300" fill="#1e40af"/>
+  <rect x="12" y="12" width="476" height="276" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2" rx="8"/>
+  <text x="250" y="150" font-family="'Noto Sans JP','Meiryo UI','Hiragino Kaku Gothic ProN',sans-serif" font-size="18" fill="#ffffff" text-anchor="middle" dominant-baseline="central">あんしん 機能概要図</text>
+</svg>

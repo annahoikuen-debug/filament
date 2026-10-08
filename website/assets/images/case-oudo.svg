@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250">
+  <rect width="400" height="250" fill="#1e40af"/>
+  <rect x="12" y="12" width="376" height="226" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2" rx="8"/>
+  <text x="200" y="125" font-family="'Noto Sans JP','Meiryo UI','Hiragino Kaku Gothic ProN',sans-serif" font-size="15" fill="#ffffff" text-anchor="middle" dominant-baseline="central">介護医療院 おうどクリニック</text>
+</svg>

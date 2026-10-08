@@ -58,13 +58,13 @@ class ListMonthlyInvoices extends ListRecords
                         ->send();
                 }),
 
-            // 2. 月次一括PDF生成（全25名分ZIP）
+            // 2. 月次一括PDF生成（全25名分ZIP） - 非同期版
             Actions\Action::make('downloadMonthlyZip')
                 ->label('一括PDF(ZIP)出力')
                 ->icon('heroicon-o-archive-box-arrow-down')
                 ->color('info')
                 ->modalHeading('全入居者の請求書PDF一括ZIPダウンロード')
-                ->modalDescription('指定年月の全入居者（25名分）の請求書PDFを1つのZIPファイルにまとめてダウンロードします。')
+                ->modalDescription('指定年月の全入居者（25名分）の請求書PDFを1つのZIPファイルにまとめてダウンロードします。大量データの場合は非同期処理で実行されます。')
                 ->form([
                     Forms\Components\Select::make('year_month')
                         ->label('対象年月')
@@ -74,9 +74,9 @@ class ListMonthlyInvoices extends ListRecords
                 ])
                 ->action(function (array $data, InvoicePdfService $service) {
                     $yearMonth = $data['year_month'];
-                    $zipPath = $service->generateMonthlyZip($yearMonth);
+                    $jobId = $service->generateMonthlyZipAsync($yearMonth);
 
-                    return response()->download($zipPath, "請求書一括_{$yearMonth}.zip")->deleteFileAfterSend();
+                    return redirect()->route('filament.admin.resources.monthly-invoices.zip-progress', ['jobId' => $jobId]);
                 }),
 
             // 3. 会計連携用CSVエクスポート

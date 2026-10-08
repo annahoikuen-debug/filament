@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#1e40af"/>
+  <rect x="12" y="12" width="776" height="476" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2" rx="8"/>
+  <text x="400" y="250" font-family="'Noto Sans JP','Meiryo UI','Hiragino Kaku Gothic ProN',sans-serif" font-size="26" fill="#ffffff" text-anchor="middle" dominant-baseline="central">あんしん 管理画面イメージ</text>
+</svg>
