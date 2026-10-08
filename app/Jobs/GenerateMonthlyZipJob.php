@@ -4,13 +4,13 @@ namespace App\Jobs;
 
 use App\Models\MonthlyInvoice;
 use App\Services\InvoicePdfService;
+use App\Services\Pdf\InvoicePdfGenerator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use ZipArchive;
@@ -31,6 +31,7 @@ class GenerateMonthlyZipJob implements ShouldQueue
 
     public function handle(InvoicePdfService $pdfService): void
     {
+        $generator = app(InvoicePdfGenerator::class);
         $this->jobId = $this->jobId ?: $this->getJobId();
         $progressKey = "zip_progress_{$this->jobId}";
 
@@ -55,7 +56,7 @@ class GenerateMonthlyZipJob implements ShouldQueue
 
             $this->updateProgress($progressKey, 5, 'processing', "対象請求書: {$totalInvoices}件");
 
-            $zipPath = $this->buildZipWithChunks($query, $pdfService, $progressKey, $totalInvoices);
+            $zipPath = $this->buildZipWithStreaming($generator, $progressKey, $totalInvoices);
 
             $this->updateProgress($progressKey, 100, 'completed', 'ZIP生成完了');
             $this->setResult($progressKey, $zipPath);
@@ -69,6 +70,48 @@ class GenerateMonthlyZipJob implements ShouldQueue
         }
     }
 
+    /**
+     * ストリーミング版：Generatorから直接ZIPに書き込み（中間ファイル不要、メモリ効率化）
+     */
+    private function buildZipWithStreaming(
+        InvoicePdfGenerator $generator,
+        string $progressKey,
+        int $totalInvoices
+    ): string {
+        $zipPath = storage_path("app/temp/請求書一括_{$this->yearMonth}.zip");
+        File::ensureDirectoryExists(dirname($zipPath));
+
+        if (File::exists($zipPath)) {
+            File::delete($zipPath);
+        }
+
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new \RuntimeException('ZIPファイルの作成に失敗しました。');
+        }
+
+        try {
+            // ストリーミング版で直接ZIPに書き込み
+            $processed = $generator->generateMonthlyZipStream($this->yearMonth, $zip, $this->facilityId);
+
+            // 進捗更新（完了時のみ）
+            $this->updateProgress($progressKey, 95, 'processing', "完了: {$processed}/{$totalInvoices}件");
+
+            $zip->close();
+
+            return $zipPath;
+        } catch (\Throwable $e) {
+            $zip->close();
+            if (File::exists($zipPath)) {
+                File::delete($zipPath);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * 従来版（互換性維持用・キャッシュ活用）
+     */
     private function buildZipWithChunks(
         \Illuminate\Database\Eloquent\Builder $query,
         InvoicePdfService $pdfService,

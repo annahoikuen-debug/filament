@@ -1,0 +1,102 @@
+# Git
+.git
+.gitignore
+.github
+.gitattributes
+
+# Environment
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Dependencies
+vendor
+node_modules
+
+# Storage & Cache
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+storage/app/invoices/*
+storage/app/temp/*
+!storage/app/public/.gitkeep
+bootstrap/cache/*
+!bootstrap/cache/.gitkeep
+
+# Build outputs
+public/build
+public/storage
+
+# IDE & Editor
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+.phpunit.result.cache
+.php-cs-fixer.cache
+.phpstan.cache
+.pint.cache
+.rector.cache
+.pest.php
+coverage
+phpunit.xml
+phpunit.xml.dist
+
+# Docker
+Dockerfile*
+Caddyfile
+railway.json
+docker-compose*
+docker-compose.yml
+docker-compose.yaml
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE.md
+DEPLOYMENT.md
+IMPLEMENTATION_*.md
+PDF_*.md
+*.md
+
+# Misc
+*.sqlite
+*.sqlite3
+*.phar
+composer.phar
+*.bat
+*.ps1
+*.sh
+
+# Debug files
+debug_*.php
+test_*.php
+check_*.php
+basic_test.php
+final_debug.php
+update_*.php
+start-*.bat
+start-*.ps1
+
+# Website (separate)
+website/
+
+# Filament demo (separate)
+filament/
+
+# Scripts
+scripts/

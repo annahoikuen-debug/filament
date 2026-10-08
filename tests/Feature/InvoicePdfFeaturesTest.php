@@ -11,9 +11,12 @@ class InvoicePdfFeaturesTest extends TestCase
 {
     use RefreshDatabase;
 
+    private InvoicePdfService $service;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->service = app(InvoicePdfService::class);
         
         $this->resident = \App\Models\Resident::create([
             'room_number' => '101',
@@ -33,8 +36,7 @@ class InvoicePdfFeaturesTest extends TestCase
     
     public function test_invoice_pdf_generates_without_error()
     {
-        $service = new InvoicePdfService();
-        $pdf = $service->generateInvoicePdf($this->invoice);
+        $pdf = $this->service->generateInvoicePdf($this->invoice);
         
         $this->assertNotNull($pdf);
         $output = $pdf->output();
@@ -47,9 +49,8 @@ class InvoicePdfFeaturesTest extends TestCase
         // 入金済みにする
         $this->invoice->markAsPaid(PaymentMethod::BankTransfer);
         
-        $service = new InvoicePdfService();
-        $pdf = $service->generateReceiptPdf($this->invoice);
-        
+        $pdf = $this->service->generateReceiptPdf($this->invoice);
+
         $this->assertNotNull($pdf);
         $output = $pdf->output();
         $this->assertIsString($output);
@@ -58,8 +59,7 @@ class InvoicePdfFeaturesTest extends TestCase
     
     public function test_template_config_includes_compliance_settings()
     {
-        $service = new InvoicePdfService();
-        $config = $service->getTemplateConfig('invoice');
+        $config = $this->service->getTemplateConfig('invoice');
         
         $this->assertArrayHasKey('invoice_compliance', $config);
         $this->assertArrayHasKey('show_registration_number_prominently', $config['invoice_compliance']);
@@ -78,20 +78,17 @@ class InvoicePdfFeaturesTest extends TestCase
      */
     protected function renderPdfHtml($invoice, string $type): string
     {
-        $service = new InvoicePdfService();
-        [$view, $data] = $service->prepareViewData($invoice, $type);
+        [$view, $data] = $this->service->prepareViewData($invoice, $type);
 
         return view($view, $data)->render();
     }
 
     public function test_qr_code_generation_methods_exist()
     {
-        $service = new InvoicePdfService();
-        
         // メソッドが存在することを確認
-        $this->assertTrue(method_exists($service, 'generatePaymentQrCode'));
-        $this->assertTrue(method_exists($service, 'getBankTransferQrCodeData'));
-        $this->assertTrue(method_exists($service, 'getReceiptVerificationQrCodeData'));
+        $this->assertTrue(method_exists($this->service, 'generatePaymentQrCode'));
+        $this->assertTrue(method_exists($this->service, 'getBankTransferQrCodeData'));
+        $this->assertTrue(method_exists($this->service, 'getReceiptVerificationQrCodeData'));
     }
     
     public function test_qr_code_data_is_set_when_enabled()
@@ -125,9 +122,7 @@ class InvoicePdfFeaturesTest extends TestCase
     
     public function test_monthly_zip_still_works_with_changes()
     {
-        $service = new InvoicePdfService();
-        
-        $zipPath = $service->generateMonthlyZip('2026-10');
+        $zipPath = $this->service->generateMonthlyZip('2026-10');
         
         $this->assertIsString($zipPath);
         $this->assertTrue(file_exists($zipPath));

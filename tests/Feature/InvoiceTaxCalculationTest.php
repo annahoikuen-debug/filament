@@ -70,7 +70,7 @@ test('PDF生成時に税情報が正しく表示されること', function () {
         'status' => InvoiceStatus::Unbilled,
     ]);
 
-    $pdfService = new InvoicePdfService;
+    $pdfService = app(InvoicePdfService::class);
     $pdf = $pdfService->generateInvoicePdf($invoice);
 
     // PDFが生成されることだけを確認（実際の中身の検証は複雑になるため）
@@ -123,7 +123,7 @@ test('領収書PDF生成時に税情報が正しく表示されること', funct
 
     $invoice->markAsPaid(PaymentMethod::BankTransfer);
 
-    $pdfService = new InvoicePdfService;
+    $pdfService = app(InvoicePdfService::class);
     $pdf = $pdfService->generateReceiptPdf($invoice);
 
     expect($pdf)->not->toBeNull();

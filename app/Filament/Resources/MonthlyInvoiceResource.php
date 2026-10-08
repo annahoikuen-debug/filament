@@ -10,6 +10,8 @@ use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\InvoiceCsvExportService;
 use App\Services\InvoicePdfService;
+use App\Services\Pdf\Contracts\RendererInterface;
+use App\Services\Pdf\Renderers\HtmlRenderer;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -271,6 +273,23 @@ class MonthlyInvoiceResource extends Resource
                             ['Content-Type' => 'application/pdf']
                         );
                     }),
+
+                // 4. 請求書プレビュー (HTML表示・新しいタブで開く)
+                Tables\Actions\Action::make('previewInvoice')
+                    ->label('請求書プレビュー')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->openUrlInNewTab()
+                    ->url(fn (MonthlyInvoice $record): string => route('invoices.preview', ['invoice' => $record->id, 'type' => 'invoice'])),
+
+                // 5. 領収書プレビュー (入金済みのみ・HTML表示・新しいタブで開く)
+                Tables\Actions\Action::make('previewReceipt')
+                    ->label('領収書プレビュー')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->visible(fn (MonthlyInvoice $record) => $record->status === InvoiceStatus::Paid)
+                    ->openUrlInNewTab()
+                    ->url(fn (MonthlyInvoice $record): string => route('invoices.preview', ['invoice' => $record->id, 'type' => 'receipt'])),
 
                 // 編集アクション: アーカイブ済み（請求済・入金済）は非表示
                 Tables\Actions\EditAction::make()

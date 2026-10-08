@@ -3,356 +3,34 @@
 namespace App\Services;
 
 use App\Models\MonthlyInvoice;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\Pdf\InvoicePdfGenerator;
+use App\Services\Pdf\TemplateSettingsService;
 use Barryvdh\DomPDF\PDF as DomPdfInstance;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Cache;
-use ZipArchive;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Writer;
-use Illuminate\Support\Carbon;
 
 class InvoicePdfService
 {
-    /**
-     * 日本語フォント設定（Windows環境で利用可能なフォントを優先し、Noto Sans JPをフォールバックに）
-     */
-    private const FONT_FAMILY = 'YuMincho, "MS Gothic", "Meiryo", "Noto Sans JP", sans-serif';
-
-    private const NOTO_SANS_JP_DIR = 'noto-sans-jp';
-
-    /**
-     * Noto Sans JPフォントファイルのダウンロードURL
-     */
-    private const NOTO_FONTS = [
-        'Regular' => 'https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Regular.ttf',
-        'Bold' => 'https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Bold.ttf',
-        'Medium' => 'https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Medium.ttf',
-    ];
+    public function __construct(
+        private InvoicePdfGenerator $generator,
+        private TemplateSettingsService $templateSettings,
+    ) {}
 
     /**
      * 請求書PDFを生成する
      */
     public function generateInvoicePdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
-        // N+1防止: 必要なリレーションを事前にロード
-        $invoice->loadMissing([
-            'resident.dailyCharges' => function ($query) use ($invoice) {
-                $query->forYearMonth($invoice->billing_year_month)
-                    ->with('chargeItem')
-                    ->orderBy('date');
-            },
-        ]);
-
-        return $this->generatePdfFromInvoice($invoice, 'invoice', $facility);
+        $html = $this->generator->previewInvoice($invoice, $facility);
+        return Pdf::loadHTML($html);
     }
 
     /**
-     * 共通PDF生成メソッド（請求書・領収書を統合）
-     *
-     * @param  string  $type  'invoice' または 'receipt'
+     * 請求書PDFをHTTPレスポンスとしてダウンロードする
      */
-    /**
-     * ビュー名とテンプレートデータを組み立てる
-     * （テストからBladeビューを直接レンダリングしてレイアウト検証できるように公開）
-     *
-     * @return array{0: string, 1: array} [ビュー名, データ]
-     */
-    public function prepareViewData(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): array
-    {
-        // N+1防止: 未ロードの場合のみロード（generateInvoicePdf/generateReceiptPdfで事前ロード済みの場合はスキップ）
-        $invoice->loadMissing([
-            'resident.dailyCharges' => function ($query) use ($invoice) {
-                $query->forYearMonth($invoice->billing_year_month)
-                    ->with('chargeItem')
-                    ->orderBy('date');
-            },
-        ]);
-
-        $view = $type === 'invoice' ? 'invoices.pdf' : 'invoices.receipt';
-
-        // テンプレート設定を取得
-        $templateConfig = $this->getTemplateConfig($type);
-
-        // QRコードデータを設定（設定で有効になっている場合）
-        if ($templateConfig['show_qr_code'] ?? false) {
-            if ($type === 'invoice') {
-                // 請求書の場合は振込用QRコード
-                $qrCodeData = $this->getBankTransferQrCodeData($invoice, $facility ?? config('facility'));
-                $cacheKey = 'qr_invoice_' . md5($qrCodeData);
-                $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData, $cacheKey);
-            } else {
-                // 領収書の場合は検証用QRコード
-                $qrCodeData = $this->getReceiptVerificationQrCodeData($invoice);
-                $cacheKey = 'qr_receipt_' . md5($qrCodeData);
-                $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData, $cacheKey);
-            }
-        }
-
-        $data = [
-            'invoice' => $invoice,
-            'resident' => $invoice->resident,
-            'dailyCharges' => $type === 'invoice' ? $invoice->resident->dailyCharges : null,
-            'facility' => $facility ?? config('facility'),
-            // 税情報を追加
-            'tax_info' => [
-                'non_taxable' => $invoice->non_taxable_amount,
-                'taxable' => $invoice->taxable_amount,
-                'tax_rate' => $invoice->tax_rate,
-                'tax_amount' => $invoice->tax_amount,
-                'total_with_tax' => $invoice->total_with_tax,
-            ],
-            // テンプレート設定（CSS変数等用）
-            'template' => $templateConfig,
-        ];
-
-        return [$view, $data];
-    }
-
-    public function generatePdfFromInvoice(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): DomPdfInstance
-    {
-        [$view, $data] = $this->prepareViewData($invoice, $type, $facility);
-
-        $pdf = Pdf::loadView($view, $data);
-
-        // 日本語フォント設定を適用
-        $this->applyJapaneseFontSettings($pdf, $data['template']);
-
-        // 余白・用紙設定を適用
-        $this->applyMargins($pdf, $data['template']);
-
-        return $pdf;
-    }
-
-    /**
-     * テンプレート設定を取得（config からマージ）
-     */
-    /**
-     * テンプレート設定を取得（config からマージ）
-     */
-    public function getTemplateConfig(string $type): array
-    {
-        $baseConfig = config('pdf.default', []);
-        $typeConfig = config("pdf.{$type}", []);
-
-        // Merge base with type-specific config
-        return array_merge($baseConfig, $typeConfig);
-    }
-
-    /**
-     * 日本語フォント設定を適用
-     */
-    private function applyJapaneseFontSettings(DomPdfInstance $pdf, array $templateConfig): void
-    {
-        // Noto Sans JPフォントディレクトリを優先（存在する場合）
-        $notoFontDir = resource_path('fonts/'.self::NOTO_SANS_JP_DIR);
-        $fontDir = File::exists($notoFontDir) ? $notoFontDir : storage_path('fonts');
-
-        $fontFamily = $templateConfig['font_family'] ?? 'YuMincho, "MS Gothic", "Meiryo", "Noto Sans JP", sans-serif';
-        $fontSize = $templateConfig['font_size'] ?? 11;
-        $lineHeight = $templateConfig['line_height'] ?? 1.6;
-
-        $options = [
-            'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled' => true,
-            'fontHeightRatio' => (float) $lineHeight,
-            'font_dir' => $fontDir,
-            'font_cache' => storage_path('fonts'),
-        ];
-
-        $pdf->setOptions($options);
-    }
-
-    /**
-     * 余白設定を適用
-     */
-    private function applyMargins(DomPdfInstance $pdf, array $templateConfig): void
-    {
-        $marginTop = ($templateConfig['margin_top'] ?? 15) . 'mm';
-        $marginRight = ($templateConfig['margin_right'] ?? 15) . 'mm';
-        $marginBottom = ($templateConfig['margin_bottom'] ?? 15) . 'mm';
-        $marginLeft = ($templateConfig['margin_left'] ?? 15) . 'mm';
-
-        // DomPDFのマージン設定はsetPaperで指定
-        // setPaper(size, orientation, margins)
-        $paperSize = $templateConfig['paper_size'] ?? 'a4';
-        $paperOrientation = $templateConfig['paper_orientation'] ?? 'portrait';
-        $pdf->setPaper(
-            $paperSize,
-            $paperOrientation,
-            [
-                (float) str_replace('mm', '', $marginLeft),
-                (float) str_replace('mm', '', $marginTop),
-                (float) str_replace('mm', '', $marginRight),
-                (float) str_replace('mm', '', $marginBottom),
-            ]
-        );
-    }
-
-    /**
-     * Noto Sans JPフォントをダウンロード・インストールする
-     * 初回実行時やデプロイ時に実行推奨
-     *
-     * @return array<string, string> インストール結果
-     */
-    public function installNotoSansJpFonts(): array
-    {
-        $results = [];
-        $targetDir = resource_path('fonts/'.self::NOTO_SANS_JP_DIR);
-        File::ensureDirectoryExists($targetDir);
-
-        foreach (self::NOTO_FONTS as $weight => $url) {
-            $fileName = "NotoSansJP-{$weight}.ttf";
-            $targetPath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
-
-            if (File::exists($targetPath)) {
-                $results[$weight] = 'already_exists';
-
-                continue;
-            }
-
-            try {
-                $content = @file_get_contents($url);
-                if ($content === false) {
-                    $results[$weight] = 'download_failed';
-
-                    continue;
-                }
-
-                File::put($targetPath, $content);
-                $results[$weight] = 'installed';
-            } catch (\Throwable $e) {
-                $results[$weight] = 'error: '.$e->getMessage();
-            }
-        }
-
-        // DomPDFフォントキャッシュをクリア
-        $this->clearFontCache();
-
-        return $results;
-    }
-
-/**
-     * QRコードを生成するヘルパーメソッド（キャッシュ対応）
-     *
-     * @param string $data エンコードするデータ
-     * @param string|null $cacheKey キャッシュキー（指定時はキャッシュから取得・保存）
-     * @return string base64エンコードされたSVGデータURI
-     */
-    private function generatePaymentQrCode(string $data, ?string $cacheKey = null): string
-    {
-        // キャッシュキーが指定されている場合はキャッシュから取得を試みる
-        if ($cacheKey !== null) {
-            $cached = Cache::get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-
-        try {
-            $rendererStyle = new \BaconQrCode\Renderer\RendererStyle\RendererStyle(70);
-            $imageBackEnd = new \BaconQrCode\Renderer\Image\SvgImageBackEnd();
-            $renderer = new \BaconQrCode\Renderer\ImageRenderer($rendererStyle, $imageBackEnd);
-            $writer = new \BaconQrCode\Writer($renderer);
-            // 日本語を含むデータを扱うため UTF-8 を指定（既定の ISO-8859-1 では多バイト文字のエンコードに失敗する）
-            $svg = $writer->writeString($data, 'UTF-8');
-
-            $result = 'data:image/svg+xml;base64,'.base64_encode($svg);
-
-            // キャッシュに保存（24時間）
-            if ($cacheKey !== null) {
-                Cache::put($cacheKey, $result, now()->addHours(24));
-            }
-
-            return $result;
-        } catch (\Throwable $e) {
-            // QRコード生成に失敗してもPDF生成は続行
-            return '';
-        }
-    }
-
-    /**
-     * 振込用QRコードデータを生成
-     *
-     * @param MonthlyInvoice $invoice 請求書データ
-     * @param array $facility 施設情報
-     * @return string QRコード用データ文字列
-     */
-    private function getBankTransferQrCodeData(MonthlyInvoice $invoice, array $facility): string
-    {
-        // 日本のQRコード規格（振込用）に準拠したデータを生成
-        // 実際の実装では、銀行が指定するフォーマットに従う必要があるため、
-        // ここでは簡易版を実装
-        $data = sprintf(
-            "STU{\\n振:%s\\n種:振込\\n金:%d\\n名:%s\\n  współ:%s %s\\n 口:%s %s\\n 住:%s\\nREF:%s-%s}",
-            $facility['bank']['account_number'] ?? '012345',
-            (int)$invoice->total_with_tax,
-            $facility['bank']['account_holder'] ?? '',
-            $facility['bank']['name'] ?? '',
-            $facility['bank']['branch_name'] ?? '',
-            $facility['bank']['account_type'] ?? '普通',
-            $facility['bank']['account_number'] ?? '',
-            $facility['address'] ?? '',
-            str_replace('-', '', $invoice->billing_year_month),
-            str_pad($invoice->resident->id, 3, '0', STR_PAD_LEFT)
-        );
-        
-        return str_replace(["\r\n", "\n", "\r"], '', $data);
-    }
-
-    /**
-     * 領収書用検証QRコードデータを生成
-     *
-     * @param MonthlyInvoice $invoice 領収書データ
-     * @return string QRコード用データ文字列
-     */
-    private function getReceiptVerificationQrCodeData(MonthlyInvoice $invoice): string
-    {
-        $data = json_encode([
-            'type' => 'receipt_verification',
-            'receipt_number' => $invoice->receipt_number,
-            'resident_id' => $invoice->resident->id,
-            'resident_name' => $invoice->resident->name,
-            'amount' => $invoice->total_with_tax,
-            'date' => $invoice->paid_at ? $invoice->paid_at->format('Y-m-d') : now()->format('Y-m-d'),
-            'issued_by' => config('facility.name'),
-            'timestamp' => now()->timestamp
-        ], JSON_UNESCAPED_UNICODE);
-
-        return base64_encode($data);
-        }
-
-        /**
-         * DomPDFフォントキャッシュをクリア
-         */
-        private function clearFontCache(): void
-        {
-            $cacheDir = storage_path('fonts');
-            if (File::exists($cacheDir)) {
-                foreach (File::allFiles($cacheDir) as $file) {
-                    if ($file->getExtension() === 'ufm' || $file->getExtension() === 'afm') {
-                        File::delete($file->getPathname());
-                    }
-                }
-            }
-        }
-
-        /**
-         * 請求書PDFをHTTPレスポンスとしてダウンロードする
-         */
     public function downloadPdf(MonthlyInvoice $invoice): Response
     {
-        $pdf = $this->generatePdfFromInvoice($invoice, 'invoice', null);
-        $fileName = sprintf(
-            '請求書_%s_%s様_%s.pdf',
-            $invoice->billing_year_month,
-            $invoice->resident->name,
-            $invoice->resident->room_number
-        );
-
-        return $pdf->download($fileName);
+        return $this->generator->generateInvoice($invoice, true, null);
     }
 
     /**
@@ -360,9 +38,43 @@ class InvoicePdfService
      */
     public function streamPdf(MonthlyInvoice $invoice): Response
     {
-        $pdf = $this->generatePdfFromInvoice($invoice, 'invoice', null);
+        return $this->generator->streamInvoice($invoice, null);
+    }
 
-        return $pdf->stream();
+    /**
+     * HTMLプレビュー表示（Webアプリ用・同一テンプレートをHTMLで返却）
+     *
+     * @param  \App\Models\MonthlyInvoice  $invoice
+     * @param  string  $type  'invoice' または 'receipt'
+     * @return \Illuminate\Http\Response
+     */
+    public function previewHtml(MonthlyInvoice $invoice, string $type = 'invoice'): Response
+    {
+        if (! in_array($type, ['invoice', 'receipt'], true)) {
+            abort(404);
+        }
+
+        // 領収書プレビューは入金済みのみ許可
+        if ($type === 'receipt' && $invoice->status !== \App\Enums\InvoiceStatus::Paid) {
+            abort(404);
+        }
+
+        try {
+            $html = $type === 'invoice'
+                ? $this->generator->previewInvoice($invoice, $invoice->resident->facility?->toConfigArray())
+                : $this->generator->previewReceipt($invoice, $invoice->resident->facility?->toConfigArray());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Preview HTML generation failed', [
+                'invoice_id' => $invoice->id,
+                'type' => $type,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+
+        return response($html)
+            ->header('Content-Type', 'text/html; charset=UTF-8');
     }
 
     /**
@@ -370,19 +82,11 @@ class InvoicePdfService
      */
     public function generateReceiptPdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
-        // N+1防止: 必要なリレーションを事前にロード
-        $invoice->loadMissing([
-            'resident.dailyCharges' => function ($query) use ($invoice) {
-                $query->forYearMonth($invoice->billing_year_month)
-                    ->with('chargeItem')
-                    ->orderBy('date');
-            },
-        ]);
-
-        return $this->generatePdfFromInvoice($invoice, 'receipt', $facility);
+        $html = $this->generator->previewReceipt($invoice, $facility);
+        return Pdf::loadHTML($html);
     }
 
-/**
+    /**
      * 指定年月の全入居者分請求書PDFを一括ZIPファイルにアーカイブする（同期版・互換性維持）
      *
      * @param  string  $yearMonth  'YYYY-MM'
@@ -401,46 +105,24 @@ class InvoicePdfService
      */
     public function generateMonthlyZipSync(string $yearMonth, ?int $facilityId = null): string
     {
-        $query = MonthlyInvoice::with([
-            'resident.dailyCharges' => function ($q) use ($yearMonth) {
-                $q->forYearMonth($yearMonth)
-                  ->with('chargeItem')
-                  ->orderBy('date');
-            },
-        ])->forYearMonth($yearMonth);
-
-        if ($facilityId) {
-            $query->whereHas('resident', function ($q) use ($facilityId) {
-                $q->where('facility_id', $facilityId);
-            });
-        }
-
-        $invoices = $query->get();
+        $results = $this->generator->generateMonthlyBatch($yearMonth, $facilityId);
 
         $zipPath = storage_path("app/temp/請求書一括_{$yearMonth}.zip");
 
-        File::ensureDirectoryExists(dirname($zipPath));
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($zipPath));
 
-        if (File::exists($zipPath)) {
-            File::delete($zipPath);
+        if (\Illuminate\Support\Facades\File::exists($zipPath)) {
+            \Illuminate\Support\Facades\File::delete($zipPath);
         }
 
-        $zip = new ZipArchive;
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        $zip = new \ZipArchive;
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             throw new \RuntimeException('ZIPファイルの作成に失敗しました。');
         }
 
         try {
-            foreach ($invoices as $invoice) {
-                $pdf = $this->generateInvoicePdf($invoice, null);
-                $fileName = sprintf(
-                    '【%s号室】%s様_請求書_%s.pdf',
-                    $invoice->resident->room_number,
-                    $invoice->resident->name,
-                    $invoice->billing_year_month
-                );
-
-                $zip->addFromString($fileName, $pdf->output());
+            foreach ($results as $result) {
+                $zip->addFromString($result['filename'], $result['content']);
             }
 
             $zip->close();
@@ -448,8 +130,8 @@ class InvoicePdfService
             return $zipPath;
         } catch (\Throwable $e) {
             $zip->close();
-            if (File::exists($zipPath)) {
-                File::delete($zipPath);
+            if (\Illuminate\Support\Facades\File::exists($zipPath)) {
+                \Illuminate\Support\Facades\File::delete($zipPath);
             }
             throw $e;
         }
@@ -508,7 +190,7 @@ class InvoicePdfService
      */
     public function hasCachedPdf(string $yearMonth, int $invoiceId): bool
     {
-        return File::exists($this->getCachedPdfPath($yearMonth, $invoiceId));
+        return \Illuminate\Support\Facades\File::exists($this->getCachedPdfPath($yearMonth, $invoiceId));
     }
 
     /**
@@ -521,29 +203,30 @@ class InvoicePdfService
         $cachePath = $this->getCachedPdfPath($yearMonth, $invoice->id);
 
         // 既に存在する場合は即座に返す（読み取りは競合しない）
-        if (File::exists($cachePath)) {
-            return File::get($cachePath);
+        if (\Illuminate\Support\Facades\File::exists($cachePath)) {
+            return \Illuminate\Support\Facades\File::get($cachePath);
         }
 
-        $pdf = $this->generateInvoicePdf($invoice, $facility);
+        $html = $this->generator->previewInvoice($invoice, $facility);
+        $pdf = Pdf::loadHTML($html);
         $pdfContent = $pdf->output();
 
         // アトミック書き込み: 一時ファイルに書いてから rename（POSIXでアトミック）
         $tempPath = $cachePath . '.tmp.' . uniqid('', true);
-        File::ensureDirectoryExists(dirname($cachePath));
-        File::put($tempPath, $pdfContent);
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($cachePath));
+        \Illuminate\Support\Facades\File::put($tempPath, $pdfContent);
 
         // rename でアトミックに移動（既存ファイルがあれば上書き）
         @rename($tempPath, $cachePath);
 
         // 稀に rename 後にファイルが消えている場合のフォールバック
-        if (! File::exists($cachePath)) {
+        if (! \Illuminate\Support\Facades\File::exists($cachePath)) {
             // 別プロセスが書き込んだ可能性 → 再読み取り
-            if (File::exists($cachePath)) {
-                return File::get($cachePath);
+            if (\Illuminate\Support\Facades\File::exists($cachePath)) {
+                return \Illuminate\Support\Facades\File::get($cachePath);
             }
             // それでもなければ自分で書き込み直し（最後の手段）
-            File::put($cachePath, $pdfContent);
+            \Illuminate\Support\Facades\File::put($cachePath, $pdfContent);
         }
 
         return $pdfContent;
@@ -555,8 +238,8 @@ class InvoicePdfService
     public function clearInvoiceCache(string $yearMonth): void
     {
         $cacheDir = storage_path("app/invoices/{$yearMonth}");
-        if (File::exists($cacheDir)) {
-            File::deleteDirectory($cacheDir);
+        if (\Illuminate\Support\Facades\File::exists($cacheDir)) {
+            \Illuminate\Support\Facades\File::deleteDirectory($cacheDir);
         }
     }
 
@@ -573,23 +256,171 @@ class InvoicePdfService
         ?int $facilityId = null,
         int $chunkSize = 10
     ): void {
-        $query = MonthlyInvoice::with('resident')
-            ->forYearMonth($yearMonth);
+        $dataProvider = app(\App\Services\Pdf\DataProviders\InvoiceDataProvider::class);
+        $invoicesData = $dataProvider->getMonthlyInvoicesData($yearMonth, $facilityId);
 
-        if ($facilityId) {
-            $query->whereHas('resident', function ($q) use ($facilityId) {
-                $q->where('facility_id', $facilityId);
-            });
+        foreach (array_chunk($invoicesData, $chunkSize) as $chunk) {
+            foreach ($chunk as $data) {
+                $html = $this->generator->previewInvoiceFromData($data);
+                $callback(null, $html); // 互換性のため第1引数はnull
+            }
+        }
+    }
+
+    /**
+     * テンプレート設定を取得（DB優先、configフォールバック）
+     *
+     * @param  string  $type  'invoice' または 'receipt'
+     */
+    public function getTemplateConfig(string $type): array
+    {
+        return $this->templateSettings->getSettings($type);
+    }
+
+    /**
+     * ビュー名とテンプレートデータを組み立てる（後方互換性用）
+     *
+     * @return array{0: string, 1: array} [ビュー名, データ]
+     */
+    public function prepareViewData(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): array
+    {
+        $dataProvider = app(\App\Services\Pdf\DataProviders\InvoiceDataProvider::class);
+        
+        if ($type === 'invoice') {
+            $data = $dataProvider->getInvoiceData($invoice, $facility);
+        } else {
+            $data = $dataProvider->getReceiptData($invoice, $facility);
         }
 
-        $query->orderBy('id')
-            ->chunkById($chunkSize, function ($invoices) use ($callback, $facility) {
-                foreach ($invoices as $invoice) {
-                    $pdf = $this->generateInvoicePdf($invoice, $facility);
-                    $callback($invoice, $pdf->output());
-                }
+        $templateConfig = $this->getTemplateConfig($type);
 
-                return true;
-            });
+        // QRコードデータを設定（設定で有効になっている場合）
+        if ($templateConfig['show_qr_code'] ?? false) {
+            if ($type === 'invoice') {
+                $qrCodeData = $this->getBankTransferQrCodeData($invoice, $facility ?? config('facility'));
+                $cacheKey = 'qr_invoice_' . md5($qrCodeData);
+                $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData, $cacheKey);
+            } else {
+                $qrCodeData = $this->getReceiptVerificationQrCodeData($invoice);
+                $cacheKey = 'qr_receipt_' . md5($qrCodeData);
+                $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData, $cacheKey);
+            }
+        }
+
+        $view = $type === 'invoice' ? 'pdf.invoice' : 'pdf.receipt';
+
+        // CSSを取得（テンプレートクラスから）
+        $templateClass = $type === 'invoice' 
+            ? app(\App\Services\Pdf\Templates\InvoiceTemplate::class)
+            : app(\App\Services\Pdf\Templates\ReceiptTemplate::class);
+        $css = $templateClass->getCss();
+
+        return [$view, [
+            'data' => $data->toArray(),
+            'template' => $templateConfig,
+            'css' => $css,
+        ]];
+    }
+
+    /**
+     * 共通PDF生成メソッド（請求書・領収書を統合・後方互換性用）
+     *
+     * @param  string  $type  'invoice' または 'receipt'
+     */
+    public function generatePdfFromInvoice(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): DomPdfInstance
+    {
+        $html = $type === 'invoice' 
+            ? $this->generator->previewInvoice($invoice, $facility)
+            : $this->generator->previewReceipt($invoice, $facility);
+        
+        return Pdf::loadHTML($html);
+    }
+
+    /**
+     * 振込用QRコードデータを生成（後方互換性用）
+     *
+     * @param MonthlyInvoice $invoice 請求書データ
+     * @param array $facility 施設情報
+     * @return string QRコード用データ文字列
+     */
+    public function getBankTransferQrCodeData(MonthlyInvoice $invoice, array $facility): string
+    {
+        // 日本のQRコード規格（振込用）に準拠したデータを生成
+        $data = sprintf(
+            "STU{\n振:%s\n種:振込\n金:%d\n名:%s\n  共同:%s %s\n 口:%s %s\n 住:%s\nREF:%s-%s}",
+            $facility['bank']['account_number'] ?? '012345',
+            (int)$invoice->total_with_tax,
+            $facility['bank']['account_holder'] ?? '',
+            $facility['bank']['name'] ?? '',
+            $facility['bank']['branch_name'] ?? '',
+            $facility['bank']['account_type'] ?? '普通',
+            $facility['bank']['account_number'] ?? '',
+            $facility['address'] ?? '',
+            str_replace('-', '', $invoice->billing_year_month),
+            str_pad($invoice->resident->id, 3, '0', STR_PAD_LEFT)
+        );
+        
+        return str_replace(["\r\n", "\n", "\r"], '', $data);
+    }
+
+    /**
+     * 領収書用検証QRコードデータを生成（後方互換性用）
+     *
+     * @param MonthlyInvoice $invoice 領収書データ
+     * @return string QRコード用データ文字列
+     */
+    public function getReceiptVerificationQrCodeData(MonthlyInvoice $invoice): string
+    {
+        $data = json_encode([
+            'type' => 'receipt_verification',
+            'receipt_number' => $invoice->receipt_number,
+            'resident_id' => $invoice->resident->id,
+            'resident_name' => $invoice->resident->name,
+            'amount' => $invoice->total_with_tax,
+            'date' => $invoice->paid_at ? $invoice->paid_at->format('Y-m-d') : now()->format('Y-m-d'),
+            'issued_by' => config('facility.name'),
+            'timestamp' => now()->timestamp
+        ], JSON_UNESCAPED_UNICODE);
+
+        return base64_encode($data);
+    }
+
+    /**
+     * QRコードを生成するヘルパーメソッド（キャッシュ対応・後方互換性用）
+     *
+     * @param string $data エンコードするデータ
+     * @param string|null $cacheKey キャッシュキー（指定時はキャッシュから取得・保存）
+     * @return string base64エンコードされたSVGデータURI
+     */
+    public function generatePaymentQrCode(string $data, ?string $cacheKey = null): string
+    {
+        // キャッシュキーが指定されている場合はキャッシュから取得を試みる
+        if ($cacheKey !== null) {
+            $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
+        try {
+            $rendererStyle = new \BaconQrCode\Renderer\RendererStyle\RendererStyle(70);
+            $imageBackEnd = new \BaconQrCode\Renderer\Image\SvgImageBackEnd();
+            $renderer = new \BaconQrCode\Renderer\ImageRenderer($rendererStyle, $imageBackEnd);
+            $writer = new \BaconQrCode\Writer($renderer);
+            // 日本語を含むデータを扱うため UTF-8 を指定（既定の ISO-8859-1 では多バイト文字のエンコードに失敗する）
+            $svg = $writer->writeString($data, 'UTF-8');
+
+            $result = 'data:image/svg+xml;base64,'.base64_encode($svg);
+
+            // キャッシュに保存（24時間）
+            if ($cacheKey !== null) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addHours(24));
+            }
+
+            return $result;
+        } catch (\Throwable $e) {
+            // QRコード生成に失敗してもPDF生成は続行
+            return '';
+        }
     }
 }

@@ -8,12 +8,17 @@ class InvoicePdfDesignSystemTest extends TestCase
 {
     use RefreshDatabase;
 
+    private InvoicePdfService $service;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->service = app(InvoicePdfService::class);
+    }
+
     public function test_design_tokens_are_available_in_template_config()
     {
-        $service = new InvoicePdfService();
-        
-        // 請求書のテンプレート設定を取得
-        $config = $service->getTemplateConfig('invoice');
+        $config = $this->service->getTemplateConfig('invoice');
         
         // カラーパレットの存在確認
         $this->assertArrayHasKey('colors', $config);
@@ -31,8 +36,7 @@ class InvoicePdfDesignSystemTest extends TestCase
     
     public function test_backward_compatibility_of_existing_config_keys()
     {
-        $service = new InvoicePdfService();
-        $config = $service->getTemplateConfig('invoice');
+        $config = $this->service->getTemplateConfig('invoice');
         
         // 既存コードが参照するキーは残存することを確認
         $this->assertArrayHasKey('primary_color', $config);
@@ -59,8 +63,7 @@ class InvoicePdfDesignSystemTest extends TestCase
             'status' => \App\Enums\InvoiceStatus::Unbilled,
         ]);
         
-        $service = new InvoicePdfService();
-        $pdf = $service->generateInvoicePdf($invoice);
+        $pdf = $this->service->generateInvoicePdf($invoice);
         
         $this->assertNotNull($pdf);
         $output = $pdf->output();

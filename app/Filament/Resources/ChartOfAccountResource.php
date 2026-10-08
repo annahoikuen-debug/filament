@@ -228,7 +228,12 @@ class ChartOfAccountResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort(['facility_id', 'item_type', 'account_side', 'sort_order'])
+            ->defaultSort(
+                fn (Builder $query) => $query->orderBy('facility_id')
+                    ->orderBy('item_type')
+                    ->orderBy('account_side')
+                    ->orderBy('sort_order')
+            )
             ->filters([
                 Tables\Filters\SelectFilter::make('facility_id')
                     ->label('施設')

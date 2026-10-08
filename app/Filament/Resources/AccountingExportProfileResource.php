@@ -296,7 +296,11 @@ class AccountingExportProfileResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort(['facility_id', 'software_type', 'name'])
+            ->defaultSort(
+                fn (Builder $query) => $query->orderBy('facility_id')
+                    ->orderBy('software_type')
+                    ->orderBy('name')
+            )
             ->filters([
                 Tables\Filters\SelectFilter::make('facility_id')
                     ->label('施設')

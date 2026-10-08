@@ -10,9 +10,12 @@ class InvoicePdfLayoutTest extends TestCase
 {
     use RefreshDatabase;
 
+    private InvoicePdfService $service;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->service = app(InvoicePdfService::class);
         
         $this->resident = \App\Models\Resident::create([
             'room_number' => '101',
@@ -36,8 +39,7 @@ class InvoicePdfLayoutTest extends TestCase
      */
     protected function renderPdfHtml($invoice, string $type): string
     {
-        $service = new InvoicePdfService();
-        [$view, $data] = $service->prepareViewData($invoice, $type);
+        [$view, $data] = $this->service->prepareViewData($invoice, $type);
 
         return view($view, $data)->render();
     }

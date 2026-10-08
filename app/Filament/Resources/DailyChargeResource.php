@@ -39,15 +39,14 @@ class DailyChargeResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('resident_id')
                             ->label('入居者')
-                            ->relationship('resident', 'full_title')
+                            ->relationship('resident', 'full_title', fn (Builder $query) => $query->when(
+                                Auth::user()?->isFacilityAdmin() && Auth::user()?->facility_id,
+                                fn ($q) => $q->where('facility_id', Auth::user()->facility_id)
+                            ))
                             ->searchable(['room_number', 'name'])
                             ->getOptionLabelFromRecordUsing(fn (Resident $record) => $record->full_title)
                             ->required()
-                            ->preload()
-                            ->modifyQueryUsing(fn (Builder $query) => $query->when(
-                                Auth::user()?->isFacilityAdmin() && Auth::user()?->facility_id,
-                                fn ($q) => $q->where('facility_id', Auth::user()->facility_id)
-                            )),
+                            ->preload(),
 
                         Forms\Components\Select::make('charge_item_id')
                             ->label('品目')

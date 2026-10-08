@@ -8,7 +8,7 @@ use App\Services\InvoicePdfService;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
-    $this->service = new InvoicePdfService;
+    $this->service = app(InvoicePdfService::class);
 
     $this->resident = Resident::create([
         'room_number' => '101',

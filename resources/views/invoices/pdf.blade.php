@@ -7,14 +7,14 @@
         /* Margins and paper size set via InvoicePdfService */
         
         body {
-            font-family: 'ipaexg', 'Noto Sans JP', 'Yu Mincho', 'YuMincho', 'Hiragino Mincho Pro', 'HGS明朝E', 'ＭＳ 明朝', serif;
-            font-size: 10.5pt;
+            font-family: {{ $template['font_family'] ?? "'Yu Mincho', 'YuMincho', 'Meiryo', 'MS Gothic', 'Noto Sans JP', sans-serif" }};
+            font-size: {{ ($template['font_size'] ?? 10.5) }}pt;
             color: #111827;
-            line-height: 1.6;
+            line-height: {{ $template['line_height'] ?? 1.6 }};
         }
         
         .tabular-nums {
-            font-family: 'ipaexg', 'Noto Sans JP', 'Yu Gothic', 'Meiryo', sans-serif;
+            font-family: {{ $template['font_family_numbers'] ?? "'Yu Gothic', 'Meiryo', 'MS Gothic', 'Noto Sans JP', sans-serif" }};
         }
         
         table {
@@ -43,14 +43,13 @@
     
     <div class="page-content">
         <!-- 受取人・発行者セクション -->
-        <div style="display: table; width: 100%; border-spacing: 6mm; margin-bottom: 6mm;">
+        <div style="overflow: hidden; margin-bottom: 6mm;">
             <!-- 受取人情報 -->
-            <div style="display: table-cell; width: 50%; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 4mm; background-color: #fafafa;">
+            <div style="float: left; width: 47%; border: 1px solid #e5e7eb; padding: 4mm; background-color: #fafafa;">
                 <div style="font-weight: 600; color: #1e3a8a; margin-bottom: 2mm;">ご請求先</div>
                 <div style="margin-bottom: 2mm;">
                     <div style="margin-bottom: 2mm;">
-                        <span style="margin-right: 2mm;">🏠</span>
-                        <span>居室:</span>
+                        <span>[居室] </span>
                         <strong style="font-weight: 500;">{{ $resident->room_number }} 号室</strong>
                     </div>
                     <div style="font-weight: 700; font-size: 12pt; text-decoration: underline;">{{ $resident->name }} 様</div>
@@ -65,7 +64,7 @@
             </div>
             
             <!-- 発行者情報 -->
-            <div style="display: table-cell; width: 50%; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 4mm; background-color: #fafafa;">
+            <div style="float: right; width: 47%; border: 1px solid #e5e7eb; padding: 4mm; background-color: #fafafa;">
                 <div style="font-weight: 600; color: #1e3a8a; margin-bottom: 2mm;">発行者情報</div>
                 <div style="font-size: 9pt;">
                     <div style="margin-bottom: 2mm;">請求番号: INV-{{ str_replace('-', '', $invoice->billing_year_month) }}-{{ str_pad($resident->id, 3, '0', STR_PAD_LEFT) }}</div>
@@ -87,6 +86,7 @@
                     @endif
                 </div>
             </div>
+            <div style="clear: both;"></div>
         </div>
 
         <!-- 合計金額エリア -->

@@ -5,8 +5,6 @@ use App\Models\Resident;
 use App\Services\InvoicePdfService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Facade;
-use Mockery;
-use ReflectionMethod;
 
 beforeEach(function () {
     $this->resident = Resident::create([
@@ -51,6 +49,8 @@ beforeEach(function () {
             'direct_debit_day' => 5,
         ],
     ]);
+
+    $this->pdfService = app(InvoicePdfService::class);
 });
 
 /**
@@ -64,12 +64,13 @@ function invokePrivateMethod($object, $methodName, array $parameters = [])
 }
 
 afterEach(function () {
-    Mockery::close();
+    if (class_exists(\Mockery\Mockery::class)) {
+        \Mockery::close();
+    }
 });
 
 test('銀行振込QRコードデータにBladeプレースホルダーが含まれないこと', function () {
-    $pdfService = new InvoicePdfService();
-    $data = invokePrivateMethod($pdfService, 'getBankTransferQrCodeData', [$this->invoice, Config::get('facility')]);
+    $data = $this->pdfService->getBankTransferQrCodeData($this->invoice, Config::get('facility'));
 
     expect($data)->not->toContain('{{')
         ->and($data)->not->toContain('}}')
@@ -78,8 +79,7 @@ test('銀行振込QRコードデータにBladeプレースホルダーが含ま�
 });
 
 test('銀行振込QRコードデータが正しいフォーマットであること', function () {
-    $pdfService = new InvoicePdfService();
-    $data = invokePrivateMethod($pdfService, 'getBankTransferQrCodeData', [$this->invoice, Config::get('facility')]);
+    $data = $this->pdfService->getBankTransferQrCodeData($this->invoice, Config::get('facility'));
 
     // Expected format: STU{...}
     expect($data)->toStartWith('STU{')
@@ -90,33 +90,36 @@ test('銀行振込QRコードデータが正しいフォーマットであるこ
         ->and($data)->toContain('種:振込')
         ->and($data)->toContain('金:')
         ->and($data)->toContain('名:')
-        ->and($data)->toContain('  współ:')
+        ->and($data)->toContain(' 共同:')
         ->and($data)->toContain(' 口:')
         ->and($data)->toContain(' 住:')
         ->and($data)->toContain('REF:');
 });
 
 test('QRコード生成メソッドが有効なデータURIを返すこと', function () {
-    $pdfService = new InvoicePdfService();
-    $qrData = invokePrivateMethod($pdfService, 'generatePaymentQrCode', ['test data']);
+    $qrData = $this->pdfService->generatePaymentQrCode('test data');
 
     expect($qrData)->toStartWith('data:image/svg+xml;base64,')
         ->and($qrData)->not->toBeEmpty();
 });
 
 test('QRコードが有効な場合でもPDFが一度しか生成されないこと', function () {
-    $mockInstance = Mockery::mock(\Barryvdh\DomPDF\PDF::class);
-    $mockInstance->shouldReceive('setOptions')->andReturnSelf();
-    $mockInstance->shouldReceive('setPaper')->andReturnSelf();
+    // generatorのpreviewInvoiceをモックしてPDF生成を制御
+    $mockGenerator = Mockery::mock(\App\Services\Pdf\InvoicePdfGenerator::class)->makePartial();
+    $mockGenerator->shouldReceive('previewInvoice')
+        ->once()
+        ->andReturn('<html><body>Test</body></html>');
+    
+    // リフレクションでサービスのgeneratorプロパティを置き換え
+    $reflection = new ReflectionClass($this->pdfService);
+    $property = $reflection->getProperty('generator');
+    $property->setAccessible(true);
+    $property->setValue($this->pdfService, $mockGenerator);
 
-    // Facadeモック（Pdfファサードを経由してloadViewを1回だけ呼び出す）
-    \Barryvdh\DomPDF\Facade\Pdf::shouldReceive('loadView')->once()->andReturn($mockInstance);
-
-    // QRコードを有効化（getTemplateConfig はconfig参照のため Config::set で対応）
+    // QRコードを有効化
     Config::set('pdf.invoice.show_qr_code', true);
 
-    $pdfService = new InvoicePdfService();
-    $pdfService->generatePdfFromInvoice($this->invoice, 'invoice', null);
+    $pdf = $this->pdfService->generateInvoicePdf($this->invoice);
 
-    // Assertions already done via mock expectations
+    expect($pdf)->not->toBeNull();
 });

@@ -7,7 +7,7 @@ use App\Services\InvoicePdfService;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
-    $this->service = new InvoicePdfService;
+    $this->service = app(InvoicePdfService::class);
 });
 
 test('通常動作でZIPファイルが生成され一時ディレクトリがクリーンアップされること', function () {
@@ -107,11 +107,22 @@ test('例外発生時もZIPファイルがクリーンアップされること',
         'status' => InvoiceStatus::Unbilled,
     ]);
 
-    // resident リレーション破壊で例外を発生させる（モックで generateInvoicePdf を失敗させる）
-    $mock = Mockery::mock(InvoicePdfService::class)->makePartial();
-    $mock->shouldAllowMockingProtectedMethods()
-        ->shouldReceive('generateInvoicePdf')
+    // generatorのgenerateMonthlyBatchをモックして例外を発生させる
+    $mockGenerator = Mockery::mock(\App\Services\Pdf\InvoicePdfGenerator::class);
+    $mockGenerator->shouldReceive('generateMonthlyBatch')
         ->andThrow(new RuntimeException('PDF生成エラー'));
 
-    $mock->generateMonthlyZip('2026-10');
-})->throws(RuntimeException::class, 'PDF生成エラー');
+    // リフレクションでサービスのgeneratorプロパティを置き換え
+    $reflection = new ReflectionClass($this->service);
+    $property = $reflection->getProperty('generator');
+    $property->setAccessible(true);
+    $property->setValue($this->service, $mockGenerator);
+
+    // 例外が発生することを確認
+    expect(fn () => $this->service->generateMonthlyZip('2026-10'))
+        ->toThrow(RuntimeException::class, 'PDF生成エラー');
+
+    // ZIPファイルが作成されていないことを確認（クリーンアップ済み）
+    $zipPath = storage_path("app/temp/請求書一括_2026-10.zip");
+    expect(File::exists($zipPath))->toBeFalse();
+});

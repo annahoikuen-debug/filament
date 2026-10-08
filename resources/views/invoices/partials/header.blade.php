@@ -7,15 +7,15 @@
 @endphp
 
 <!-- ヘッダー部分 -->
-<div style="margin-bottom: 6mm; display: table; width: 100%;">
-    <div style="display: table-cell; vertical-align: top; width: 60%;">
-        <div style="display: table; width: 100%;">
+<div style="margin-bottom: 6mm; overflow: hidden;">
+    <div style="float: left; width: 60%;">
+        <div style="overflow: hidden;">
             @if($template['show_facility_logo'] && $template['facility_logo_path'])
-                <div style="display: table-cell; vertical-align: middle; padding-right: 4mm;">
+                <div style="float: left; padding-right: 4mm;">
                     <img src="{{ $template['facility_logo_path'] }}" alt="施設ロゴ" style="height: 10mm; width: auto;">
                 </div>
             @endif
-            <div style="display: table-cell; vertical-align: middle;">
+            <div style="overflow: hidden;">
                 <div style="font-weight: 600; font-size: 11pt; color: #1e3a8a; margin-bottom: 1mm;">{{ $facility['name'] ?? config('facility.name') }}</div>
                 <div style="font-size: 9pt; color: #6b7280;">{{ $facility['operator'] ?? config('facility.operator') }}</div>
                 @if(!empty($facility['seal_path']))
@@ -31,7 +31,7 @@
             </div>
         </div>
     </div>
-    <div style="display: table-cell; vertical-align: top; text-align: right; width: 40%;">
+    <div style="float: right; width: 40%; text-align: right;">
         <div style="font-size: 18pt; font-weight: 700; color: #1e3a8a; letter-spacing: 2px;">{{ $headerTitle }}</div>
         <div style="font-size: 9pt; color: #6b7280;">{{ $headerSubtitle }}</div>
         @if(!empty($facility['invoice_registration_number'] ?? config('facility.invoice_registration_number')) && !(($template['invoice_compliance']['show_registration_number_prominently'] ?? false)))
@@ -40,4 +40,5 @@
             </div>
         @endif
     </div>
+    <div style="clear: both;"></div>
 </div>
