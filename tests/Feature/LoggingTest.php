@@ -18,7 +18,7 @@ test('請求生成時にinfoログが出力されること', function () {
 
     ChargeItem::create(['name' => 'テスト品目', 'default_price' => 1000]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $service->generateForMonth('2026-10');
 
     Log::shouldHaveReceived('info')->atLeast()->once();
@@ -35,7 +35,7 @@ test('ログレベルinfoが適切に使用されていること', function () {
         'move_in_date' => '2026-01-01',
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $service->generateForMonth('2026-10');
 
     Log::shouldHaveReceived('info')

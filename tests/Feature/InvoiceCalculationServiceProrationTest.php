@@ -18,7 +18,7 @@ test('月中入居者の請求が日割り計算されること', function () {
         'move_out_date' => null,
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     // 10月31日間中17日在籍 (15日〜31日)
@@ -60,7 +60,7 @@ test('月中退去者の請求が日割り計算されること', function () {
         'quantity' => 2,
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     // 10月1日〜10日で10日在籍
@@ -89,7 +89,7 @@ test('月の最初日に入居した場合は満額請求されること', funct
         'move_out_date' => null,
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     $invoice = MonthlyInvoice::where('resident_id', $resident->id)
@@ -111,7 +111,7 @@ test('月の最後に退去した場合は満額請求されること', function
         'move_out_date' => '2026-10-31',
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     $invoice = MonthlyInvoice::where('resident_id', $resident->id)

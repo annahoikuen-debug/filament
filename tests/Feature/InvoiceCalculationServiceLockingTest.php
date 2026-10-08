@@ -27,7 +27,7 @@ test('一括請求生成時に楽観ロックが適用されバージョンが�
         'version' => 5, // 既に何らかのバージョンがあると仮定
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     // バージョンがインクリメントされていることを確認
@@ -60,7 +60,7 @@ test('フォースアップデート時にステータスに関わらず更新�
         'version' => 3,
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     // フォースアップデートフラグをtrueにして実行
     $stats = $service->generateForMonth('2026-10', true);
 
@@ -92,7 +92,7 @@ test('同時に同じレコードを更新しようとすると競合が発生�
         'version' => 2,
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
 
     // 楽観ロックを適用して更新を試みる（正しいバージョン）
     $updateData = [

@@ -49,6 +49,25 @@ class MonthlyInvoiceResource extends Resource
                             ->required()
                             ->maxLength(7),
 
+                        Forms\Components\Select::make('invoice_date_mode')
+                            ->label('請求書日付モード')
+                            ->options([
+                                'auto' => '請求年月に基づく (自動)',
+                                'manual' => '任意の日付を指定',
+                            ])
+                            ->default('auto')
+                            ->required()
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(fn (Forms\Set $set) => $set('custom_invoice_date', null)),
+
+                        Forms\Components\DatePicker::make('custom_invoice_date')
+                            ->label('請求書日付 (任意)')
+                            ->native(false)
+                            ->displayFormat('Y/m/d')
+                            ->visible(fn (Forms\Get $get) => $get('invoice_date_mode') === 'manual')
+                            ->helperText('請求書日付モードが「任意」の場合のみ入力'),
+
                         Forms\Components\Select::make('resident_id')
                             ->label('入居者')
                             ->relationship('resident')
@@ -118,6 +137,25 @@ class MonthlyInvoiceResource extends Resource
                             ->options(PaymentMethod::class)
                             ->native(false),
 
+                        Forms\Components\Select::make('receipt_date_mode')
+                            ->label('領収書日付モード')
+                            ->options([
+                                'auto' => '入金日に基づく (自動)',
+                                'manual' => '任意の日付を指定',
+                            ])
+                            ->default('auto')
+                            ->required()
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(fn (Forms\Set $set) => $set('custom_receipt_date', null)),
+
+                        Forms\Components\DatePicker::make('custom_receipt_date')
+                            ->label('領収書日付 (任意)')
+                            ->native(false)
+                            ->displayFormat('Y/m/d')
+                            ->visible(fn (Forms\Get $get) => $get('receipt_date_mode') === 'manual')
+                            ->helperText('領収書日付モードが「任意」の場合のみ入力'),
+
                         Forms\Components\TextInput::make('receipt_number')
                             ->label('領収書番号')
                             ->maxLength(50)
@@ -129,6 +167,10 @@ class MonthlyInvoiceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->contentGrid([
+                'md' => 1,
+                'xl' => 2,
+            ])
             ->columns([
                 Tables\Columns\TextColumn::make('billing_year_month')
                     ->label('請求年月')
@@ -153,12 +195,15 @@ class MonthlyInvoiceResource extends Resource
                 Tables\Columns\TextColumn::make('management_fee_subtotal')
                     ->label('管理費')
                     ->money('JPY')
-                    ->toggleable(),
+                    ->toggleable()
+                    ->hiddenFrom('md'),
 
                 Tables\Columns\TextColumn::make('service_subtotal')
                     ->label('自費小計')
                     ->money('JPY')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable()
+                    ->hiddenFrom('md'),
 
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('合計請求額')
@@ -237,6 +282,25 @@ class MonthlyInvoiceResource extends Resource
                             ->options(PaymentMethod::class)
                             ->default(PaymentMethod::BankTransfer)
                             ->required(),
+
+                        Forms\Components\Select::make('receipt_date_mode')
+                            ->label('領収書日付モード')
+                            ->options([
+                                'auto' => '入金日に基づく (自動)',
+                                'manual' => '任意の日付を指定',
+                            ])
+                            ->default('auto')
+                            ->required()
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(fn (Forms\Set $set) => $set('custom_receipt_date', null)),
+
+                        Forms\Components\DatePicker::make('custom_receipt_date')
+                            ->label('領収書日付 (任意)')
+                            ->native(false)
+                            ->displayFormat('Y/m/d')
+                            ->visible(fn (Forms\Get $get) => $get('receipt_date_mode') === 'manual')
+                            ->helperText('領収書日付モードが「任意」の場合のみ入力'),
                     ])
                     ->action(function (MonthlyInvoice $record, array $data) {
                         $method = $data['payment_method'] instanceof PaymentMethod
@@ -247,6 +311,12 @@ class MonthlyInvoiceResource extends Resource
                             $method,
                             $data['paid_at']
                         );
+
+                        // 領収書日付モードと任意日付を保存
+                        $record->update([
+                            'receipt_date_mode' => $data['receipt_date_mode'] ?? 'auto',
+                            'custom_receipt_date' => $data['custom_receipt_date'] ?? null,
+                        ]);
 
                         Notification::make()
                             ->title("入金消込が完了しました (領収書番号: {$record->receipt_number})")
@@ -309,9 +379,34 @@ class MonthlyInvoiceResource extends Resource
                     Tables\Actions\BulkAction::make('bulkMarkAsPaid')
                         ->label('一括「入金済（口座振替）」に変更')
                         ->icon('heroicon-o-check-circle')
-                        ->action(function ($records) {
-                            $records->each(function (MonthlyInvoice $inv) {
-                                $inv->markAsPaid(PaymentMethod::DirectDebit);
+                        ->form([
+                            Forms\Components\Select::make('receipt_date_mode')
+                                ->label('領収書日付モード')
+                                ->options([
+                                    'auto' => '入金日に基づく (自動)',
+                                    'manual' => '任意の日付を指定',
+                                ])
+                                ->default('auto')
+                                ->required()
+                                ->native(false)
+                                ->live()
+                                ->afterStateUpdated(fn (Forms\Set $set) => $set('custom_receipt_date', null)),
+
+                            Forms\Components\DatePicker::make('custom_receipt_date')
+                                ->label('領収書日付 (任意)')
+                                ->native(false)
+                                ->displayFormat('Y/m/d')
+                                ->visible(fn (Forms\Get $get) => $get('receipt_date_mode') === 'manual')
+                                ->helperText('領収書日付モードが「任意」の場合のみ入力'),
+                        ])
+                        ->action(function ($records, array $data) {
+                            $records->each(function (MonthlyInvoice $inv) use ($data) {
+                                $inv->markAsPaid(
+                                    PaymentMethod::DirectDebit,
+                                    paidAt: now()->toDateString(),
+                                    receiptDateMode: $data['receipt_date_mode'] ?? 'auto',
+                                    customReceiptDate: $data['custom_receipt_date'] ?? null
+                                );
                             });
                         })
                         ->requiresConfirmation(),

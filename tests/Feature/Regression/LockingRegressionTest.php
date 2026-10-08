@@ -17,7 +17,7 @@ test('楽観ロック実装後も既存の請求生成機能が正常に動作�
         'move_in_date' => '2026-01-01',
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     $invoice = MonthlyInvoice::where('resident_id', $resident->id)
@@ -76,7 +76,7 @@ test('既存データの更新時にも楽観ロックが適用されずに正�
         'version' => 1,
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     expect($stats['updated'])->toBe(1);

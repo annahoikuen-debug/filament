@@ -15,7 +15,7 @@ test('税関連カラム追加後も既存の合計金額計算が変わらな�
         'move_in_date' => '2026-01-01',
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     $invoice = MonthlyInvoice::where('resident_id', $resident->id)
@@ -28,7 +28,7 @@ test('税関連カラム追加後も既存の合計金額計算が変わらな�
     // 新しい税関連フィールドも正しく設定されていることを確認
     expect($invoice->taxable_amount)->toBe(25000);
     expect($invoice->tax_amount)->toBe(2500);
-    expect($invoice->tax_rate)->toBe(10);
+    expect((int) $invoice->tax_rate)->toBe(10);
 });
 
 test('マークアズペイド機能が税情報を壊さないこと', function () {

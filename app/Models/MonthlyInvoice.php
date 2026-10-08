@@ -34,6 +34,10 @@ class MonthlyInvoice extends Model
         'tax_rate' => 'decimal:2',
         'tax_breakdown' => 'array',
         'version' => 'integer',
+        'invoice_date_mode' => 'string',
+        'custom_invoice_date' => 'date',
+        'receipt_date_mode' => 'string',
+        'custom_receipt_date' => 'date',
     ];
 
     protected $appends = [
@@ -122,7 +126,7 @@ class MonthlyInvoice extends Model
     /**
      * 入金処理を行い、領収書番号を発行する
      */
-    public function markAsPaid(PaymentMethod $method, ?string $paidAt = null): void
+    public function markAsPaid(PaymentMethod $method, ?string $paidAt = null, ?string $receiptDateMode = null, ?string $customReceiptDate = null): void
     {
         $paidDate = $paidAt ? Carbon::parse($paidAt)->toDateString() : now()->toDateString();
 
@@ -132,6 +136,8 @@ class MonthlyInvoice extends Model
             'payment_method' => $method,
             'receipt_number' => $this->receipt_number ?? sprintf('REC-%s-%04d', str_replace('-', '', $this->billing_year_month), $this->resident_id),
             'receipt_issued_at' => $this->receipt_issued_at ?? now(),
+            'receipt_date_mode' => $receiptDateMode ?? 'auto',
+            'custom_receipt_date' => $customReceiptDate,
         ]);
     }
 

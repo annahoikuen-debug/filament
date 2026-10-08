@@ -47,6 +47,7 @@ class PdfTemplateSettings extends Model
         'custom_css',
         'translations',
         'show_page_numbers',
+        'date_mode',
         'table_header_bg',
         'table_row_even_bg',
         'table_row_odd_bg',
@@ -76,6 +77,7 @@ class PdfTemplateSettings extends Model
         'version' => 'integer',
         'theme_config' => 'array',
         'translations' => 'array',
+        'date_mode' => 'string',
     ];
 
     protected static function booted(): void
@@ -340,6 +342,7 @@ class PdfTemplateSettings extends Model
             'header_html' => $this->header_html,
             'footer_html' => $this->footer_html,
             'show_page_numbers' => $this->show_page_numbers,
+            'date_mode' => $this->date_mode,
             'invoice_compliance' => [
                 'show_registration_number_prominently' => true,
                 'registration_number_position' => 'header_right',
@@ -492,6 +495,7 @@ class PdfTemplateSettings extends Model
             'custom_css' => null,
             'translations' => null,
             'show_page_numbers' => true,
+            'date_mode' => 'auto',
             'theme_config' => null,
         ], $themeDefaults);
     }

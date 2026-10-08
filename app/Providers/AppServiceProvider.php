@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadFacilityConfigFromDatabase();
         $this->loadTaxConfigFromDatabase();
         $this->loadPdfTemplateConfigFromDatabase();
         $this->validateFacilityConfig();
@@ -38,9 +39,9 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function loadFacilityConfigFromDatabase(): void
     {
-        if (! $this->app->runningInConsole() || $this->app->runningUnitTests()) {
-            // Webリクエスト時のみDBから読み込み
-            // ※ コンソールコマンド（migrate等）ではスキップ
+        // Skip during console commands and unit tests
+        if ($this->app->runningInConsole() || $this->app->runningUnitTests()) {
+            return;
         }
 
         try {
@@ -55,9 +56,7 @@ class AppServiceProvider extends ServiceProvider
             }
         } catch (\Throwable $e) {
             // DB接続エラー等はログに出して継続（config/facility.php のデフォルト値が使われる）
-            if (! $this->app->runningInConsole()) {
-                report($e);
-            }
+            report($e);
         }
     }
 

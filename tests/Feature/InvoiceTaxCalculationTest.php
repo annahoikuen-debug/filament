@@ -35,7 +35,7 @@ test('請求生成時に税情報が正しく設定されること', function ()
         'quantity' => 2,
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     $invoice = MonthlyInvoice::where('resident_id', $resident->id)

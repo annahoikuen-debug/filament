@@ -17,7 +17,7 @@ test('既存の機能（満月在籍者）が変更されないこと', function
         'move_out_date' => null,
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     $invoice = MonthlyInvoice::where('resident_id', $resident->id)
@@ -43,7 +43,7 @@ test('入居日・退去日が未設定の場合の動作が変更されない�
         'move_out_date' => null,
     ]);
 
-    $service = new InvoiceCalculationService;
+    $service = app(InvoiceCalculationService::class);
     $stats = $service->generateForMonth('2026-10');
 
     $invoice = MonthlyInvoice::where('resident_id', $resident->id)

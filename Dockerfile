@@ -99,6 +99,9 @@ RUN wget -q -O /tmp/noto-regular.ttf https://github.com/googlefonts/noto-fonts/r
     && mv /tmp/noto-*.ttf resources/fonts/noto-sans-jp/ \
     && chmod 644 resources/fonts/noto-sans-jp/*.ttf
 
+# OPcache + JIT configuration
+RUN echo "opcache.enable=1\nopcache.memory_consumption=64\nopcache.interned_strings_buffer=16\nopcache.max_accelerated_files=10000\nopcache.revalidate_freq=0\nopcache.jit_buffer_size=32M\nopcache.jit=1255" > /usr/local/etc/php/conf.d/opcache.ini
+
 # Clear and cache configuration
 RUN php artisan config:clear \
     && php artisan route:clear \

@@ -48,6 +48,7 @@ class PdfServiceProvider extends ServiceProvider
                 $app->make(InvoiceTemplate::class),
                 $app->make(ReceiptTemplate::class),
                 $app->make(RendererInterface::class),
+                $app->make(TemplateSettingsService::class),
             );
         });
     }

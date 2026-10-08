@@ -139,7 +139,7 @@ class TrialProvisioningService
         }
         
         // 当月の請求データ生成
-        $invoiceService = new InvoiceCalculationService();
+        $invoiceService = app(InvoiceCalculationService::class);
         $currentMonth = now()->format('Y-m');
         Log::info("Generating invoices for month: {$currentMonth}");
         $invoiceService->generateForMonth($currentMonth, false, $facility->id);

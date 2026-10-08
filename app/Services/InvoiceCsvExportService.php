@@ -64,7 +64,7 @@ class InvoiceCsvExportService
                 $inv->management_fee_subtotal,
                 $inv->service_subtotal,
                 $inv->taxable_amount,
-                $inv->tax_rate.'%',
+                rtrim(rtrim($inv->tax_rate, '0'), '.') . '%',
                 $inv->tax_amount,
                 $inv->total_amount,
                 $inv->status?->getLabel() ?? $inv->status,

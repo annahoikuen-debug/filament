@@ -91,6 +91,9 @@ return [
             ]
         ],
 
+        // Date mode: 'auto' (請求書主導) or 'manual' (任意選択)
+        'date_mode' => 'auto',
+
         // Feature toggles
         'show_facility_logo' => false,
         'facility_logo_path' => null,

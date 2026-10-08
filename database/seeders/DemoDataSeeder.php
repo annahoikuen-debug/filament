@@ -318,7 +318,7 @@ class DemoDataSeeder extends Seeder
         }
 
         // 6. 過去3ヶ月分の請求書を一括集計生成
-        $service = new InvoiceCalculationService;
+        $service = app()->make(InvoiceCalculationService::class);
         for ($monthOffset = 0; $monthOffset < 3; $monthOffset++) {
             $targetMonth = Carbon::now()->subMonths($monthOffset)->format('Y-m');
             foreach ($facilities as $facility) {

@@ -20,13 +20,14 @@ test('税関連のアトリビュートが正しく計算されること', funct
         'rent_subtotal' => 50000, // 非課税
         'management_fee_subtotal' => 30000, // 課税
         'service_subtotal' => 20000, // 課税
+        'tax_rate' => 10,
         'status' => InvoiceStatus::Unbilled,
     ]);
 
     // アトリビュートの確算
     expect($invoice->non_taxable_amount)->toBe(50000);
     expect($invoice->taxable_amount)->toBe(50000); // 30000 + 20000
-    expect($invoice->tax_rate)->toBe(10);
+    expect((int) $invoice->tax_rate)->toBe(10);
     expect($invoice->tax_amount)->toBe(5000); // 50000 * 0.1
     expect($invoice->total_with_tax)->toBe(105000); // 50000 + 50000 + 5000
 });
@@ -46,6 +47,7 @@ test('マークアズペイド後も税情報が保持されること', function
         'rent_subtotal' => 40000,
         'management_fee_subtotal' => 25000,
         'service_subtotal' => 15000,
+        'tax_rate' => 10,
         'status' => InvoiceStatus::Unbilled,
     ]);
 
@@ -56,6 +58,6 @@ test('マークアズペイド後も税情報が保持されること', function
     expect($invoice->status)->toBe(InvoiceStatus::Paid);
     expect($invoice->non_taxable_amount)->toBe(40000);
     expect($invoice->taxable_amount)->toBe(40000); // 25000 + 15000
-    expect($invoice->tax_rate)->toBe(10);
+    expect((int) $invoice->tax_rate)->toBe(10);
     expect($invoice->tax_amount)->toBe(4000); // 40000 * 0.1
 });

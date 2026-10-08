@@ -161,7 +161,7 @@ class FacilityBillingSeeder extends Seeder
         }
 
         // 5. 今月の請求書を一括集計生成（施設スコープ付き）
-        $service = new InvoiceCalculationService;
+        $service = app()->make(InvoiceCalculationService::class);
         $service->generateForMonth($currentMonth, false, $facility->id);
 
         // 6. 先月分の請求データを作成し、一部を入金済みに設定（領収書検証用）

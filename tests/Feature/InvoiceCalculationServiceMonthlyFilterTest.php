@@ -8,7 +8,7 @@ use App\Models\Resident;
 use App\Services\InvoiceCalculationService;
 
 beforeEach(function () {
-    $this->service = new InvoiceCalculationService;
+    $this->service = app(InvoiceCalculationService::class);
     $this->chargeItem = ChargeItem::create([
         'name' => '自費サービス',
         'default_price' => 1000,

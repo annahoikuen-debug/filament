@@ -9,7 +9,7 @@ use App\Models\Resident;
 use App\Services\InvoiceCalculationService;
 
 beforeEach(function () {
-    $this->service = new InvoiceCalculationService;
+    $this->service = app()->make(InvoiceCalculationService::class);
 });
 
 test('入居中Resident25名分の月次請求書が一括で正しく生成されること', function () {
