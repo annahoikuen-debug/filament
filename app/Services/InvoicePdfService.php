@@ -37,6 +37,15 @@ class InvoicePdfService
      */
     public function generateInvoicePdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
+        // N+1防止: 必要なリレーションを事前にロード
+        $invoice->loadMissing([
+            'resident.dailyCharges' => function ($query) use ($invoice) {
+                $query->forYearMonth($invoice->billing_year_month)
+                    ->with('chargeItem')
+                    ->orderBy('date');
+            },
+        ]);
+
         return $this->generatePdfFromInvoice($invoice, 'invoice', $facility);
     }
 
@@ -53,9 +62,8 @@ class InvoicePdfService
      */
     public function prepareViewData(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): array
     {
-        @ini_set('memory_limit', '512M');
-
-        $invoice->load([
+        // N+1防止: 未ロードの場合のみロード（generateInvoicePdf/generateReceiptPdfで事前ロード済みの場合はスキップ）
+        $invoice->loadMissing([
             'resident.dailyCharges' => function ($query) use ($invoice) {
                 $query->forYearMonth($invoice->billing_year_month)
                     ->with('chargeItem')
@@ -73,11 +81,13 @@ class InvoicePdfService
             if ($type === 'invoice') {
                 // 請求書の場合は振込用QRコード
                 $qrCodeData = $this->getBankTransferQrCodeData($invoice, $facility ?? config('facility'));
-                $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData);
+                $cacheKey = 'qr_invoice_' . md5($qrCodeData);
+                $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData, $cacheKey);
             } else {
                 // 領収書の場合は検証用QRコード
                 $qrCodeData = $this->getReceiptVerificationQrCodeData($invoice);
-                $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData);
+                $cacheKey = 'qr_receipt_' . md5($qrCodeData);
+                $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData, $cacheKey);
             }
         }
 
@@ -224,14 +234,23 @@ class InvoicePdfService
         return $results;
     }
 
-    /**
-     * QRコードを生成するヘルパーメソッド
+/**
+     * QRコードを生成するヘルパーメソッド（キャッシュ対応）
      *
      * @param string $data エンコードするデータ
+     * @param string|null $cacheKey キャッシュキー（指定時はキャッシュから取得・保存）
      * @return string base64エンコードされたSVGデータURI
      */
-    private function generatePaymentQrCode(string $data): string
+    private function generatePaymentQrCode(string $data, ?string $cacheKey = null): string
     {
+        // キャッシュキーが指定されている場合はキャッシュから取得を試みる
+        if ($cacheKey !== null) {
+            $cached = Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
         try {
             $rendererStyle = new \BaconQrCode\Renderer\RendererStyle\RendererStyle(70);
             $imageBackEnd = new \BaconQrCode\Renderer\Image\SvgImageBackEnd();
@@ -239,8 +258,15 @@ class InvoicePdfService
             $writer = new \BaconQrCode\Writer($renderer);
             // 日本語を含むデータを扱うため UTF-8 を指定（既定の ISO-8859-1 では多バイト文字のエンコードに失敗する）
             $svg = $writer->writeString($data, 'UTF-8');
-            
-            return 'data:image/svg+xml;base64,'.base64_encode($svg);
+
+            $result = 'data:image/svg+xml;base64,'.base64_encode($svg);
+
+            // キャッシュに保存（24時間）
+            if ($cacheKey !== null) {
+                Cache::put($cacheKey, $result, now()->addHours(24));
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             // QRコード生成に失敗してもPDF生成は続行
             return '';
@@ -344,6 +370,15 @@ class InvoicePdfService
      */
     public function generateReceiptPdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
+        // N+1防止: 必要なリレーションを事前にロード
+        $invoice->loadMissing([
+            'resident.dailyCharges' => function ($query) use ($invoice) {
+                $query->forYearMonth($invoice->billing_year_month)
+                    ->with('chargeItem')
+                    ->orderBy('date');
+            },
+        ]);
+
         return $this->generatePdfFromInvoice($invoice, 'receipt', $facility);
     }
 
@@ -366,8 +401,13 @@ class InvoicePdfService
      */
     public function generateMonthlyZipSync(string $yearMonth, ?int $facilityId = null): string
     {
-        $query = MonthlyInvoice::with('resident')
-            ->forYearMonth($yearMonth);
+        $query = MonthlyInvoice::with([
+            'resident.dailyCharges' => function ($q) use ($yearMonth) {
+                $q->forYearMonth($yearMonth)
+                  ->with('chargeItem')
+                  ->orderBy('date');
+            },
+        ])->forYearMonth($yearMonth);
 
         if ($facilityId) {
             $query->whereHas('resident', function ($q) use ($facilityId) {
@@ -473,12 +513,14 @@ class InvoicePdfService
 
     /**
      * キャッシュされたPDFを取得する（存在しない場合は生成してキャッシュ）
+     * アトミック書き込みで競合状態を防止
      */
     public function getOrGenerateCachedPdf(MonthlyInvoice $invoice, ?array $facility = null): string
     {
         $yearMonth = $invoice->billing_year_month;
         $cachePath = $this->getCachedPdfPath($yearMonth, $invoice->id);
 
+        // 既に存在する場合は即座に返す（読み取りは競合しない）
         if (File::exists($cachePath)) {
             return File::get($cachePath);
         }
@@ -486,8 +528,23 @@ class InvoicePdfService
         $pdf = $this->generateInvoicePdf($invoice, $facility);
         $pdfContent = $pdf->output();
 
+        // アトミック書き込み: 一時ファイルに書いてから rename（POSIXでアトミック）
+        $tempPath = $cachePath . '.tmp.' . uniqid('', true);
         File::ensureDirectoryExists(dirname($cachePath));
-        File::put($cachePath, $pdfContent);
+        File::put($tempPath, $pdfContent);
+
+        // rename でアトミックに移動（既存ファイルがあれば上書き）
+        @rename($tempPath, $cachePath);
+
+        // 稀に rename 後にファイルが消えている場合のフォールバック
+        if (! File::exists($cachePath)) {
+            // 別プロセスが書き込んだ可能性 → 再読み取り
+            if (File::exists($cachePath)) {
+                return File::get($cachePath);
+            }
+            // それでもなければ自分で書き込み直し（最後の手段）
+            File::put($cachePath, $pdfContent);
+        }
 
         return $pdfContent;
     }
