@@ -7,19 +7,35 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ChargeItem extends Model
 {
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'name',
+        'default_price',
+        'tax_type',
+        'category',
+        'is_active',
+        'facility_id',
+    ];
 
     protected $casts = [
         'default_price' => 'integer',
         'is_active' => 'boolean',
         'tax_type' => TaxType::class,
     ];
+
+    /**
+     * 施設リレーション
+     */
+    public function facility(): BelongsTo
+    {
+        return $this->belongsTo(Facility::class);
+    }
 
     /**
      * この品目が使われた日々の自費記録一覧

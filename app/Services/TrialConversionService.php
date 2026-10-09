@@ -26,6 +26,12 @@ class TrialConversionService
      */
     public function convert(Trial $trial, array $data): Subscription
     {
+        // 冪等性: 既に移行済みの場合は既存サブスクリプションを返す（重複作成を防止）
+        $existing = Subscription::where('trial_id', $trial->id)->first();
+        if ($existing !== null) {
+            return $existing;
+        }
+
         if ($trial->status !== 'active') {
             throw new \RuntimeException('トライアルが有効ではないため移行できません');
         }
@@ -33,7 +39,7 @@ class TrialConversionService
         $plan = $data['plan'];
         $monthlyPrice = $this->resolvePrice($plan, $data['quoted_price'] ?? null);
 
-        return \DB::transaction(function () use ($trial, $plan, $monthlyPrice, $data) {
+        $subscription = \DB::transaction(function () use ($trial, $plan, $monthlyPrice, $data) {
             // 1. 施設を本契約施設に昇格
             $facility = $trial->facility;
             $facility->update([
@@ -60,16 +66,18 @@ class TrialConversionService
             // 3. トライアルステータス更新
             $trial->update(['status' => 'converted']);
 
-            // 4. 本契約完了メール
-            $this->mailService->send(
-                new ContractCompletedMail($trial, $plan, $monthlyPrice),
-                $trial->email,
-            );
-
-            Log::info("Trial {$trial->id} converted to {$plan} contract (subscription {$subscription->id})");
-
             return $subscription;
         });
+
+        // 4. 本契約完了メール（トランザクションコミット後に送信）
+        $this->mailService->send(
+            new ContractCompletedMail($trial, $plan, $monthlyPrice),
+            $trial->email,
+        );
+
+        Log::info("Trial {$trial->id} converted to {$plan} contract (subscription {$subscription->id})");
+
+        return $subscription;
     }
 
     private function resolvePrice(string $plan, ?int $quotedPrice): int

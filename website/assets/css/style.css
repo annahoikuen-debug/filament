@@ -696,3 +696,12 @@ p {
     text-align: center;
   }
 }
+
+/* Honeypot (spam protection) - visually hidden but present for bots */
+.c-form__hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

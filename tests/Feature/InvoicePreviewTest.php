@@ -62,7 +62,8 @@ class InvoicePreviewTest extends TestCase
 
     public function test_invoice_preview_returns_html()
     {
-        $response = $this->get(route('invoices.preview', ['invoice' => $this->invoice->id, 'type' => 'invoice']));
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'invoice']);
+        $response = $this->get($url);
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
@@ -79,7 +80,8 @@ class InvoicePreviewTest extends TestCase
     {
         $this->invoice->markAsPaid(PaymentMethod::BankTransfer);
 
-        $response = $this->get(route('invoices.preview', ['invoice' => $this->invoice->id, 'type' => 'receipt']));
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'receipt']);
+        $response = $this->get($url);
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
@@ -94,21 +96,32 @@ class InvoicePreviewTest extends TestCase
     public function test_receipt_preview_404_when_not_paid()
     {
         // Unpaid invoice should 404 for receipt preview
-        $response = $this->get(route('invoices.preview', ['invoice' => $this->invoice->id, 'type' => 'receipt']));
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'receipt']);
+        $response = $this->get($url);
 
         $response->assertStatus(404);
     }
 
     public function test_invalid_type_returns_404()
     {
-        $response = $this->get(route('invoices.preview', ['invoice' => $this->invoice->id, 'type' => 'invalid']));
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'invalid']);
+        $response = $this->get($url);
 
         $response->assertStatus(404);
     }
 
+    public function test_unsigned_url_is_rejected()
+    {
+        // 署名なしURLは403で拒否される（個人情報保護）
+        $response = $this->get(route('invoices.preview', ['invoice' => $this->invoice->id, 'type' => 'invoice']));
+
+        $response->assertStatus(403);
+    }
+
     public function test_preview_uses_same_templates_as_pdf()
     {
-        $response = $this->get(route('invoices.preview', ['invoice' => $this->invoice->id, 'type' => 'invoice']));
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'invoice']);
+        $response = $this->get($url);
 
         $html = $response->getContent();
 

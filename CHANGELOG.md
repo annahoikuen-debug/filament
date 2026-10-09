@@ -1,5 +1,66 @@
 # 変更履歴
 
+## [1.3.0] - 2026-10-09
+
+### 新機能
+- **ダッシュボード** (`App\Filament\Pages\Dashboard`) — 請求業務の司令塔
+  - 対象月の請求進捗バー（進捗率）と件数サマリー（対象/請求済/未請求/入金済）
+  - 未入金アラート（`UnpaidInvoicesAlert` ウィジェット連携）
+  - クイック統計（入居者数・今月の請求総額等）
+  - 年月セレクタで過去12ヶ月＋未来3ヶ月を切替可能
+  - 施設管理者（`isFacilityAdmin`）は自施設のデータのみ表示
+- **セットアップウィザード** (`App\Filament\Pages\OnboardingWizard`) — 初期導入を5ステップでガイド
+  - Step1: 施設情報の入力（施設名・運営法人・インボイス登録番号・銀行口座）
+  - Step2: 請求品目の選択（プリセット6種：おむつ/理美容/受診付き添い等をワンクリック追加）
+  - Step3: 入居者CSVの一括取込（プレビュー付き、`League\Csv` 使用）
+  - Step4: 会計ソフト連携設定（freee/MF/弥生/勘定奉行のプロファイル自動作成）
+  - Step5: 完了
+- **請求書・領収書の日付モード** — `invoice_date_mode` / `receipt_date_mode`（`auto`/`manual`）に対応
+  - `auto`: 請求年月・入金日に基づく自動決定（従来通り）
+  - `manual`: `custom_invoice_date` / `custom_receipt_date` で任意の日付を指定
+- **税額内訳の詳細化** — `monthly_invoices.tax_breakdown`（JSON）で標準税率（10%）・軽減税率（8%）を別々に管理
+  - `MonthlyInvoice::getTaxableAmountAttribute()` / `getTaxAmountAttribute()` が `tax_breakdown` を優先して算出
+
+### アーキテクチャ改善
+- **PDFアーキテクチャ刷新** — 責務分離と拡張性の向上
+  - DTO 層（`App\DTOs\Pdf\`）: `InvoicePdfData`, `ReceiptPdfData`, `FacilityPdfData`, `ResidentPdfData`, `DailyChargePdfData`, `TaxInfoPdfData`
+  - サービス層（`App\Services\Pdf\`）: `InvoicePdfGenerator`（統合インターフェース）, `TemplateSettingsService`, `InvoiceDataProvider`
+  - 契約インターフェース: `RendererInterface`, `TemplateInterface`, `FontRegistryInterface`
+  - 実装: `Renderers\DomPdfRenderer`, `Renderers\HtmlRenderer`, `Templates\InvoiceTemplate`, `Templates\ReceiptTemplate`, `Fonts\WindowsFontRegistry`
+  - `App\Providers\PdfServiceProvider` でサービスコンテナに登録
+- **請求計算サービスのリファクタリング** — `InvoiceCalculationService` をオーケストレーションに特化
+  - `App\Services\Invoice\DailyChargeAggregator`: 日次課金の税区分別集計（1クエリ）
+  - `App\Services\Invoice\RecurringChargeAggregator`: 定期課金の集計
+  - `App\Services\Invoice\ProrationCalculator`: 日割り計算（在籍日数ベース）
+  - `App\Services\Invoice\TaxCalculator`: 税率・税額計算（`TaxSetting` 履歴対応）
+  - `App\Services\Invoice\InvoicePersister`: 請求データの永続化（チャンク単位トランザクション）
+  - `chunkById` によるチャンク処理でメモリ効率化（`CHUNK_SIZE = 100`）
+- **FacilityConfigService** — 施設設定の統一アクセス（`facilities` テーブルを優先、`config/facility.php` にフォールバック）
+- **PdfTemplateSettingsResource** — `PdfTemplateSettingResource` をリネーム・強化（ロケール・テーマ・日付モード対応、`PdfTemplateSettings` モデル）
+
+### フォント・デザイン
+- **Noto Sans JP** フォント対応（`storage/fonts/NotoSansJP-Regular.ttf` / `NotoSansJP-Bold.ttf` を同梱）
+- PDF用CSSの整備（`resources/css/pdf-invoice.css` / `pdf-receipt.css`）
+- PDFビューのコンポーネント化（`resources/views/pdf/components/`）
+- 空状態ビューの追加（`resources/views/filament/resources/*/list-empty.blade.php`）
+
+### デプロイ基盤
+- `Dockerfile` / `.dockerignore` / `Caddyfile` / `railway.json` / `.env.production.example`
+
+### テスト拡充
+- PDF DTO・データプロバイダ・ジェネレータ・フォントレジストリの単体テスト（`tests/Unit/Pdf/`）
+- モデルテストの大幅拡充（Facility, ChargeItem, ChargeItemPrice, ChartOfAccount, AccountingExportProfile, Trial, Subscription, Booking, RecurringCharge, User）
+- `InvoicePreviewTest`, `PdfTemplateSettingsResourceTest` の追加
+- **全 350 テスト / 1666 アサーション**（v1.2 の 183 テスト / 1104 アサーションから拡充）
+
+### データベース
+- `monthly_invoices` に `tax_breakdown`（JSON）、`invoice_date_mode`、`custom_invoice_date`、`receipt_date_mode`、`custom_receipt_date` カラム追加
+- `pdf_template_settings` に `locale`、`theme`、`date_mode` カラム追加
+- 複合インデックス追加（`monthly_invoices`、`daily_charges`、`residents`）
+
+### 備考
+v1.2 からの破壊的変更なし。既存データ・テストは全て互換性維持。
+
 ## [1.2.0] - 2026-10-08
 
 ### 会計連携CSVエクスポート機能の大幅拡張

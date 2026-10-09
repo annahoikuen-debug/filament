@@ -49,6 +49,10 @@ class TrialProvisioningService
                 'status' => 'active',
                 'trial_started_at' => now(),
                 'trial_ends_at' => now()->addDays(14), // 14日間トライアル
+                'trial_config' => array_merge($trial->trial_config ?? [], [
+                    // 本契約移行・見積書送信用トークン（メールでのみ通知）
+                    'conversion_token' => Str::random(64),
+                ]),
             ];
             Log::info("Updating trial with data: " . json_encode($updateData));
             $result = $trial->update($updateData);
@@ -178,9 +182,10 @@ class TrialProvisioningService
     private function sendProvisioningCompleteEmail(Trial $trial, User $adminUser): void
     {
         $tempPassword = $trial->trial_config['temp_password'] ?? null;
+        $conversionToken = $trial->trial_config['conversion_token'] ?? null;
 
         $sent = $this->mailService->send(
-            new TrialProvisioningCompleteMail($trial, $tempPassword ?? ''),
+            new TrialProvisioningCompleteMail($trial, $tempPassword ?? '', $conversionToken),
             $trial->email,
         );
 

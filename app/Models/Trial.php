@@ -42,6 +42,20 @@ class Trial extends Model
         return $this->status === 'expired' || 
                ($this->trial_ends_at && $this->trial_ends_at->isPast());
     }
+
+    /**
+     * 本契約移行・見積書送信用のトークン検証（タイミング攻撃対策済み）
+     */
+    public function isValidConversionToken(?string $token): bool
+    {
+        $expected = (string) ($this->trial_config['conversion_token'] ?? '');
+
+        if ($expected === '' || $token === null || $token === '') {
+            return false;
+        }
+
+        return hash_equals($expected, $token);
+    }
     
     public function daysUntilExpiry(): int
     {

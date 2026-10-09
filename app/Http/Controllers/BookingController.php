@@ -28,7 +28,7 @@ class BookingController extends Controller
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'preferred_date' => ['required', 'date', 'after_or_equal:today'],
-            'preferred_time' => ['required', 'string', 'max:10'],
+            'preferred_time' => ['required', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -39,8 +39,26 @@ class BookingController extends Controller
             ], 422);
         }
 
+        $validated = $validator->validated();
+
+        // 二重予約防止（同一メールアドレス・日時）
+        // preferred_date は date キャストにより 'Y-m-d H:i:s' で保存されるため、
+        // whereDate で日付部分のみ比較する
+        $duplicate = Booking::where('email', $validated['email'])
+            ->whereDate('preferred_date', $validated['preferred_date'])
+            ->where('preferred_time', $validated['preferred_time'])
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if ($duplicate) {
+            return response()->json([
+                'success' => false,
+                'message' => '同じ日時の予約が既に存在します。',
+            ], 409);
+        }
+
         $booking = Booking::create(array_merge(
-            $validator->validated(),
+            $validated,
             ['status' => 'pending']
         ));
 
@@ -60,14 +78,30 @@ class BookingController extends Controller
     }
 
     /**
-     * 予約一覧（営業担当用）
+     * 予約一覧（営業担当用・管理者のみ）
      */
     public function index()
     {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return response()->json([
+                'success' => false,
+                'message' => '認証が必要です。',
+            ], 401);
+        }
+
+        if (!$user->is_admin) {
+            return response()->json([
+                'success' => false,
+                'message' => '管理者権限が必要です。',
+            ], 403);
+        }
+
         $bookings = Booking::where('status', 'pending')
             ->orderBy('preferred_date')
             ->orderBy('preferred_time')
-            ->get();
+            ->paginate(50);
 
         return response()->json([
             'success' => true,

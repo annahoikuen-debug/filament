@@ -7,8 +7,11 @@ use App\Models\PdfTemplateSetting;
 use App\Models\TaxSetting;
 use App\Policies\MonthlyInvoicePolicy;
 use App\Services\FacilityConfigService;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 
@@ -29,6 +32,19 @@ class AppServiceProvider extends ServiceProvider
 
         // ポリシー登録
         Gate::policy(MonthlyInvoice::class, MonthlyInvoicePolicy::class);
+
+        $this->registerRateLimiters();
+    }
+
+    /**
+     * 公開APIのレート制限定義（不正利用防止）
+     */
+    protected function registerRateLimiters(): void
+    {
+        RateLimiter::for('trial-create', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+        RateLimiter::for('trial-convert', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
+        RateLimiter::for('booking-create', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+        RateLimiter::for('quote-send', fn (Request $request) => Limit::perMinute(3)->by($request->ip()));
     }
 
     /**

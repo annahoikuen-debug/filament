@@ -5,11 +5,13 @@ namespace App\Filament\Resources;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Filament\Resources\MonthlyInvoiceResource\Pages;
+use App\Mail\InvoiceMail;
 use App\Models\AccountingExportProfile;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\InvoiceCsvExportService;
 use App\Services\InvoicePdfService;
+use App\Services\MailService;
 use App\Services\Pdf\Contracts\RendererInterface;
 use App\Services\Pdf\Renderers\HtmlRenderer;
 use Filament\Forms;
@@ -20,6 +22,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 
 class MonthlyInvoiceResource extends Resource
 {
@@ -352,7 +356,7 @@ class MonthlyInvoiceResource extends Resource
                     ->icon('heroicon-o-eye')
                     ->color('info')
                     ->openUrlInNewTab()
-                    ->url(fn (MonthlyInvoice $record): string => route('invoices.preview', ['invoice' => $record->id, 'type' => 'invoice'])),
+                    ->url(fn (MonthlyInvoice $record): string => URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $record->id, 'type' => 'invoice'])),
 
                 // 5. 領収書プレビュー (入金済みのみ・HTML表示・新しいタブで開く)
                 Tables\Actions\Action::make('previewReceipt')
@@ -361,7 +365,47 @@ class MonthlyInvoiceResource extends Resource
                     ->color('info')
                     ->visible(fn (MonthlyInvoice $record) => $record->status === InvoiceStatus::Paid)
                     ->openUrlInNewTab()
-                    ->url(fn (MonthlyInvoice $record): string => route('invoices.preview', ['invoice' => $record->id, 'type' => 'receipt'])),
+                    ->url(fn (MonthlyInvoice $record): string => URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $record->id, 'type' => 'receipt'])),
+
+                // 6. 請求書メール送信
+                Tables\Actions\Action::make('sendInvoiceEmail')
+                    ->label('請求書送信')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\TextInput::make('email')
+                            ->label('送信先メールアドレス')
+                            ->email()
+                            ->default(fn (MonthlyInvoice $record) => $record->resident->email ?? $record->resident->facility?->email)
+                            ->required()
+                            ->placeholder('example@domain.com'),
+                        Forms\Components\Textarea::make('message')
+                            ->label('添え書き（任意）')
+                            ->rows(3)
+                            ->placeholder('請求書に関するメッセージがあれば入力してください'),
+                    ])
+                    ->action(function (MonthlyInvoice $record, array $data, MailService $mailService) {
+                        // PDFプレビューURLを生成（認証不要の公開URL）
+                        $pdfUrl = URL::signedRoute('invoices.preview', [
+                            'invoice' => $record->id,
+                            'type' => 'invoice',
+                        ]);
+
+                        $mailable = new InvoiceMail($record, $pdfUrl, $data['message'] ?? null);
+                        $sent = $mailService->send($mailable, $data['email']);
+
+                        if ($sent) {
+                            Notification::make()
+                                ->title("請求書を {$data['email']} へ送信しました")
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('メール送信に失敗しました（メール設定を確認してください）')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
 
                 // 編集アクション: アーカイブ済み（請求済・入金済）は非表示
                 Tables\Actions\EditAction::make()
@@ -559,6 +603,65 @@ class MonthlyInvoiceResource extends Resource
                                 $fileName,
                                 ['Content-Type' => 'text/csv; charset=UTF-8']
                             );
+                        })
+                        ->requiresConfirmation(),
+
+                    // 一括請求書メール送信
+                    Tables\Actions\BulkAction::make('bulkSendInvoiceEmail')
+                        ->label('一括請求書送信')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->color('success')
+                        ->form([
+                            Forms\Components\TextInput::make('email')
+                                ->label('送信先メールアドレス（共通）')
+                                ->email()
+                                ->required()
+                                ->placeholder('example@domain.com')
+                                ->helperText('個別のメールアドレスが設定されている場合はそちらが優先されます'),
+                            Forms\Components\Textarea::make('message')
+                                ->label('添え書き（任意・全件共通）')
+                                ->rows(3)
+                                ->placeholder('全請求書に共通で添えるメッセージ'),
+                        ])
+                        ->action(function (array $data, $records, MailService $mailService) {
+                            $sentCount = 0;
+                            $failedCount = 0;
+
+                            foreach ($records as $record) {
+                                $email = $record->resident->email ?? $record->resident->facility?->email ?? $data['email'];
+                                
+                                if (!$email) {
+                                    $failedCount++;
+                                    continue;
+                                }
+
+                                $pdfUrl = URL::signedRoute('invoices.preview', [
+                                    'invoice' => $record->id,
+                                    'type' => 'invoice',
+                                ]);
+
+                                $mailable = new InvoiceMail($record, $pdfUrl, $data['message'] ?? null);
+                                $sent = $mailService->send($mailable, $email);
+
+                                if ($sent) {
+                                    $sentCount++;
+                                } else {
+                                    $failedCount++;
+                                }
+                            }
+
+                            if ($sentCount > 0) {
+                                Notification::make()
+                                    ->title("{$sentCount} 件の請求書を送信しました")
+                                    ->success()
+                                    ->send();
+                            }
+                            if ($failedCount > 0) {
+                                Notification::make()
+                                    ->title("{$failedCount} 件の送信に失敗しました（メール未設定または送信エラー）")
+                                    ->warning()
+                                    ->send();
+                            }
                         })
                         ->requiresConfirmation(),
 

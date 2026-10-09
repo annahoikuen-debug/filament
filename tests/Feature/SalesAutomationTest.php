@@ -17,6 +17,33 @@ $validPayload = [
     'resident_capacity' => '50_100',
 ];
 
+/**
+ * トライアルの移行トークンを取得（プロビジョニング時に生成される）
+ */
+function tokenFor(Trial $trial): array
+{
+    return ['conversion_token' => $trial->trial_config['conversion_token']];
+}
+
+/**
+ * 本契約移行の標準ペイロード
+ */
+function convertPayload(Trial $trial, array $overrides = []): array
+{
+    return array_merge([
+        'plan' => 'starter',
+        'invoice_registration_number' => 'T1234567890123',
+        'bank' => [
+            'name' => 'テスト銀行',
+            'branch_name' => 'テスト支店',
+            'account_type' => '普通',
+            'account_number' => '1234567',
+            'account_holder' => 'カ）テスト',
+        ],
+        'contract_accepted' => true,
+    ], tokenFor($trial), $overrides);
+}
+
 // ==================== リードスコアリング ====================
 
 test('リードスコアがトライアル作成時に自動算出されること', function () use ($validPayload) {
@@ -82,7 +109,18 @@ test('見積書メール送信APIが動作すること', function () use ($valid
 
     $trial = Trial::find($response->json('trial_id'));
 
-    $this->postJson("/api/trials/{$trial->id}/quote/send")->assertStatus(200);
+    $this->postJson("/api/trials/{$trial->id}/quote/send", tokenFor($trial))->assertStatus(200);
+});
+
+test('見積書メール送信はトークンなしで403を返すこと', function () use ($validPayload) {
+    $response = $this->postJson('/api/trials', array_merge($validPayload, [
+        'seed_sample_data' => false,
+    ]))->assertStatus(201);
+
+    $trial = Trial::find($response->json('trial_id'));
+
+    $this->postJson("/api/trials/{$trial->id}/quote/send")->assertStatus(403);
+    $this->postJson("/api/trials/{$trial->id}/quote/send", ['conversion_token' => 'invalid'])->assertStatus(403);
 });
 
 // ==================== 本契約移行 ====================
@@ -94,18 +132,10 @@ test('トライアルから本契約に移行できること', function () use (
 
     $trial = Trial::find($response->json('trial_id'));
 
-    $convertResponse = $this->postJson("/api/trials/{$trial->id}/convert", [
-        'plan' => 'standard',
-        'invoice_registration_number' => 'T1234567890123',
-        'bank' => [
-            'name' => 'テスト銀行',
-            'branch_name' => 'テスト支店',
-            'account_type' => '普通',
-            'account_number' => '1234567',
-            'account_holder' => 'カ）テスト',
-        ],
-        'contract_accepted' => true,
-    ])->assertStatus(200);
+    $convertResponse = $this->postJson(
+        "/api/trials/{$trial->id}/convert",
+        convertPayload($trial, ['plan' => 'standard'])
+    )->assertStatus(200);
 
     $trial->refresh();
     $subscription = Subscription::where('trial_id', $trial->id)->first();
@@ -118,6 +148,47 @@ test('トライアルから本契約に移行できること', function () use (
         ->and($convertResponse->json('subscription_id'))->toBe($subscription->id);
 });
 
+test('移行トークンなしの本契約移行は403を返すこと', function () use ($validPayload) {
+    $response = $this->postJson('/api/trials', array_merge($validPayload, [
+        'seed_sample_data' => false,
+    ]))->assertStatus(201);
+
+    $trial = Trial::find($response->json('trial_id'));
+
+    // トークンなし
+    $this->postJson("/api/trials/{$trial->id}/convert", [
+        'plan' => 'starter',
+        'invoice_registration_number' => 'T1234567890123',
+        'bank' => ['name' => '銀行', 'branch_name' => '支店', 'account_type' => '普通', 'account_number' => '1', 'account_holder' => 'カ）X'],
+        'contract_accepted' => true,
+    ])->assertStatus(403);
+
+    // 不正なトークン
+    $this->postJson("/api/trials/{$trial->id}/convert", array_merge(
+        convertPayload($trial),
+        ['conversion_token' => 'invalid-token']
+    ))->assertStatus(403);
+
+    // 移行されていないことを確認
+    expect($trial->fresh()->status)->toBe('active')
+        ->and(Subscription::where('trial_id', $trial->id)->count())->toBe(0);
+});
+
+test('本契約移行は冪等であること（二重移行でサブスクリプションが重複しない）', function () use ($validPayload) {
+    $response = $this->postJson('/api/trials', array_merge($validPayload, [
+        'seed_sample_data' => false,
+    ]))->assertStatus(201);
+
+    $trial = Trial::find($response->json('trial_id'));
+
+    $first = $this->postJson("/api/trials/{$trial->id}/convert", convertPayload($trial))->assertStatus(200);
+    $second = $this->postJson("/api/trials/{$trial->id}/convert", convertPayload($trial))->assertStatus(200);
+
+    expect(Subscription::where('trial_id', $trial->id)->count())->toBe(1)
+        ->and($second->json('subscription_id'))->toBe($first->json('subscription_id'))
+        ->and($second->json('message'))->toBe('既に本契約に移行済みです。');
+});
+
 test('本契約移行で施設名のトライアルプレフィックスが除去されること', function () use ($validPayload) {
     $response = $this->postJson('/api/trials', array_merge($validPayload, [
         'seed_sample_data' => false,
@@ -127,18 +198,7 @@ test('本契約移行で施設名のトライアルプレフィックスが除�
     $originalName = $trial->facility->name;
     expect($originalName)->toBe("トライアル テスト法人 ({$trial->id})");
 
-    $this->postJson("/api/trials/{$trial->id}/convert", [
-        'plan' => 'starter',
-        'invoice_registration_number' => 'T1234567890123',
-        'bank' => [
-            'name' => 'テスト銀行',
-            'branch_name' => 'テスト支店',
-            'account_type' => '普通',
-            'account_number' => '1234567',
-            'account_holder' => 'カ）テスト',
-        ],
-        'contract_accepted' => true,
-    ])->assertStatus(200);
+    $this->postJson("/api/trials/{$trial->id}/convert", convertPayload($trial))->assertStatus(200);
 
     expect($trial->fresh()->facility->name)->toBe('テスト法人');
 });
@@ -150,18 +210,9 @@ test('エンタープライズ移行には見積金額が必須であること',
 
     $trial = Trial::find($response->json('trial_id'));
 
-    $this->postJson("/api/trials/{$trial->id}/convert", [
+    $this->postJson("/api/trials/{$trial->id}/convert", convertPayload($trial, [
         'plan' => 'enterprise',
-        'invoice_registration_number' => 'T1234567890123',
-        'bank' => [
-            'name' => 'テスト銀行',
-            'branch_name' => 'テスト支店',
-            'account_type' => '普通',
-            'account_number' => '1234567',
-            'account_holder' => 'カ）テスト',
-        ],
-        'contract_accepted' => true,
-    ])->assertStatus(422);
+    ]))->assertStatus(422);
 });
 
 test('契約同意なしの移行は422を返すこと', function () use ($validPayload) {
@@ -171,17 +222,9 @@ test('契約同意なしの移行は422を返すこと', function () use ($valid
 
     $trial = Trial::find($response->json('trial_id'));
 
-    $this->postJson("/api/trials/{$trial->id}/convert", [
-        'plan' => 'starter',
-        'invoice_registration_number' => 'T1234567890123',
-        'bank' => [
-            'name' => 'テスト銀行',
-            'branch_name' => 'テスト支店',
-            'account_type' => '普通',
-            'account_number' => '1234567',
-            'account_holder' => 'カ）テスト',
-        ],
-    ])->assertStatus(422);
+    $this->postJson("/api/trials/{$trial->id}/convert", convertPayload($trial, [
+        'contract_accepted' => false,
+    ]))->assertStatus(422);
 });
 
 test('無効な請求書登録番号の移行は422を返すこと', function () use ($validPayload) {
@@ -191,18 +234,9 @@ test('無効な請求書登録番号の移行は422を返すこと', function ()
 
     $trial = Trial::find($response->json('trial_id'));
 
-    $this->postJson("/api/trials/{$trial->id}/convert", [
-        'plan' => 'starter',
+    $this->postJson("/api/trials/{$trial->id}/convert", convertPayload($trial, [
         'invoice_registration_number' => 'INVALID',
-        'bank' => [
-            'name' => 'テスト銀行',
-            'branch_name' => 'テスト支店',
-            'account_type' => '普通',
-            'account_number' => '1234567',
-            'account_holder' => 'カ）テスト',
-        ],
-        'contract_accepted' => true,
-    ])->assertStatus(422);
+    ]))->assertStatus(422);
 });
 
 // ==================== デモ予約 ====================
@@ -230,18 +264,41 @@ test('過去日のデモ予約は422を返すこと', function () {
     ])->assertStatus(422);
 });
 
-test('予約一覧APIがpendingの予約を返すこと', function () {
-    Booking::create([
-        'name' => '一覧テスト',
-        'email' => 'list@example.com',
-        'preferred_date' => now()->addDays(2),
-        'preferred_time' => '10:00',
-        'status' => 'pending',
-    ]);
+test('時刻形式が不正なデモ予約は422を返すこと', function () {
+    $this->postJson('/api/bookings', [
+        'name' => '山田 太郎',
+        'email' => 'yamada@example.com',
+        'preferred_date' => now()->addDays(2)->format('Y-m-d'),
+        'preferred_time' => '午後',
+    ])->assertStatus(422);
+});
 
-    $response = $this->getJson('/api/bookings')->assertStatus(200);
+test('同一日時の二重予約は409を返すこと', function () {
+    $date = now()->addDays(2)->format('Y-m-d');
 
-    expect($response->json('bookings'))->not->toBeEmpty();
+    $this->postJson('/api/bookings', [
+        'name' => '山田 太郎',
+        'email' => 'yamada@example.com',
+        'preferred_date' => $date,
+        'preferred_time' => '14:00',
+    ])->assertStatus(201);
+
+    $this->postJson('/api/bookings', [
+        'name' => '山田 太郎',
+        'email' => 'yamada@example.com',
+        'preferred_date' => $date,
+        'preferred_time' => '14:00',
+    ])->assertStatus(409);
+
+    expect(Booking::where('email', 'yamada@example.com')->count())->toBe(1);
+});
+
+test('予約一覧は認証なしではアクセスできないこと', function () {
+    // API の一覧エンドポイントは廃止（POST のみ残るため GET は 405）
+    $this->getJson('/api/bookings')->assertStatus(405);
+
+    // Web ルートは未認証で401
+    $this->get('/bookings')->assertStatus(401);
 });
 
 // ==================== ナーチャリングメール ====================

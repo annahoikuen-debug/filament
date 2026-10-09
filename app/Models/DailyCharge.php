@@ -23,6 +23,14 @@ class DailyCharge extends Model
     protected static function booted(): void
     {
         static::creating(function (DailyCharge $charge) {
+            // facility_id が未設定の場合、入居者から自動補完（施設管理者の一覧表示・データ分離のため）
+            if (empty($charge->facility_id) && $charge->resident_id) {
+                $resident = $charge->resident ?? Resident::find($charge->resident_id);
+                if ($resident) {
+                    $charge->facility_id = $resident->facility_id;
+                }
+            }
+
             // charge_item_id が指定されていて unit_price が未設定（または0）の場合、価格履歴から自動取得
             // NULL、0、空文字列のいずれもガード
             $chargeItemId = $charge->charge_item_id;

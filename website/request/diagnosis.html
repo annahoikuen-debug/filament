@@ -73,6 +73,10 @@
             </p>
 
             <form class="c-form" id="diagnosisForm" action="#" method="POST">
+              <!-- スパム対策: ハニーポット（ボットはこの項目に記入する） -->
+              <input type="text" id="website" name="website" class="c-form__hp" autocomplete="off" tabindex="-1" aria-hidden="true">
+              <input type="hidden" id="form_loaded_at" name="form_loaded_at" value="">
+              <script>document.getElementById('form_loaded_at').value = Math.floor(Date.now() / 1000);</script>
               <div class="c-form__row">
                 <label class="c-form__label" for="name">お名前 <span class="c-form__required">必須</span></label>
                 <input type="text" id="name" name="name" class="c-form__input" placeholder="例：山田 太郎" required>

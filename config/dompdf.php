@@ -8,6 +8,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | ここでカスタムフォントを登録し、PDF生成時に使用できるようにします。
+    | DejaVu Sans は Alpine Linux 標準搭載（/usr/share/fonts/truetype/dejavu/）
     |
     */
 
@@ -15,7 +16,7 @@ return [
 
     'font_cache' => storage_path('fonts'),
 
-    'default_font' => 'ipaexg',
+    'default_font' => 'DejaVu Sans',
 
     'font_height_ratio' => 1.25,
 

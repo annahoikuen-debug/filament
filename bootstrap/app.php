@@ -27,6 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->job(new SendTrialNurtureEmails())
                  ->dailyAt('10:00')
                  ->withoutOverlapping();
+
+        // 毎月1日午前2時に5年以上古い請求書PDFキャッシュを削除
+        $schedule->command('invoices:cleanup-pdfs --years=5')
+                 ->monthlyOn(1, '02:00')
+                 ->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

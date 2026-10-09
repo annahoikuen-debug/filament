@@ -18,13 +18,19 @@ use App\Http\Controllers\QuoteController;
 |
 */
 
-Route::post('/trials', [TrialController::class, 'store']);
-Route::post('/trials/{trial}/convert', [TrialConversionController::class, 'convert']);
-Route::get('/trials/{trial}/quote', [QuoteController::class, 'show']);
-Route::post('/trials/{trial}/quote/send', [QuoteController::class, 'send']);
+Route::post('/trials', [TrialController::class, 'store'])
+    ->middleware('throttle:trial-create');
 
-Route::post('/bookings', [BookingController::class, 'store']);
-Route::get('/bookings', [BookingController::class, 'index']);
+Route::post('/trials/{trial}/convert', [TrialConversionController::class, 'convert'])
+    ->middleware('throttle:trial-convert');
+
+Route::get('/trials/{trial}/quote', [QuoteController::class, 'show']);
+
+Route::post('/trials/{trial}/quote/send', [QuoteController::class, 'send'])
+    ->middleware('throttle:quote-send');
+
+Route::post('/bookings', [BookingController::class, 'store'])
+    ->middleware('throttle:booking-create');
 
 Route::post('/site-forms/{type}', [FormController::class, 'store'])
     ->where('type', 'catalog|demo|diagnosis|prospect|inquiry')

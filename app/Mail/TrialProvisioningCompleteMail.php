@@ -15,6 +15,7 @@ class TrialProvisioningCompleteMail extends Mailable
     public function __construct(
         public readonly Trial $trial,
         public readonly string $tempPassword,
+        public readonly ?string $conversionToken = null,
     ) {
     }
 

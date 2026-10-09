@@ -177,9 +177,9 @@ class OnboardingWizard extends Page implements HasActions, HasForms
                             ->label('会計ソフト')
                             ->options([
                                 'freee' => 'freee',
-                                'MFクラウド会計' => 'MFクラウド会計',
-                                '弥生会計' => '弥生会計',
-                                '勘定奉行' => '勘定奉行',
+                                'mf' => 'MFクラウド会計',
+                                'yayoi' => '弥生会計',
+                                'kanjobugyo' => '勘定奉行',
                             ])
                             ->default('freee')
                             ->required(),

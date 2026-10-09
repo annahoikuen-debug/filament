@@ -23,7 +23,7 @@ class UnpaidInvoicesAlert extends BaseWidget
         $query = MonthlyInvoice::query()
             ->where('status', '!=', InvoiceStatus::Paid);
 
-        // 施設管理者の場合は自施設のみ
+        // 施設管理者の場合は自施設のみ（法人管理者も facility_id を持つ場合は自施設基準）
         if ($user && $user->role === 'facility_admin' && $user->facility_id) {
             $query->where('facility_id', $user->facility_id);
         }

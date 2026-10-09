@@ -131,9 +131,9 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">会計ソフト</label>
                             <select wire:model="formData.accounting_software" class="fi-input block w-full border-gray-300 rounded-md shadow-sm">
                                 <option value="freee">freee</option>
-                                <option value="MFクラウド会計">MFクラウド会計</option>
-                                <option value="弥生会計">弥生会計</option>
-                                <option value="勘定奉行">勘定奉行</option>
+                                <option value="mf">MFクラウド会計</option>
+                                <option value="yayoi">弥生会計</option>
+                                <option value="kanjobugyo">勘定奉行</option>
                             </select>
                         </div>
                         <div>

@@ -21,6 +21,14 @@ class TrialConversionController extends Controller
      */
     public function convert(Request $request, Trial $trial)
     {
+        // 認可: トライアル所有者のみが移行可能（プロビジョニングメールで通知されるトークン）
+        if (!$trial->isValidConversionToken($request->input('conversion_token'))) {
+            return response()->json([
+                'success' => false,
+                'message' => '移行トークンが不正です。',
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'plan' => ['required', Rule::in(['starter', 'standard', 'enterprise'])],
             'invoice_registration_number' => ['required', 'regex:/^T\d{13}$/'],
@@ -42,6 +50,8 @@ class TrialConversionController extends Controller
         }
 
         try {
+            $alreadyConverted = $trial->status === 'converted';
+
             $subscription = $this->conversionService->convert($trial, array_merge(
                 $validator->validated(),
                 [
@@ -52,7 +62,7 @@ class TrialConversionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => '本契約に移行しました。',
+                'message' => $alreadyConverted ? '既に本契約に移行済みです。' : '本契約に移行しました。',
                 'subscription_id' => $subscription->id,
                 'plan' => $subscription->plan,
                 'monthly_price' => $subscription->monthly_price,

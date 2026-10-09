@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Mail;
 class MailService
 {
     /**
-     * メール送信（設定未検知時はログへフォールバック）
+     * メール送信（キュー経由で非同期化）
+     * 設定未検知時はログへフォールバック
      */
     public function send(Mailable $mailable, string $email): bool
     {
@@ -17,20 +18,22 @@ class MailService
             Log::info('[MailService] メール設定が無いためログに記録します', [
                 'to' => $email,
                 'mailable' => get_class($mailable),
-                'subject' => method_exists($mailable, 'build') ? 'N/A' : 'N/A',
             ]);
             return false;
         }
 
         try {
-            Mail::to($email)->send($mailable);
-            Log::info('[MailService] メール送信完了', [
+            // キューに投入（onQueue('emails') で emails キューへ）
+            // 同期ドライバーの場合は即時送信されるため挙動は変わらない
+            Mail::to($email)->queue($mailable);
+
+            Log::info('[MailService] メールをキューに投入しました', [
                 'to' => $email,
                 'mailable' => get_class($mailable),
             ]);
             return true;
         } catch (\Exception $e) {
-            Log::error('[MailService] メール送信失敗', [
+            Log::error('[MailService] メールキューへの投入に失敗しました', [
                 'to' => $email,
                 'mailable' => get_class($mailable),
                 'error' => $e->getMessage(),

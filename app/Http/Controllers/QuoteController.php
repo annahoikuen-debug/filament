@@ -29,10 +29,19 @@ class QuoteController extends Controller
     }
 
     /**
-     * 見積書をメール送信
+     * 見積書をメール送信（トライアル所有者のみ）
      */
-    public function send(Trial $trial)
+    public function send(Request $request, Trial $trial)
     {
+        // 認可: 見積書はトライアル所有者のメールアドレスへ送信されるため、
+        // プロビジョニングメールで通知されるトークンを要求する
+        if (!$trial->isValidConversionToken($request->input('conversion_token'))) {
+            return response()->json([
+                'success' => false,
+                'message' => '見積書送信トークンが不正です。',
+            ], 403);
+        }
+
         $quote = $this->quoteService->quote($trial);
 
         $this->mailService->send(

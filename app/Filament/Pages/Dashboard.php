@@ -138,7 +138,7 @@ class Dashboard extends BaseDashboard implements HasActions
                     'name' => $invoice->resident?->name ?? '不明',
                     'total_amount' => $invoice->total_amount,
                     'status' => $invoice->status->value,
-                    'status_label' => $invoice->status->label(),
+                    'status_label' => $invoice->status->getLabel(),
                 ];
             })
             ->toArray();

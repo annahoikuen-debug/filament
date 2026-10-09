@@ -50,7 +50,15 @@ class DailyChargeResource extends Resource
 
                         Forms\Components\Select::make('charge_item_id')
                             ->label('品目')
-                            ->relationship('chargeItem', 'name')
+                            ->relationship('chargeItem', 'name', fn (Builder $query) => $query
+                                ->where('is_active', true)
+                                ->when(
+                                    Auth::user()?->isFacilityAdmin() && Auth::user()?->facility_id,
+                                    fn ($q) => $q->where(function ($qq) {
+                                        $qq->whereNull('facility_id')
+                                            ->orWhere('facility_id', Auth::user()->facility_id);
+                                    })
+                                ))
                             ->searchable(['name'])
                             ->getOptionLabelFromRecordUsing(fn (ChargeItem $record) => "{$record->name} (¥{$record->default_price})")
                             ->required()

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\FormDownloadController;
 use App\Http\Controllers\InvoiceZipDownloadController;
 use App\Services\InvoicePdfService;
 use Illuminate\Support\Facades\Route;
@@ -21,10 +23,22 @@ Route::middleware(['web', 'auth'])->group(function () {
         ->name('invoices.zip-progress');
 });
 
-// HTMLプレビュー用ルート（Webアプリ表示用・認証不要）
-Route::middleware(['web'])->group(function () {
+// デモ面談予約一覧（営業担当用・管理者のみ。個人情報保護のため認証必須）
+// JSON 応答のため 'auth' リダイレクトではなくコントローラー側で認可判定
+Route::middleware(['web'])->get('/bookings', [BookingController::class, 'index'])
+    ->name('bookings.index');
+
+// HTMLプレビュー用ルート（メール送信用・署名付きURLのみ許可）
+// 個人情報（請求書データ）が含まれるため、ID推測による不正アクセスを防止するため署名検証を必須化
+Route::middleware(['web', 'signed'])->group(function () {
     Route::get('/invoices/{invoice}/preview/{type}', [InvoicePdfService::class, 'previewHtml'])
         ->name('invoices.preview')
         ->where('type', 'invoice|receipt')
         ->withoutMiddleware([\Illuminate\Auth\Middleware\Authenticate::class]);
 });
+
+// フォーム確認メール内の署名付き資料ダウンロードルート（認証不要・署名必須）
+Route::get('/forms/{submission}/download/{document}', [FormDownloadController::class, 'show'])
+    ->name('forms.download')
+    ->middleware('signed')
+    ->where('document', 'catalog|diagnosis');

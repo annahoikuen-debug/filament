@@ -88,16 +88,8 @@ RUN mkdir -p \
     storage/logs \
     storage/app/{invoices,temp,public} \
     bootstrap/cache \
-    resources/fonts/noto-sans-jp \
     && chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
-
-# Install Noto Sans JP fonts for PDF generation
-RUN wget -q -O /tmp/noto-regular.ttf https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Regular.ttf \
-    && wget -q -O /tmp/noto-bold.ttf https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Bold.ttf \
-    && wget -q -O /tmp/noto-medium.ttf https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansJP/NotoSansJP-Medium.ttf \
-    && mv /tmp/noto-*.ttf resources/fonts/noto-sans-jp/ \
-    && chmod 644 resources/fonts/noto-sans-jp/*.ttf
 
 # OPcache + JIT configuration
 RUN echo "opcache.enable=1\nopcache.memory_consumption=64\nopcache.interned_strings_buffer=16\nopcache.max_accelerated_files=10000\nopcache.revalidate_freq=0\nopcache.jit_buffer_size=32M\nopcache.jit=1255" > /usr/local/etc/php/conf.d/opcache.ini

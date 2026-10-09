@@ -7,8 +7,10 @@
     root * /app/public
     encode zstd gzip
 
-    # PHP server
-    php_server
+    # PHP server - single worker for memory efficiency
+    php_server {
+        # Worker count controlled via env: FRANKENPHP_PHP_SERVER_WORKERS=1
+    }
 
     # Security headers
     header {
