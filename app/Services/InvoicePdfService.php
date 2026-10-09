@@ -7,6 +7,7 @@ use App\Models\ServiceInvoice;
 use App\Services\Pdf\Contracts\FontRegistryInterface;
 use App\Services\Pdf\Contracts\RendererInterface;
 use App\Services\Pdf\InvoicePdfGenerator;
+use App\Services\Pdf\PdfPasswordProtector;
 use App\Services\Pdf\TemplateSettingsService;
 use Barryvdh\DomPDF\PDF as DomPdfInstance;
 use Illuminate\Http\Response;
@@ -21,7 +22,25 @@ class InvoicePdfService
         private TemplateSettingsService $templateSettings,
         private FontRegistryInterface $fontRegistry,
         private RendererInterface $renderer,
+        private PdfPasswordProtector $passwordProtector,
     ) {}
+
+    /**
+     * 設定に応じてPDFバイナリにパスワード保護を適用する（保護無効時は元のバイナリを返す）
+     */
+    protected function applyPasswordProtection(string $pdfBinary, MonthlyInvoice $invoice): string
+    {
+        try {
+            return $this->passwordProtector->protectInvoice($pdfBinary, $invoice);
+        } catch (\Throwable $e) {
+            // 保護に失敗した場合は安全のためPDFを返さずエラーとする
+            \Illuminate\Support\Facades\Log::error('PDF password protection failed', [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
 
     /**
      * 請求書PDFを生成する
@@ -70,7 +89,15 @@ class InvoicePdfService
      */
     public function downloadPdf(MonthlyInvoice $invoice): Response
     {
-        return $this->generator->generateInvoice($invoice, true, null);
+        $pdfBinary = $this->applyPasswordProtection(
+            $this->generator->generateInvoice($invoice, false, null),
+            $invoice
+        );
+
+        return response($pdfBinary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $this->generator->generateInvoiceFilename($invoice) . '"',
+        ]);
     }
 
     /**
@@ -78,7 +105,15 @@ class InvoicePdfService
      */
     public function streamPdf(MonthlyInvoice $invoice): Response
     {
-        return $this->generator->streamInvoice($invoice, null);
+        $pdfBinary = $this->applyPasswordProtection(
+            $this->generator->generateInvoice($invoice, false, null),
+            $invoice
+        );
+
+        return response($pdfBinary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $this->generator->generateInvoiceFilename($invoice) . '"',
+        ]);
     }
 
     /**
@@ -137,6 +172,19 @@ class InvoicePdfService
     public function generateMonthlyZipSync(string $yearMonth, ?int $facilityId = null): string
     {
         $results = $this->generator->generateMonthlyBatch($yearMonth, $facilityId);
+
+        // パスワード保護が有効な場合は各PDFに保護を適用
+        if (config('pdf.password.enabled')) {
+            $invoiceMap = MonthlyInvoice::where('billing_year_month', $yearMonth)
+                ->with('resident')
+                ->get()
+                ->keyBy('id');
+            foreach ($results as $i => $result) {
+                if (isset($result['invoice_id']) && ($invoice = $invoiceMap->get($result['invoice_id']))) {
+                    $results[$i]['content'] = $this->applyPasswordProtection($result['content'], $invoice);
+                }
+            }
+        }
 
         $zipPath = storage_path("app/temp/請求書一括_{$yearMonth}.zip");
 

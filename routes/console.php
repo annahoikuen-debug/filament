@@ -44,6 +44,18 @@ Artisan::command('pdf:install-fonts {--force : 既存フォントを上書きす
     return 0;
 })->purpose('Noto Sans JP フォントをダウンロードしてPDF生成用にインストールします');
 
+// チャットボット会話ログの保持期間クリーンアップ
+Schedule::call(function () {
+    $retentionDays = (int) config('chatbot.retention_days', 90);
+    $deleted = \App\Models\ChatLog::where('created_at', '<', now()->subDays($retentionDays))->delete();
+    if ($deleted > 0) {
+        \Illuminate\Support\Facades\Log::info("チャットログクリーンアップ: {$deleted} 件を削除");
+    }
+})
+    ->dailyAt('04:00')
+    ->description('チャットボット会話ログの保持期間超過分を削除')
+    ->environments(['production', 'staging']);
+
 // スケジューラ設定
 Schedule::command(GenerateMonthlyInvoices::class)
     ->monthlyOn(1, '02:00')

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\FormDownloadController;
 use App\Http\Controllers\InvoiceZipDownloadController;
 use App\Services\InvoicePdfService;
@@ -35,6 +36,13 @@ Route::middleware(['web', 'signed'])->group(function () {
         ->name('invoices.preview')
         ->where('type', 'invoice|receipt')
         ->withoutMiddleware([\Illuminate\Auth\Middleware\Authenticate::class]);
+});
+
+// チャットボットAPI（職員向け・認証必須）
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/api/chatbot/message', [ChatbotController::class, 'message'])
+        ->middleware('throttle:30,1')
+        ->name('chatbot.message');
 });
 
 // フォーム確認メール内の署名付き資料ダウンロードルート（認証不要・署名必須）

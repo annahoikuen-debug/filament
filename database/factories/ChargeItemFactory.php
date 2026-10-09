@@ -13,8 +13,13 @@ class ChargeItemFactory extends Factory
 
     public function definition(): array
     {
+        $names = ['おむつ', '理美容', '立替', '介護用品', 'リハビリ'];
+        $displayNames = ['おむつ代', '理美容代', '立替金', '介護用品費', 'リハビリ費'];
+        
         return [
-            'name' => fake()->randomElement(['おむつ', '理美容', '立替', '介護用品', 'リハビリ']),
+            'name' => fake()->randomElement($names),
+            'display_name' => fake()->randomElement($displayNames),
+            'description' => fake()->optional(0.5)->sentence(),
             'default_price' => fake()->numberBetween(100, 5000),
             'is_active' => true,
             'tax_type' => \App\Enums\TaxType::Standard,

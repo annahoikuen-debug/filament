@@ -42,6 +42,11 @@
             'dailyCharges' => $data['daily_charges'],
         ])
 
+        {{-- 計算根拠セクション --}}
+        @include('pdf.components.calculation-basis', [
+            'data' => $data,
+        ])
+
         @include('pdf.components.footer', [
             'facility' => $data['facility'],
             'template' => $template,

@@ -50,6 +50,7 @@ test('fill可能フィールド一覧が正しいこと', function () {
         'room_number',
         'name',
         'name_kana',
+        'birth_date',
         'base_rent',
         'base_management_fee',
         'status',

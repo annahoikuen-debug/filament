@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" font-family="'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif">
+  <rect width="1100" height="620" fill="#f8fafc"/>
+  <rect x="0" y="0" width="1100" height="48" fill="#0f172a"/>
+  <text x="20" y="30" font-size="15" fill="#ffffff" font-weight="bold">請求管理システム</text>
+  <rect x="0" y="48" width="220" height="572" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="20" y="119" font-size="13" fill="#475569">日々の自費記録</text>
+  <text x="20" y="152" font-size="13" fill="#475569">月次請求データ</text>
+  <text x="20" y="185" font-size="13" fill="#475569">介護サービス請求</text>
+  <rect x="0" y="203" width="220" height="36" fill="#f0f9ff"/>
+  <rect x="0" y="203" width="4" height="36" fill="#0284c7"/>
+  <text x="20" y="226" font-size="13" fill="#0369a1" font-weight="bold">統合請求管理</text>
+  <text x="20" y="260" font-size="13" fill="#475569">監査ログ</text>
+
+  <text x="248" y="80" font-size="20" fill="#0f172a" font-weight="bold">統合請求管理ダッシュボード</text>
+
+  <!-- フィルタ -->
+  <rect x="248" y="96" width="160" height="34" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="260" y="118" font-size="11" fill="#475569">請求年月: 2026-10 ▼</text>
+  <rect x="416" y="96" width="140" height="34" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="428" y="118" font-size="11" fill="#475569">施設: 全施設 ▼</text>
+  <rect x="920" y="96" width="140" height="34" rx="6" fill="#0ea5e9"/>
+  <text x="990" y="118" font-size="11" fill="#fff" text-anchor="middle" font-weight="bold">⬇ CSVエクスポート</text>
+
+  <!-- テーブル -->
+  <rect x="248" y="146" width="812" height="380" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <rect x="248" y="146" width="812" height="38" rx="8" fill="#f8fafc"/>
+  <g font-size="10" fill="#64748b" font-weight="bold">
+    <text x="258" y="170">部屋番号</text>
+    <text x="330" y="170">入居者名</text>
+    <text x="405" y="170">家賃</text>
+    <text x="465" y="170">管理費</text>
+    <text x="525" y="170">自費</text>
+    <text x="585" y="170">訪問介護</text>
+    <text x="655" y="170">通所介護</text>
+    <text x="730" y="170">住居費計</text>
+    <text x="805" y="170">介護計</text>
+    <text x="875" y="170">総合計(税込)</text>
+  </g>
+  <line x1="248" y1="184" x2="1060" y2="184" stroke="#e2e8f0"/>
+
+  <!-- 行1 -->
+  <g font-size="11" fill="#334155">
+    <rect x="253" y="196" width="46" height="20" rx="10" fill="#dbeafe"/>
+    <text x="276" y="210" font-size="10" fill="#1d4ed8" text-anchor="middle" font-weight="bold">101</text>
+    <text x="330" y="210" font-weight="bold">佐藤 一郎</text>
+    <text x="405" y="210">¥65,000</text>
+    <text x="465" y="210">¥30,000</text>
+    <text x="525" y="210">¥540</text>
+    <text x="585" y="210">¥52,800</text>
+    <text x="655" y="210">¥0</text>
+    <text x="730" y="210" fill="#0369a1" font-weight="bold">¥95,540</text>
+    <text x="805" y="210" fill="#b45309" font-weight="bold">¥52,800</text>
+    <text x="875" y="210" fill="#b91c1c" font-weight="bold">¥148,340</text>
+  </g>
+  <line x1="248" y1="230" x2="1060" y2="230" stroke="#f1f5f9"/>
+
+  <!-- 行2 -->
+  <g font-size="11" fill="#334155">
+    <rect x="253" y="244" width="46" height="20" rx="10" fill="#dbeafe"/>
+    <text x="276" y="258" font-size="10" fill="#1d4ed8" text-anchor="middle" font-weight="bold">102</text>
+    <text x="330" y="258" font-weight="bold">鈴木 ハナ</text>
+    <text x="405" y="258">¥60,000</text>
+    <text x="465" y="258">¥30,000</text>
+    <text x="525" y="258">¥0</text>
+    <text x="585" y="258">¥0</text>
+    <text x="655" y="258">¥34,100</text>
+    <text x="730" y="258" fill="#0369a1" font-weight="bold">¥90,000</text>
+    <text x="805" y="258" fill="#b45309" font-weight="bold">¥34,100</text>
+    <text x="875" y="258" fill="#b91c1c" font-weight="bold">¥124,100</text>
+  </g>
+  <line x1="248" y1="278" x2="1060" y2="278" stroke="#f1f5f9"/>
+
+  <!-- 行3 -->
+  <g font-size="11" fill="#334155">
+    <rect x="253" y="292" width="46" height="20" rx="10" fill="#dbeafe"/>
+    <text x="276" y="306" font-size="10" fill="#1d4ed8" text-anchor="middle" font-weight="bold">103</text>
+    <text x="330" y="306" font-weight="bold">高橋 健二</text>
+    <text x="405" y="306">¥65,000</text>
+    <text x="465" y="306">¥30,000</text>
+    <text x="525" y="306">¥2,200</text>
+    <text x="585" y="306">¥0</text>
+    <text x="655" y="306">¥0</text>
+    <text x="730" y="306" fill="#0369a1" font-weight="bold">¥97,200</text>
+    <text x="805" y="306" fill="#b45309" font-weight="bold">¥0</text>
+    <text x="875" y="306" fill="#b91c1c" font-weight="bold">¥97,200</text>
+  </g>
+  <line x1="248" y1="326" x2="1060" y2="326" stroke="#f1f5f9"/>
+
+  <!-- 行4 -->
+  <g font-size="11" fill="#334155">
+    <rect x="253" y="340" width="46" height="20" rx="10" fill="#dbeafe"/>
+    <text x="276" y="354" font-size="10" fill="#1d4ed8" text-anchor="middle" font-weight="bold">104</text>
+    <text x="330" y="354" font-weight="bold">田中 トメ</text>
+    <text x="405" y="354">¥60,000</text>
+    <text x="465" y="354">¥30,000</text>
+    <text x="525" y="354">¥0</text>
+    <text x="585" y="354">¥13,200</text>
+    <text x="655" y="354">¥0</text>
+    <text x="730" y="354" fill="#0369a1" font-weight="bold">¥90,000</text>
+    <text x="805" y="354" fill="#b45309" font-weight="bold">¥13,200</text>
+    <text x="875" y="354" fill="#b91c1c" font-weight="bold">¥103,200</text>
+  </g>
+  <text x="258" y="382" font-size="11" fill="#94a3b8">…（対象月の在籍入居者全件表示）</text>
+
+  <!-- 集計サマリー -->
+  <rect x="248" y="400" width="812" height="110" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <g font-size="11" fill="#475569" font-weight="bold">
+    <text x="268" y="428">集計（全行）：</text>
+  </g>
+  <g font-size="12" fill="#334155">
+    <text x="268" y="456">住居費総計: <tspan fill="#0369a1" font-weight="bold">¥372,740</tspan></text>
+    <text x="470" y="456">介護総計: <tspan fill="#b45309" font-weight="bold">¥100,100</tspan></text>
+    <text x="650" y="456">総合計: <tspan fill="#b91c1c" font-weight="bold">¥472,840</tspan></text>
+  </g>
+  <g font-size="10" fill="#64748b">
+    <text x="268" y="482">家賃計 ¥250,000　管理費計 ¥120,000　自費計 ¥2,740</text>
+  </g>
+
+  <!-- 凡例 -->
+  <rect x="248" y="540" width="812" height="56" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="268" y="562" font-size="11" fill="#475569" font-weight="bold">列の見方：</text>
+  <text x="360" y="562" font-size="10" fill="#64748b">住居費計＝家賃＋管理費＋自費（月次請求）、介護計＝介護サービス請求の合計、総合計＝住居費計＋介護計</text>
+  <text x="268" y="584" font-size="10" fill="#94a3b8">※ 介護サービス種別（訪問介護・通所介護等）ごとの列は動的に生成されます。下書きの介護サービス請求は集計対象外です。</text>
+</svg>

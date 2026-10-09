@@ -24,8 +24,8 @@ class InvoicePdfGenerator
 
     public function generateInvoice(MonthlyInvoice $invoice, bool $download = false, ?array $facility = null)
     {
-        $data = $this->dataProvider->getInvoiceData($invoice, $facility);
         $templateConfig = $this->templateSettings->getSettings('invoice');
+        $data = $this->dataProvider->getInvoiceData($invoice, $facility, $templateConfig);
         $html = $this->invoiceTemplate->render(array_merge($data->toArray(), ['template' => $templateConfig]));
 
         if ($download) {
@@ -37,8 +37,8 @@ class InvoicePdfGenerator
 
     public function streamInvoice(MonthlyInvoice $invoice, ?array $facility = null)
     {
-        $data = $this->dataProvider->getInvoiceData($invoice, $facility);
         $templateConfig = $this->templateSettings->getSettings('invoice');
+        $data = $this->dataProvider->getInvoiceData($invoice, $facility, $templateConfig);
         $html = $this->invoiceTemplate->render(array_merge($data->toArray(), ['template' => $templateConfig]));
         return $this->renderer->stream($html, $this->invoiceFilename($invoice));
     }
@@ -66,8 +66,8 @@ class InvoicePdfGenerator
 
     public function previewInvoice(MonthlyInvoice $invoice, ?array $facility = null): string
     {
-        $data = $this->dataProvider->getInvoiceData($invoice, $facility);
         $templateConfig = $this->templateSettings->getSettings('invoice');
+        $data = $this->dataProvider->getInvoiceData($invoice, $facility, $templateConfig);
         return $this->invoiceTemplate->render(array_merge($data->toArray(), ['template' => $templateConfig]));
     }
 
@@ -94,13 +94,14 @@ class InvoicePdfGenerator
      */
     public function generateMonthlyBatch(string $yearMonth, ?int $facilityId = null): array
     {
-        $invoicesData = $this->dataProvider->getMonthlyInvoicesData($yearMonth, $facilityId);
         $templateConfig = $this->templateSettings->getSettings('invoice');
+        $invoicesData = $this->dataProvider->getMonthlyInvoicesData($yearMonth, $facilityId, $templateConfig);
         $results = [];
 
         foreach ($invoicesData as $data) {
             $html = $this->invoiceTemplate->render(array_merge($data->toArray(), ['template' => $templateConfig]));
             $results[] = [
+                'invoice_id' => $data->invoiceId,
                 'filename' => $this->batchFilename($data),
                 'content' => $this->renderer->render($html),
             ];
@@ -147,6 +148,11 @@ class InvoicePdfGenerator
             $count++;
         }
         return $count;
+    }
+
+    public function generateInvoiceFilename(MonthlyInvoice $invoice): string
+    {
+        return $this->invoiceFilename($invoice);
     }
 
     private function invoiceFilename(MonthlyInvoice $invoice): string

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" font-family="'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif">
+  <rect width="1100" height="620" fill="#f8fafc"/>
+  <rect x="0" y="0" width="1100" height="48" fill="#0f172a"/>
+  <text x="20" y="30" font-size="15" fill="#ffffff" font-weight="bold">請求管理システム</text>
+  <rect x="0" y="48" width="220" height="572" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="20" y="119" font-size="13" fill="#475569">日々の自費記録</text>
+  <text x="20" y="152" font-size="13" fill="#475569">月次請求データ</text>
+  <text x="20" y="185" font-size="13" fill="#475569">介護サービス請求</text>
+  <text x="20" y="218" font-size="13" fill="#475569">統合請求管理</text>
+  <text x="20" y="251" font-size="13" fill="#475569">監査ログ</text>
+  <rect x="0" y="269" width="220" height="36" fill="#f0f9ff"/>
+  <rect x="0" y="269" width="4" height="36" fill="#0284c7"/>
+  <text x="20" y="292" font-size="13" fill="#0369a1" font-weight="bold">チャットボット</text>
+
+  <text x="248" y="80" font-size="20" fill="#0f172a" font-weight="bold">チャットボットアシスタント</text>
+  <text x="850" y="80" font-size="11" fill="#94a3b8">🔒 管理者のみ利用可能</text>
+
+  <!-- チャットエリア -->
+  <rect x="248" y="96" width="812" height="420" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+
+  <!-- 日付区切り -->
+  <text x="654" y="124" font-size="10" fill="#94a3b8" text-anchor="middle">— 2026年10月9日 —</text>
+
+  <!-- ユーザー質問1 -->
+  <rect x="700" y="140" width="330" height="36" rx="12" fill="#0284c7"/>
+  <text x="714" y="163" font-size="12" fill="#fff">山田太郎の今月の請求額は？</text>
+
+  <!-- アシスタント回答1 -->
+  <rect x="268" y="190" width="600" height="110" rx="12" fill="#f8fafc" stroke="#e2e8f0"/>
+  <circle cx="292" cy="212" r="10" fill="#0ea5e9"/>
+  <text x="292" y="216" font-size="10" fill="#fff" text-anchor="middle">🤖</text>
+  <text x="312" y="216" font-size="11" fill="#475569" font-weight="bold">アシスタント</text>
+  <g font-size="11" fill="#334155">
+    <text x="312" y="238">山田太郎 様（102号室）の 2026年10月 請求額（税込）: <tspan font-weight="bold">¥90,000</tspan></text>
+    <text x="312" y="256">内訳: 家賃 ¥60,000（非課税）＋ 管理費 ¥30,000 ＋ 自費 ¥0 ＋ 消費税 ¥3,000</text>
+    <text x="312" y="274">支払期限: 2026-11-30　ステータス: 請求済</text>
+  </g>
+
+  <!-- ユーザー質問2 -->
+  <rect x="700" y="314" width="330" height="36" rx="12" fill="#0284c7"/>
+  <text x="714" y="337" font-size="12" fill="#fff">101号室の入居者は誰ですか</text>
+
+  <!-- アシスタント回答2 -->
+  <rect x="268" y="364" width="600" height="74" rx="12" fill="#f8fafc" stroke="#e2e8f0"/>
+  <circle cx="292" cy="386" r="10" fill="#0ea5e9"/>
+  <text x="292" y="390" font-size="10" fill="#fff" text-anchor="middle">🤖</text>
+  <text x="312" y="390" font-size="11" fill="#475569" font-weight="bold">アシスタント</text>
+  <g font-size="11" fill="#334155">
+    <text x="312" y="412">101号室の入居者は <tspan font-weight="bold">佐藤 一郎</tspan> 様です。</text>
+    <text x="312" y="430">入居日: 2026-10-01　ステータス: 入居中　月額（家賃＋管理費）: ¥95,000</text>
+  </g>
+
+  <!-- 入力欄 -->
+  <rect x="248" y="530" width="700" height="40" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="264" y="555" font-size="12" fill="#94a3b8">質問を入力してください（例: 〇〇さんの支払い状況を教えてください）</text>
+  <rect x="956" y="530" width="104" height="40" rx="8" fill="#0284c7"/>
+  <text x="1008" y="555" font-size="12" fill="#fff" text-anchor="middle" font-weight="bold">送信</text>
+
+  <!-- 凡例 -->
+  <rect x="248" y="588" width="812" height="24" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="268" y="604" font-size="10" fill="#94a3b8">※ 対応: 入居者照会・請求額照会（計算根拠表示）・支払状況・利用料照会・FAQ自動応答。会話ログは氏名をマスキングして保存（保持90日）。施設管理者は自施設のデータのみ参照。</text>
+</svg>

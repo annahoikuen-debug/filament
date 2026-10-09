@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" font-family="'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif">
+  <rect width="1100" height="620" fill="#f8fafc"/>
+  <rect x="0" y="0" width="1100" height="48" fill="#0f172a"/>
+  <text x="20" y="30" font-size="15" fill="#ffffff" font-weight="bold">請求管理システム</text>
+  <rect x="0" y="48" width="220" height="572" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="20" y="119" font-size="13" fill="#475569">日々の自費記録</text>
+  <text x="20" y="152" font-size="13" fill="#475569">月次請求データ</text>
+  <rect x="0" y="170" width="220" height="36" fill="#f0f9ff"/>
+  <rect x="0" y="170" width="4" height="36" fill="#0284c7"/>
+  <text x="20" y="193" font-size="13" fill="#0369a1" font-weight="bold">介護サービス請求</text>
+  <text x="20" y="226" font-size="13" fill="#475569">統合請求管理</text>
+  <text x="20" y="260" font-size="13" fill="#475569">監査ログ</text>
+
+  <text x="248" y="80" font-size="20" fill="#0f172a" font-weight="bold">介護サービス請求一覧</text>
+
+  <!-- ヘッダーアクション -->
+  <rect x="248" y="96" width="120" height="34" rx="6" fill="#0284c7"/>
+  <text x="308" y="118" font-size="11" fill="#fff" text-anchor="middle" font-weight="bold">＋ 新規作成</text>
+
+  <!-- フィルタ -->
+  <rect x="380" y="96" width="160" height="34" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="392" y="118" font-size="11" fill="#475569">請求年月: 2026-10 ▼</text>
+  <rect x="548" y="96" width="180" height="34" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="560" y="118" font-size="11" fill="#475569">サービス種別: すべて ▼</text>
+
+  <!-- テーブル -->
+  <rect x="248" y="146" width="812" height="360" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <rect x="248" y="146" width="812" height="38" rx="8" fill="#f8fafc"/>
+  <g font-size="10" fill="#64748b" font-weight="bold">
+    <text x="258" y="170">請求年月</text>
+    <text x="330" y="170">部屋番号</text>
+    <text x="400" y="170">入居者氏名</text>
+    <text x="490" y="170">サービス種別</text>
+    <text x="600" y="170">請求金額</text>
+    <text x="670" y="170">消費税</text>
+    <text x="735" y="170">税込合計</text>
+    <text x="820" y="170">ステータス</text>
+    <text x="905" y="170">PDF</text>
+    <text x="960" y="170">操作</text>
+  </g>
+  <line x1="248" y1="184" x2="1060" y2="184" stroke="#e2e8f0"/>
+
+  <!-- 行1: 確定済み -->
+  <g font-size="11" fill="#334155">
+    <text x="258" y="208">2026-10</text>
+    <rect x="325" y="196" width="46" height="20" rx="10" fill="#dbeafe"/>
+    <text x="348" y="210" font-size="10" fill="#1d4ed8" text-anchor="middle">101</text>
+    <text x="400" y="210">佐藤 一郎</text>
+    <rect x="485" y="196" width="80" height="20" rx="10" fill="#dbeafe"/>
+    <text x="525" y="210" font-size="10" fill="#1d4ed8" text-anchor="middle">訪問介護</text>
+    <text x="600" y="210">¥48,000</text>
+    <text x="670" y="210">¥4,800</text>
+    <text x="735" y="210" font-weight="bold">¥52,800</text>
+    <rect x="818" y="196" width="66" height="20" rx="10" fill="#e0f2fe"/>
+    <text x="851" y="210" font-size="10" fill="#0369a1" text-anchor="middle">確定済み</text>
+    <text x="905" y="210" font-size="10" fill="#16a34a">あり ✓</text>
+    <text x="958" y="210" font-size="10" fill="#0284c7">PDF DL</text>
+    <text x="958" y="224" font-size="10" fill="#16a34a">送信済みへ</text>
+  </g>
+  <line x1="248" y1="234" x2="1060" y2="234" stroke="#f1f5f9"/>
+
+  <!-- 行2: 送信済み -->
+  <g font-size="11" fill="#334155">
+    <text x="258" y="258">2026-10</text>
+    <rect x="325" y="246" width="46" height="20" rx="10" fill="#dbeafe"/>
+    <text x="348" y="260" font-size="10" fill="#1d4ed8" text-anchor="middle">102</text>
+    <text x="400" y="260">鈴木 ハナ</text>
+    <rect x="485" y="246" width="80" height="20" rx="10" fill="#dcfce7"/>
+    <text x="525" y="260" font-size="10" fill="#15803d" text-anchor="middle">通所介護</text>
+    <text x="600" y="260">¥31,000</text>
+    <text x="670" y="260">¥3,100</text>
+    <text x="735" y="260" font-weight="bold">¥34,100</text>
+    <rect x="818" y="246" width="66" height="20" rx="10" fill="#dcfce7"/>
+    <text x="851" y="260" font-size="10" fill="#15803d" text-anchor="middle">送信済み</text>
+    <text x="905" y="260" font-size="10" fill="#16a34a">あり ✓</text>
+    <text x="958" y="260" font-size="10" fill="#d97706">下書きへ</text>
+  </g>
+  <line x1="248" y1="284" x2="1060" y2="284" stroke="#f1f5f9"/>
+
+  <!-- 行3: 下書き -->
+  <g font-size="11" fill="#334155">
+    <text x="258" y="308">2026-10</text>
+    <rect x="325" y="296" width="46" height="20" rx="10" fill="#dbeafe"/>
+    <text x="348" y="310" font-size="10" fill="#1d4ed8" text-anchor="middle">103</text>
+    <text x="400" y="310">高橋 健二</text>
+    <rect x="485" y="296" width="80" height="20" rx="10" fill="#f1f5f9"/>
+    <text x="525" y="310" font-size="10" fill="#475569" text-anchor="middle">訪問看護</text>
+    <text x="600" y="310">¥22,000</text>
+    <text x="670" y="310">¥2,200</text>
+    <text x="735" y="310" font-weight="bold">¥24,200</text>
+    <rect x="818" y="296" width="66" height="20" rx="10" fill="#f1f5f9"/>
+    <text x="851" y="310" font-size="10" fill="#475569" text-anchor="middle">下書き</text>
+    <text x="905" y="310" font-size="10" fill="#94a3b8">なし ✗</text>
+    <text x="958" y="310" font-size="10" fill="#0284c7">編集</text>
+    <text x="958" y="324" font-size="10" fill="#0ea5e9">確定</text>
+  </g>
+  <line x1="248" y1="334" x2="1060" y2="334" stroke="#f1f5f9"/>
+
+  <!-- 行4: 確定済み（外部連携あり） -->
+  <g font-size="11" fill="#334155">
+    <text x="258" y="358">2026-09</text>
+    <rect x="325" y="346" width="46" height="20" rx="10" fill="#dbeafe"/>
+    <text x="348" y="360" font-size="10" fill="#1d4ed8" text-anchor="middle">104</text>
+    <text x="400" y="360">田中 トメ</text>
+    <rect x="485" y="346" width="80" height="20" rx="10" fill="#a78bfa"/>
+    <text x="525" y="360" font-size="10" fill="#fff" text-anchor="middle">福祉用具貸与</text>
+    <text x="600" y="360">¥12,000</text>
+    <text x="670" y="360">¥1,200</text>
+    <text x="735" y="360" font-weight="bold">¥13,200</text>
+    <rect x="818" y="346" width="66" height="20" rx="10" fill="#e0f2fe"/>
+    <text x="851" y="360" font-size="10" fill="#0369a1" text-anchor="middle">確定済み</text>
+    <text x="905" y="360" font-size="10" fill="#16a34a">あり ✓</text>
+    <text x="958" y="360" font-size="10" fill="#0284c7">PDF DL</text>
+  </g>
+  <text x="258" y="388" font-size="11" fill="#94a3b8">…（対象月の全件表示）</text>
+
+  <!-- 合計サマリー -->
+  <rect x="700" y="404" width="360" height="34" rx="6" fill="#f0f9ff" stroke="#bae6fd"/>
+  <text x="716" y="426" font-size="12" fill="#0369a1" font-weight="bold">税込合計: ¥124,300</text>
+
+  <!-- 凡例 -->
+  <rect x="248" y="540" width="812" height="56" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="268" y="562" font-size="11" fill="#475569" font-weight="bold">ステータス色：</text>
+  <rect x="360" y="552" width="66" height="18" rx="9" fill="#f1f5f9"/>
+  <text x="393" y="565" font-size="10" fill="#475569" text-anchor="middle">下書き</text>
+  <rect x="438" y="552" width="66" height="18" rx="9" fill="#e0f2fe"/>
+  <text x="471" y="565" font-size="10" fill="#0369a1" text-anchor="middle">確定済み</text>
+  <rect x="516" y="552" width="66" height="18" rx="9" fill="#dcfce7"/>
+  <text x="549" y="565" font-size="10" fill="#15803d" text-anchor="middle">送信済み</text>
+  <text x="268" y="584" font-size="10" fill="#94a3b8">※ 介護保険サービス8種（訪問介護・通所介護・居宅介護支援・訪問看護・短期入所・福祉用具・住宅改修・その他）。確定済み・送信済みは編集不可（下書きへ戻す）。</text>
+</svg>

@@ -18,6 +18,8 @@ class ChargeItem extends Model
 
     protected $fillable = [
         'name',
+        'display_name',
+        'description',
         'default_price',
         'tax_type',
         'category',
@@ -37,6 +39,8 @@ class ChargeItem extends Model
             ->logOnly([
                 'facility_id',
                 'name',
+                'display_name',
+                'description',
                 'default_price',
                 'tax_type',
                 'category',

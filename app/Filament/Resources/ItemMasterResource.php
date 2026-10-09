@@ -38,7 +38,20 @@ class ItemMasterResource extends Resource
                             ->label('品目名')
                             ->required()
                             ->maxLength(100)
-                            ->placeholder('例: おむつ代、理美容代、立替金'),
+                            ->placeholder('例: diaper, haircut, advance_payment'),
+
+                        Forms\Components\TextInput::make('display_name')
+                            ->label('表示名（請求書・領収書用）')
+                            ->maxLength(100)
+                            ->placeholder('例: おむつ代、理美容代、立替金')
+                            ->helperText('請求書や領収書に表示される名称。未入力時は品目名が使用されます'),
+
+                        Forms\Components\Textarea::make('description')
+                            ->label('説明・備考')
+                            ->maxLength(500)
+                            ->rows(3)
+                            ->placeholder('品目の詳細説明、用途、注意事項など')
+                            ->helperText('内部管理用の備考欄です。請求書には表示されません'),
 
                         Forms\Components\TextInput::make('default_price')
                             ->label('デフォルト単価')
@@ -69,6 +82,13 @@ class ItemMasterResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
+
+                Tables\Columns\TextColumn::make('display_name')
+                    ->label('表示名')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('default_price')
                     ->label('デフォルト単価')

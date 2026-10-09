@@ -21,6 +21,7 @@ class Resident extends Model
         'room_number',
         'name',
         'name_kana',
+        'birth_date',
         'base_rent',
         'base_management_fee',
         'status',
@@ -32,6 +33,7 @@ class Resident extends Model
         'base_rent' => 'integer',
         'base_management_fee' => 'integer',
         'status' => ResidentStatus::class,
+        'birth_date' => 'date',
         'move_in_date' => 'date',
         'move_out_date' => 'date',
     ];

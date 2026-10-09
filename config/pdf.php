@@ -140,4 +140,25 @@ return [
         // Example:
         // 'show_qr_code' => true,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | PDF Password Protection Settings
+    |--------------------------------------------------------------------------
+    |
+    | 生成される請求書・領収書PDFにパスワード保護（暗号化）を付与する。
+    |
+    | enabled: 保護の有効/無効（falseの間は既存動作を維持）
+    | mode:    'fixed' = 全PDF共通の固定パスワード
+    |          'resident_birthday' = 入居者の生年月日8桁（YYYYMMDD）
+    | fixed_password: mode='fixed' 時に使用するパスワード
+    |
+    |--------------------------------------------------------------------------
+    */
+
+    'password' => [
+        'enabled' => env('PDF_PASSWORD_ENABLED', false),
+        'mode' => env('PDF_PASSWORD_MODE', 'fixed'),
+        'fixed_password' => env('PDF_PASSWORD_FIXED', 'seikyu2026'),
+    ],
 ];

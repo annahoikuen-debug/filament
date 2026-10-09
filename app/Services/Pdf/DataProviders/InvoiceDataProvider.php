@@ -8,9 +8,9 @@ use App\Models\MonthlyInvoice;
 
 class InvoiceDataProvider
 {
-    public function getInvoiceData(MonthlyInvoice $invoice, ?array $facility = null): InvoicePdfData
+    public function getInvoiceData(MonthlyInvoice $invoice, ?array $facility = null, ?array $templateConfig = null): InvoicePdfData
     {
-        return InvoicePdfData::fromInvoice($invoice, $facility);
+        return InvoicePdfData::fromInvoice($invoice, $facility, $templateConfig);
     }
 
     public function getReceiptData(MonthlyInvoice $invoice, ?array $facility = null): ReceiptPdfData
@@ -21,7 +21,7 @@ class InvoiceDataProvider
     /**
      * @return InvoicePdfData[]
      */
-    public function getMonthlyInvoicesData(string $yearMonth, ?int $facilityId = null): array
+    public function getMonthlyInvoicesData(string $yearMonth, ?int $facilityId = null, ?array $templateConfig = null): array
     {
         $query = MonthlyInvoice::with([
             'resident.dailyCharges' => function ($q) use ($yearMonth) {
@@ -38,7 +38,7 @@ class InvoiceDataProvider
         }
 
         return $query->get()
-            ->map(fn ($invoice) => $this->getInvoiceData($invoice))
+            ->map(fn ($invoice) => $this->getInvoiceData($invoice, null, $templateConfig))
             ->toArray();
     }
 }
