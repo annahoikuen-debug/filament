@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\ServiceInvoiceStatus;
 use App\Models\AccountingExportProfile;
 use App\Models\ChartOfAccount;
 use App\Models\MonthlyInvoice;
+use App\Models\ServiceInvoice;
 use App\Models\Facility;
 use Carbon\Carbon;
 
@@ -82,24 +84,26 @@ class InvoiceCsvExportService
     }
 
     /**
-     * 会計仕訳連携用CSVを生成する（プロファイル対応版）
+     * 会計仕訳連携用CSVを生成する（プロファイル対応版・介護サービス統合対応）
      *
      * @param  string  $yearMonth  'YYYY-MM'
      * @param  int|null  $facilityId  施設ID（未指定時は全施設）
      * @param  string|null  $softwareType  会計ソフト種類 (freee, mf, yayoi, kanjobugyo, custom)
      * @param  int|null  $profileId  プロファイルID（指定時はそれを使用、未指定時はデフォルト）
+     * @param  bool  $includeCareServices  介護サービス請求を含めるか
      * @return string CSV文字列
      */
     public function exportAccountingJournalCsv(
         string $yearMonth,
         ?int $facilityId = null,
         ?string $softwareType = null,
-        ?int $profileId = null
+        ?int $profileId = null,
+        bool $includeCareServices = true
     ): string {
         // プロファイル取得
         $profile = $this->resolveProfile($facilityId, $softwareType, $profileId);
 
-        // 請求データ取得
+        // 請求データ取得（住居費）
         $query = MonthlyInvoice::with('resident.facility')
             ->forYearMonth($yearMonth)
             ->whereIn('status', [InvoiceStatus::Billed, InvoiceStatus::Paid])
@@ -111,26 +115,47 @@ class InvoiceCsvExportService
 
         $invoices = $query->get();
 
-        // 勘定科目マスタ取得（施設ごと）
-        $chartOfAccounts = $this->loadChartOfAccounts($invoices->pluck('facility_id')->unique()->toArray());
+        // 介護サービス請求データ取得（オプション）
+        $careServiceInvoices = collect();
+        if ($includeCareServices) {
+            $careQuery = ServiceInvoice::with('resident.facility')
+                ->where('billing_year_month', $yearMonth)
+                ->whereIn('status', [ServiceInvoiceStatus::Confirmed, ServiceInvoiceStatus::Sent])
+                ->orderBy('resident_id');
 
-        // 仕訳データ生成
-        $journalEntries = $this->buildJournalEntries($invoices, $chartOfAccounts, $profile);
+            if ($facilityId) {
+                $careQuery->where('facility_id', $facilityId);
+            }
+
+            $careServiceInvoices = $careQuery->get();
+        }
+
+        // 勘定科目マスタ取得（施設ごと）
+        $allFacilityIds = $invoices->pluck('facility_id')
+            ->merge($careServiceInvoices->pluck('facility_id'))
+            ->unique()
+            ->toArray();
+        $chartOfAccounts = $this->loadChartOfAccounts($allFacilityIds);
+
+        // 仕訳データ生成（住居費＋介護サービス）
+        $journalEntries = $this->buildJournalEntries($invoices, $careServiceInvoices, $chartOfAccounts, $profile);
 
         // CSV出力（データがなくてもヘッダーは出力）
         return $this->renderCsv($journalEntries, $profile);
     }
 
     /**
-     * 仕訳プレビュー用データを生成（ダウンロード前の確認用）
+     * 仕訳プレビュー用データを生成（ダウンロード前の確認用・介護サービス統合対応）
      *
+     * @param  bool  $includeCareServices  介護サービス請求を含めるか
      * @return array<string, mixed> ['entries' => array, 'headers' => array, 'totals' => array, 'profile' => array]
      */
     public function previewAccountingJournal(
         string $yearMonth,
         ?int $facilityId = null,
         ?string $softwareType = null,
-        ?int $profileId = null
+        ?int $profileId = null,
+        bool $includeCareServices = true
     ): array {
         $profile = $this->resolveProfile($facilityId, $softwareType, $profileId);
 
@@ -145,7 +170,21 @@ class InvoiceCsvExportService
 
         $invoices = $query->get();
 
-        if ($invoices->isEmpty()) {
+        $careServiceInvoices = collect();
+        if ($includeCareServices) {
+            $careQuery = ServiceInvoice::with('resident.facility')
+                ->where('billing_year_month', $yearMonth)
+                ->whereIn('status', [ServiceInvoiceStatus::Confirmed, ServiceInvoiceStatus::Sent])
+                ->orderBy('resident_id');
+
+            if ($facilityId) {
+                $careQuery->where('facility_id', $facilityId);
+            }
+
+            $careServiceInvoices = $careQuery->get();
+        }
+
+        if ($invoices->isEmpty() && $careServiceInvoices->isEmpty()) {
             return [
                 'entries' => [],
                 'headers' => $profile->buildHeader(),
@@ -154,8 +193,12 @@ class InvoiceCsvExportService
             ];
         }
 
-        $chartOfAccounts = $this->loadChartOfAccounts($invoices->pluck('facility_id')->unique()->toArray());
-        $journalEntries = $this->buildJournalEntries($invoices, $chartOfAccounts, $profile);
+        $allFacilityIds = $invoices->pluck('facility_id')
+            ->merge($careServiceInvoices->pluck('facility_id'))
+            ->unique()
+            ->toArray();
+        $chartOfAccounts = $this->loadChartOfAccounts($allFacilityIds);
+        $journalEntries = $this->buildJournalEntries($invoices, $careServiceInvoices, $chartOfAccounts, $profile);
 
         $totals = [
             'debit' => array_sum(array_column($journalEntries, 'amount')),
@@ -239,24 +282,28 @@ class InvoiceCsvExportService
     }
 
     /**
-     * 仕訳エントリ構築
+     * 仕訳エントリ構築（住居費＋介護サービス）
      *
+     * @param  \Illuminate\Database\Eloquent\Collection  $invoices  住居費請求
+     * @param  \Illuminate\Database\Eloquent\Collection  $careServiceInvoices  介護サービス請求
      * @return array<int, array<string, mixed>>
      */
     private function buildJournalEntries(
         \Illuminate\Database\Eloquent\Collection $invoices,
+        \Illuminate\Database\Eloquent\Collection $careServiceInvoices,
         array $chartOfAccounts,
         AccountingExportProfile $profile
     ): array {
-        if ($invoices->isEmpty()) {
+        if ($invoices->isEmpty() && $careServiceInvoices->isEmpty()) {
             return [];
         }
 
         $entries = [];
-        $endOfMonth = Carbon::createFromFormat('Y-m', $invoices->first()->billing_year_month)->endOfMonth();
+        $yearMonth = $invoices->first()?->billing_year_month ?? $careServiceInvoices->first()?->billing_year_month;
+        $endOfMonth = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
         $formattedDate = $profile->formatDate($endOfMonth);
 
-        // 品目タイプ定義
+        // ===== 住居費請求（MonthlyInvoice）=====
         $itemTypes = [
             'rent' => [
                 'label' => '家賃分',
@@ -343,6 +390,135 @@ class InvoiceCsvExportService
                     'amount' => $amount,
                     'tax_code' => $mappedTaxCode,
                     'description' => "{$summaryBase} {$config['label']}",
+                ];
+            }
+        }
+
+        // ===== 介護サービス請求（ServiceInvoice）=====
+        $careServiceLabels = [
+            'visiting_care' => '訪問介護',
+            'day_care' => '通所介護',
+            'care_planning' => '居宅介護支援',
+            'home_nursing' => '訪問看護',
+            'short_stay' => '短期入所生活介護',
+            'welfare_equipment' => '福祉用具貸与',
+            'home_modification' => '居宅介護住宅改修',
+            'other' => 'その他介護サービス',
+        ];
+
+        // 介護サービス用の勘定科目タイプマッピング
+        // 基本的には「care_service」として共通処理、詳細サービス種別は摘要で区別
+        $careItemType = 'care_service';
+
+        foreach ($careServiceInvoices as $si) {
+            $facilityId = $si->facility_id;
+            $facilityAccounts = $chartOfAccounts[$facilityId] ?? [];
+            $label = $careServiceLabels[$si->service_type->value] ?? $si->service_type->getLabel();
+            $summaryBase = "{$si->billing_year_month}請求 [{$si->resident->room_number}] {$si->resident->name}";
+
+            $amount = $si->amount; // 税抜金額
+            if ($amount <= 0) {
+                continue;
+            }
+
+            // 介護サービス用勘定科目取得（未設定時はデフォルト）
+            $debitAccount = $facilityAccounts["{$careItemType}.debit"][0] ?? null;
+            $creditAccount = $facilityAccounts["{$careItemType}.credit"][0] ?? null;
+
+            $debitAccount = $debitAccount ?? [
+                'account_code' => '1100',
+                'account_name' => '売掛金',
+                'sub_account_code' => null,
+                'sub_account_name' => null,
+                'tax_code' => 'taxable_10', // 介護サービスは原則課税
+                'department_code' => null,
+                'department_name' => null,
+                'tag_codes' => [],
+            ];
+
+            $creditAccount = $creditAccount ?? [
+                'account_code' => '4210',
+                'account_name' => '介護サービス収入',
+                'sub_account_code' => null,
+                'sub_account_name' => null,
+                'tax_code' => 'taxable_10',
+                'department_code' => null,
+                'department_name' => null,
+                'tag_codes' => [],
+            ];
+
+            $mappedTaxCode = $profile->mapTaxCode($creditAccount['tax_code'] ?? 'taxable_10');
+
+            $entries[] = [
+                'date' => $formattedDate,
+                'debit_account_code' => $debitAccount['account_code'],
+                'debit_account_name' => $debitAccount['account_name'],
+                'debit_sub_account_code' => $debitAccount['sub_account_code'] ?? '',
+                'debit_sub_account_name' => $debitAccount['sub_account_name'] ?? '',
+                'debit_department_code' => $debitAccount['department_code'] ?? '',
+                'debit_department_name' => $debitAccount['department_name'] ?? '',
+                'debit_tag_codes' => implode(',', $debitAccount['tag_codes'] ?? []),
+                'credit_account_code' => $creditAccount['account_code'],
+                'credit_account_name' => $creditAccount['account_name'],
+                'credit_sub_account_code' => $creditAccount['sub_account_code'] ?? '',
+                'credit_sub_account_name' => $creditAccount['sub_account_name'] ?? '',
+                'credit_department_code' => $creditAccount['department_code'] ?? '',
+                'credit_department_name' => $creditAccount['department_name'] ?? '',
+                'credit_tag_codes' => implode(',', $creditAccount['tag_codes'] ?? []),
+                'amount' => $amount,
+                'tax_code' => $mappedTaxCode,
+                'description' => "{$summaryBase} 介護サービス({$label})",
+            ];
+
+            // 消費税分も別行で出力（税額がある場合）
+            if ($si->tax_amount > 0) {
+                // 消費税預り金（借方：売掛金、貸方：仮受消費税等）
+                $taxDebitAccount = $facilityAccounts["tax_receivable.debit"][0] ?? null;
+                $taxCreditAccount = $facilityAccounts["tax_payable.credit"][0] ?? null;
+
+                $taxDebitAccount = $taxDebitAccount ?? [
+                    'account_code' => '1100',
+                    'account_name' => '売掛金',
+                    'sub_account_code' => null,
+                    'sub_account_name' => null,
+                    'tax_code' => 'tax_exempt',
+                    'department_code' => null,
+                    'department_name' => null,
+                    'tag_codes' => [],
+                ];
+
+                $taxCreditAccount = $taxCreditAccount ?? [
+                    'account_code' => '2220',
+                    'account_name' => '仮受消費税',
+                    'sub_account_code' => null,
+                    'sub_account_name' => null,
+                    'tax_code' => 'tax_exempt',
+                    'department_code' => null,
+                    'department_name' => null,
+                    'tag_codes' => [],
+                ];
+
+                $taxMappedCode = $profile->mapTaxCode('tax_exempt');
+
+                $entries[] = [
+                    'date' => $formattedDate,
+                    'debit_account_code' => $taxDebitAccount['account_code'],
+                    'debit_account_name' => $taxDebitAccount['account_name'],
+                    'debit_sub_account_code' => $taxDebitAccount['sub_account_code'] ?? '',
+                    'debit_sub_account_name' => $taxDebitAccount['sub_account_name'] ?? '',
+                    'debit_department_code' => $taxDebitAccount['department_code'] ?? '',
+                    'debit_department_name' => $taxDebitAccount['department_name'] ?? '',
+                    'debit_tag_codes' => implode(',', $taxDebitAccount['tag_codes'] ?? []),
+                    'credit_account_code' => $taxCreditAccount['account_code'],
+                    'credit_account_name' => $taxCreditAccount['account_name'],
+                    'credit_sub_account_code' => $taxCreditAccount['sub_account_code'] ?? '',
+                    'credit_sub_account_name' => $taxCreditAccount['sub_account_name'] ?? '',
+                    'credit_department_code' => $taxCreditAccount['department_code'] ?? '',
+                    'credit_department_name' => $taxCreditAccount['department_name'] ?? '',
+                    'credit_tag_codes' => implode(',', $taxCreditAccount['tag_codes'] ?? []),
+                    'amount' => $si->tax_amount,
+                    'tax_code' => $taxMappedCode,
+                    'description' => "{$summaryBase} 介護サービス({$label}) 消費税分",
                 ];
             }
         }

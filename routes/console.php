@@ -1,8 +1,10 @@
 <?php
 
+use App\Console\Commands\GenerateMonthlyInvoices;
 use App\Services\InvoicePdfService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -41,3 +43,15 @@ Artisan::command('pdf:install-fonts {--force : 既存フォントを上書きす
 
     return 0;
 })->purpose('Noto Sans JP フォントをダウンロードしてPDF生成用にインストールします');
+
+// スケジューラ設定
+Schedule::command(GenerateMonthlyInvoices::class)
+    ->monthlyOn(1, '02:00')
+    ->description('毎月1日 02:00 に前月分の請求データを自動生成')
+    ->environments(['production', 'staging'])
+    ->onSuccess(function () {
+        \Illuminate\Support\Facades\Log::info('月次請求自動生成: 正常完了');
+    })
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::error('月次請求自動生成: 失敗');
+    });

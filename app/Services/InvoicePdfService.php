@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\MonthlyInvoice;
+use App\Models\ServiceInvoice;
 use App\Services\Pdf\Contracts\FontRegistryInterface;
+use App\Services\Pdf\Contracts\RendererInterface;
 use App\Services\Pdf\InvoicePdfGenerator;
 use App\Services\Pdf\TemplateSettingsService;
 use Barryvdh\DomPDF\PDF as DomPdfInstance;
@@ -18,6 +20,7 @@ class InvoicePdfService
         private InvoicePdfGenerator $generator,
         private TemplateSettingsService $templateSettings,
         private FontRegistryInterface $fontRegistry,
+        private RendererInterface $renderer,
     ) {}
 
     /**
@@ -163,6 +166,243 @@ class InvoicePdfService
             }
             throw $e;
         }
+    }
+
+    /**
+     * 指定年月の請求書PDFをサービス種別フォルダ分けでZIPアーカイブする
+     *
+     * @param  string  $yearMonth  'YYYY-MM'
+     * @param  int|null  $facilityId  施設ID
+     * @param  bool  $includeMerged  統合請求書（住居費＋介護サービス）も含めるか
+     * @return string 作成されたZIPファイルの一時パス
+     */
+    public function generateMonthlyZipByCategory(
+        string $yearMonth,
+        ?int $facilityId = null,
+        bool $includeMerged = true
+    ): string {
+        $mergeService = app(\App\Services\InvoiceMergeService::class);
+
+        // 対象月の請求データを取得
+        $query = MonthlyInvoice::where('billing_year_month', $yearMonth)
+            ->where('status', '!=', \App\Enums\InvoiceStatus::Unbilled);
+        if ($facilityId) {
+            $query->where('facility_id', $facilityId);
+        }
+        $invoices = $query->with('resident.facility')->get();
+
+        $zipPath = storage_path("app/temp/請求書一括_カテゴリ別_{$yearMonth}.zip");
+
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($zipPath));
+
+        if (\Illuminate\Support\Facades\File::exists($zipPath)) {
+            \Illuminate\Support\Facades\File::delete($zipPath);
+        }
+
+        $zip = new \ZipArchive;
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            throw new \RuntimeException('ZIPファイルの作成に失敗しました。');
+        }
+
+        try {
+            // サービス種別ラベル
+            $serviceLabels = [
+                'visiting_care' => '訪問介護',
+                'day_care' => '通所介護',
+                'care_planning' => '居宅介護支援',
+                'home_nursing' => '訪問看護',
+                'short_stay' => '短期入所生活介護',
+                'welfare_equipment' => '福祉用具貸与',
+                'home_modification' => '居宅介護住宅改修',
+                'other' => 'その他',
+            ];
+
+            // 1. 住居費請求書フォルダ
+            foreach ($invoices as $invoice) {
+                $html = $this->generator->previewInvoice($invoice, $invoice->resident->facility?->toConfigArray());
+                $pdfContent = $this->renderer->render($html);
+
+                $fileName = sprintf(
+                    '住居費/請求書_%s_%s号室_%s様.pdf',
+                    $invoice->billing_year_month,
+                    $invoice->resident->room_number,
+                    $invoice->resident->name
+                );
+                $zip->addFromString($fileName, $pdfContent);
+            }
+
+            // 2. 介護サービス種別フォルダ
+            $serviceInvoices = ServiceInvoice::where('billing_year_month', $yearMonth)
+                ->whereNotNull('pdf_path')
+                ->where('status', '!=', 'draft');
+            if ($facilityId) {
+                $serviceInvoices->where('facility_id', $facilityId);
+            }
+            $serviceInvoices = $serviceInvoices->with('resident')->get();
+
+            foreach ($serviceInvoices as $si) {
+                if ($si->hasPdf()) {
+                    $pdfContent = \Illuminate\Support\Facades\File::get($si->pdf_full_path);
+                    $label = $serviceLabels[$si->service_type->value] ?? $si->service_type->value;
+
+                    $fileName = sprintf(
+                        '%s/請求書_%s_%s号室_%s様_%s.pdf',
+                        $label,
+                        $si->billing_year_month,
+                        $si->resident->room_number,
+                        $si->resident->name,
+                        $label
+                    );
+                    $zip->addFromString($fileName, $pdfContent);
+                }
+            }
+
+            // 3. 統合請求書フォルダ（オプション）
+            if ($includeMerged) {
+                foreach ($invoices as $invoice) {
+                    $carePdfs = $mergeService->getCareServicePdfs($invoice);
+                    if (!empty($carePdfs)) {
+                        $content = $mergeService->mergeInvoices($invoice, $carePdfs);
+
+                        $fileName = sprintf(
+                            '統合請求書/統合請求書_%s_%s号室_%s様.pdf',
+                            $invoice->billing_year_month,
+                            $invoice->resident->room_number,
+                            $invoice->resident->name
+                        );
+                        $zip->addFromString($fileName, $content);
+                    }
+                }
+            }
+
+            // 4. サマリーCSV
+            $csvContent = $this->generateCategorySummaryCsv($yearMonth, $facilityId);
+            $zip->addFromString('サマリー/請求内訳サマリー_' . $yearMonth . '.csv', $csvContent);
+
+            $zip->close();
+
+            return $zipPath;
+        } catch (\Throwable $e) {
+            $zip->close();
+            if (\Illuminate\Support\Facades\File::exists($zipPath)) {
+                \Illuminate\Support\Facades\File::delete($zipPath);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * カテゴリ別サマリーCSV生成
+     */
+    private function generateCategorySummaryCsv(string $yearMonth, ?int $facilityId): string
+    {
+        $query = MonthlyInvoice::where('billing_year_month', $yearMonth)
+            ->where('status', '!=', \App\Enums\InvoiceStatus::Unbilled);
+        if ($facilityId) {
+            $query->where('facility_id', $facilityId);
+        }
+        $invoices = $query->with('resident')->get();
+
+        $serviceLabels = [
+            'visiting_care' => '訪問介護',
+            'day_care' => '通所介護',
+            'care_planning' => '居宅介護支援',
+            'home_nursing' => '訪問看護',
+            'short_stay' => '短期入所生活介護',
+            'welfare_equipment' => '福祉用具貸与',
+            'home_modification' => '居宅介護住宅改修',
+            'other' => 'その他',
+        ];
+
+        // 介護サービス請求を取得
+        $serviceQuery = ServiceInvoice::where('billing_year_month', $yearMonth)
+            ->where('status', '!=', 'draft');
+        if ($facilityId) {
+            $serviceQuery->where('facility_id', $facilityId);
+        }
+        $serviceInvoices = $serviceQuery->with('resident')->get()->groupBy('resident_id');
+
+        $rows = [];
+        $rows[] = ['請求年月', '部屋番号', '入居者名', '区分', '項目', '金額(税抜)', '消費税', '税込合計'];
+
+        foreach ($invoices as $invoice) {
+            $resident = $invoice->resident;
+
+            // 住居費
+            $rows[] = [
+                $yearMonth,
+                $resident->room_number,
+                $resident->name,
+                '住居費',
+                '家賃',
+                $invoice->rent_subtotal,
+                0,
+                $invoice->rent_subtotal,
+            ];
+            $rows[] = [
+                $yearMonth,
+                $resident->room_number,
+                $resident->name,
+                '住居費',
+                '管理費',
+                $invoice->management_fee_subtotal,
+                round($invoice->management_fee_subtotal * 0.1),
+                $invoice->management_fee_subtotal + round($invoice->management_fee_subtotal * 0.1),
+            ];
+            if ($invoice->service_subtotal > 0) {
+                $rows[] = [
+                    $yearMonth,
+                    $resident->room_number,
+                    $resident->name,
+                    '住居費',
+                    '自費サービス',
+                    $invoice->service_subtotal,
+                    round($invoice->service_subtotal * 0.1),
+                    $invoice->service_subtotal + round($invoice->service_subtotal * 0.1),
+                ];
+            }
+
+            // 介護サービス
+            $residentServices = $serviceInvoices[$resident->id] ?? collect();
+            foreach ($residentServices as $si) {
+                $label = $serviceLabels[$si->service_type->value] ?? $si->service_type->value;
+                $rows[] = [
+                    $yearMonth,
+                    $resident->room_number,
+                    $resident->name,
+                    '介護保険',
+                    $label,
+                    $si->amount,
+                    $si->tax_amount,
+                    $si->total_with_tax,
+                ];
+            }
+
+            // 合計行
+            $housingTotal = $invoice->total_with_tax;
+            $careTotal = $residentServices->sum('total_with_tax');
+            if ($careTotal > 0) {
+                $rows[] = [
+                    $yearMonth,
+                    $resident->room_number,
+                    $resident->name,
+                    '合計',
+                    '総合計',
+                    '',
+                    '',
+                    $housingTotal + $careTotal,
+                ];
+            }
+        }
+
+        // UTF-8 BOM付きCSV
+        $bom = "\xEF\xBB\xBF";
+        $csv = $bom;
+        foreach ($rows as $row) {
+            $csv .= implode(',', array_map(fn ($v) => '"' . str_replace('"', '""', (string)$v) . '"', $row)) . "\n";
+        }
+
+        return $csv;
     }
 
     /**

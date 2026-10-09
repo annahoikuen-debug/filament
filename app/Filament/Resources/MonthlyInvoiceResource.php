@@ -383,6 +383,10 @@ class MonthlyInvoiceResource extends Resource
                             ->label('添え書き（任意）')
                             ->rows(3)
                             ->placeholder('請求書に関するメッセージがあれば入力してください'),
+                        Forms\Components\Toggle::make('include_care_services')
+                            ->label('介護サービス請求書も同封する')
+                            ->default(false)
+                            ->helperText('確定済みの介護サービスPDFがあれば添付します'),
                     ])
                     ->action(function (MonthlyInvoice $record, array $data, MailService $mailService) {
                         // PDFプレビューURLを生成（認証不要の公開URL）
@@ -391,12 +395,12 @@ class MonthlyInvoiceResource extends Resource
                             'type' => 'invoice',
                         ]);
 
-                        $mailable = new InvoiceMail($record, $pdfUrl, $data['message'] ?? null);
+                        $mailable = new InvoiceMail($record, $pdfUrl, $data['message'] ?? null, $data['include_care_services'] ?? false);
                         $sent = $mailService->send($mailable, $data['email']);
 
                         if ($sent) {
                             Notification::make()
-                                ->title("請求書を {$data['email']} へ送信しました")
+                                ->title("請求書を {$data['email']} へ送信しました" . ($data['include_care_services'] ? '（介護サービス含む）' : ''))
                                 ->success()
                                 ->send();
                         } else {
@@ -481,7 +485,7 @@ class MonthlyInvoiceResource extends Resource
                         })
                         ->requiresConfirmation(),
 
-                    // CSVエクスポート: 会計仕訳CSV (プロファイル対応版)
+                    // CSVエクスポート: 会計仕訳CSV (プロファイル対応版・介護サービス統合)
                     Tables\Actions\BulkAction::make('exportAccountingJournalCsv')
                         ->label('会計仕訳CSV出力(弥生/freee/MF/勘定奉行)')
                         ->icon('heroicon-o-document-text')
@@ -526,15 +530,21 @@ class MonthlyInvoiceResource extends Resource
                                 ->native(false)
                                 ->placeholder('デフォルトプロファイルを使用')
                                 ->helperText('未選択時はデフォルトプロファイルが使用されます'),
+
+                            Forms\Components\Toggle::make('include_care_services')
+                                ->label('介護サービス請求を含める')
+                                ->default(true)
+                                ->helperText('確定済みの介護サービス請求も仕訳に含めます'),
                         ])
                         ->action(function (array $data, InvoiceCsvExportService $service) {
                             $csv = $service->exportAccountingJournalCsv(
                                 $data['year_month'],
                                 facilityId: auth()->user()?->facility_id,
                                 softwareType: $data['software_type'],
-                                profileId: $data['profile_id'] ?? null
+                                profileId: $data['profile_id'] ?? null,
+                                includeCareServices: $data['include_care_services'] ?? true
                             );
-                            $fileName = "会計仕訳_{$data['year_month']}.csv";
+                            $fileName = "会計仕訳_{$data['year_month']}" . ($data['include_care_services'] ? '_統合' : '_住居費のみ') . ".csv";
 
                             return response()->streamDownload(
                                 fn () => print($csv),
@@ -588,15 +598,40 @@ class MonthlyInvoiceResource extends Resource
                                 ->searchable()
                                 ->native(false)
                                 ->placeholder('デフォルトプロファイルを使用'),
+
+                            Forms\Components\Toggle::make('include_care_services')
+                                ->label('介護サービス請求を含める')
+                                ->default(true)
+                                ->helperText('確定済みの介護サービス請求もプレビューに含めます'),
                         ])
                         ->action(function (array $data, InvoiceCsvExportService $service) {
-                            $csv = $service->exportAccountingJournalCsv(
+                            $preview = $service->previewAccountingJournal(
                                 $data['year_month'],
                                 facilityId: auth()->user()?->facility_id,
                                 softwareType: $data['software_type'],
-                                profileId: $data['profile_id'] ?? null
+                                profileId: $data['profile_id'] ?? null,
+                                includeCareServices: $data['include_care_services'] ?? true
                             );
-                            $fileName = "会計仕訳_{$data['year_month']}.csv";
+
+                            // CSV形式でプレビューデータを出力
+                            $csv = '';
+                            if ($preview['entries']) {
+                                $output = fopen('php://temp', 'r+');
+                                if ($preview['profile']['bom'] ?? true) {
+                                    fwrite($output, "\xEF\xBB\xBF");
+                                }
+                                if ($preview['profile']['include_header'] ?? true) {
+                                    fputcsv($output, $preview['headers']);
+                                }
+                                foreach ($preview['entries'] as $entry) {
+                                    fputcsv($output, array_values($entry));
+                                }
+                                rewind($output);
+                                $csv = stream_get_contents($output);
+                                fclose($output);
+                            }
+
+                            $fileName = "会計仕訳プレビュー_{$data['year_month']}" . ($data['include_care_services'] ? '_統合' : '_住居費のみ') . ".csv";
 
                             return response()->streamDownload(
                                 fn () => print($csv),
@@ -622,6 +657,10 @@ class MonthlyInvoiceResource extends Resource
                                 ->label('添え書き（任意・全件共通）')
                                 ->rows(3)
                                 ->placeholder('全請求書に共通で添えるメッセージ'),
+                            Forms\Components\Toggle::make('include_care_services')
+                                ->label('介護サービス請求書も同封する')
+                                ->default(false)
+                                ->helperText('確定済みの介護サービスPDFがあれば添付します'),
                         ])
                         ->action(function (array $data, $records, MailService $mailService) {
                             $sentCount = 0;
@@ -640,7 +679,7 @@ class MonthlyInvoiceResource extends Resource
                                     'type' => 'invoice',
                                 ]);
 
-                                $mailable = new InvoiceMail($record, $pdfUrl, $data['message'] ?? null);
+                                $mailable = new InvoiceMail($record, $pdfUrl, $data['message'] ?? null, $data['include_care_services'] ?? false);
                                 $sent = $mailService->send($mailable, $email);
 
                                 if ($sent) {
@@ -652,7 +691,7 @@ class MonthlyInvoiceResource extends Resource
 
                             if ($sentCount > 0) {
                                 Notification::make()
-                                    ->title("{$sentCount} 件の請求書を送信しました")
+                                    ->title("{$sentCount} 件の請求書を送信しました" . ($data['include_care_services'] ? '（介護サービス含む）' : ''))
                                     ->success()
                                     ->send();
                             }

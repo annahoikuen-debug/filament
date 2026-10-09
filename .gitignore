@@ -16,3 +16,7 @@
 /*.log
 *.sqlite
 database/database.sqlite
+/storage/app/service-invoices/*
+/storage/app/private/service-invoices/*
+/storage/fonts/*
+.phpunit.cache

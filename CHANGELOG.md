@@ -1,5 +1,50 @@
 # 変更履歴
 
+## [1.5.0] - 2026-10-09
+
+### 新機能
+- **自動月次請求生成コマンド** (`App\Console\Commands\GenerateMonthlyInvoices`) — 請求締めの自動化
+  - `billing:generate-monthly` コマンドで月次請求データを自動生成・更新（毎月1日 02:00 スケジューラ登録済み）
+  - オプション: `--year-month=`（対象年月）、`--facility-id=`（対象施設）、`--force`（確定済み強制再計算）、`--dry-run`（シミュレーションのみ）
+  - 進捗バー・結果テーブル表示、アクティビティログ記録（`monthly_invoice` ログ名）
+  - 対象: アクティブ施設の在籍入居者（月途中入居・退去を含む）、確定済み（Billed/Paid）はスキップ
+- **介護サービス請求管理** (`App\Models\ServiceInvoice`, `App\Enums\ServiceType`, `App\Enums\ServiceInvoiceStatus`) — 介護保険サービス請求の統合管理
+  - 介護保険サービス8種（訪問介護・通所介護・居宅介護支援・訪問看護・短期入所生活介護・福祉用具貸与・居宅介護住宅改修・その他）に対応
+  - ステータス管理（下書き→確定済み→送信済み）、送信経路記録（メール/ZIP配布/ポータル/手渡し）
+  - 外部システム連携（外部システム名・外部請求番号）、PDFアップロード（10MB制限）・ダウンロード
+  - `ServiceInvoiceResource`（Filament）で管理画面から登録・確定・送信管理
+- **統合請求管理ダッシュボード** (`App\Filament\Pages\IntegratedBillingDashboard`) — 住居費＋介護サービスの総合管理
+  - 住居費（家賃・管理費・自費）と介護サービス請求（種別ごと）を入居者別に一覧表示
+  - 介護サービス種別ごとの金額列を動的生成、住居費計＋介護計＝総合計をリアルタイム集計
+  - CSVエクスポート（BOM付きUTF-8、Excel対応）、請求年月・施設フィルタ対応
+- **請求書PDF自動結合** (`App\Services\InvoiceMergeService`) — 統合請求書の生成
+  - 住居費請求書と介護サービス請求書PDFを1つのPDFに結合（表紙サマリー＋住居費明細＋サービス種別見出しページ）
+  - 表紙に住居費・介護サービス種別別金額・総合計を表示、ページ番号フッター自動付与
+  - 下書きステータスの介護サービスPDFは結合対象外
+- **監査ログ・アクティビティログ** (`spatie/laravel-activitylog`) — 内部統制・改ざん検知
+  - 主要モデル（入居者・請求品目・日々の自費・月次請求・施設・税率・ユーザー・会計プロファイル等）の作成・更新・削除・ステータス変更を自動記録
+  - `ActivityLogResource`（Filament）で閲覧・フィルタ（ログ名・イベント・期間・施設）可能
+  - 閲覧権限: 法人管理者は全件、施設管理者は自施設のみ
+
+### アーキテクチャ改善
+- **スケジューラ登録** (`routes/console.php`) — `GenerateMonthlyInvoices` を毎月1日 02:00 自動実行に登録（production/staging 環境のみ、成功/失敗時のログ出力）
+- **Activitylog マイグレーション** — `activity_log` テーブルに `event` / `batch_uuid` カラム追加、インデックス最適化
+
+### テスト拡充
+- `GenerateMonthlyInvoicesTest`（新規作成・更新・スキップ・ドライラン・強制更新）
+- `ServiceInvoiceModelTest`（モデル・ステータス遷移・スコープ）
+- `InvoiceMergeServiceTest`（PDF結合ロジック）
+- `ExternalInvoiceApiTest`（API エンドポイント）
+- `InvoicePdfServiceZipByCategoryTest`（種別別ZIP出力）
+- `IntegratedBillingDashboard` の集計・CSV出力テスト
+
+### データベース
+- `service_invoices` テーブル新規作成（施設・入居者・請求年月・サービス種別・外部連携情報・金額・税額・税率・PDFパス・ステータス・送信情報）
+- `activity_log` テーブルに `event` / `batch_uuid` カラム追加・インデックス
+
+### 備考
+v1.3 からの破壊的変更なし。既存データ・テストは全て互換性維持。
+
 ## [1.3.0] - 2026-10-09
 
 ### 新機能

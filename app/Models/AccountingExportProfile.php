@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class AccountingExportProfile extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $table = 'accounting_export_profiles';
 
@@ -47,6 +49,35 @@ class AccountingExportProfile extends Model
         'is_default' => 'boolean',
         'is_active' => 'boolean',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'facility_id',
+                'name',
+                'software_type',
+                'header_mapping',
+                'field_mapping',
+                'tax_code_mapping',
+                'department_mapping',
+                'tag_mapping',
+                'sub_account_mapping',
+                'date_format',
+                'encoding',
+                'include_header',
+                'bom',
+                'line_ending',
+                'default_values',
+                'is_default',
+                'is_active',
+                'notes',
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $eventName) => "AccountingExportProfile {$eventName}")
+            ->useLogName('accounting_export_profile');
+    }
 
     /**
      * 会計ソフト種類

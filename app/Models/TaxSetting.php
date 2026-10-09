@@ -6,10 +6,12 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class TaxSetting extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $table = 'tax_settings';
 
@@ -30,6 +32,24 @@ class TaxSetting extends Model
         'effective_until' => 'date',
         'is_active' => 'boolean',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'standard_rate',
+                'reduced_rate',
+                'effective_from',
+                'effective_until',
+                'scope',
+                'is_active',
+                'notes',
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $eventName) => "TaxSetting {$eventName}")
+            ->useLogName('tax_setting');
+    }
 
     /**
      * 現在有効な税率設定を取得（日付範囲で判定）

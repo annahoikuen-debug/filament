@@ -9,12 +9,42 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class MonthlyInvoice extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $guarded = ['id'];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'resident_id',
+                'facility_id',
+                'billing_year_month',
+                'rent_subtotal',
+                'management_fee_subtotal',
+                'service_subtotal',
+                'total_amount',
+                'status',
+                'paid_at',
+                'payment_method',
+                'receipt_number',
+                'receipt_issued_at',
+                'version',
+                'taxable_amount',
+                'tax_amount',
+                'tax_rate',
+                'tax_breakdown',
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $eventName) => "MonthlyInvoice {$eventName}")
+            ->useLogName('monthly_invoice');
+    }
 
     protected $attributes = [
         'version' => 0,

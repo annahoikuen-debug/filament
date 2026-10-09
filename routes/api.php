@@ -6,6 +6,7 @@ use App\Http\Controllers\TrialConversionController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\Api\ExternalInvoiceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,3 +36,10 @@ Route::post('/bookings', [BookingController::class, 'store'])
 Route::post('/site-forms/{type}', [FormController::class, 'store'])
     ->where('type', 'catalog|demo|diagnosis|prospect|inquiry')
     ->middleware('throttle:10,1');
+
+// 外部介護サービス請求データ受信
+Route::prefix('external-invoices')->group(function () {
+    Route::post('/', [ExternalInvoiceController::class, 'store']);
+    Route::post('/single', [ExternalInvoiceController::class, 'storeSingle']);
+    Route::get('/', [ExternalInvoiceController::class, 'index']);
+});

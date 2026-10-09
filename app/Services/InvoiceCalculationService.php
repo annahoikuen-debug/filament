@@ -29,6 +29,92 @@ class InvoiceCalculationService
     ) {}
 
     /**
+     * 単一請求書の計算・更新（GenerateMonthlyInvoicesコマンド用）
+     *
+     * @param MonthlyInvoice $invoice 計算対象の請求書インスタンス
+     * @return void
+     */
+    public function calculate(MonthlyInvoice $invoice): void
+    {
+        $yearMonth = $invoice->billing_year_month;
+        $resident = $invoice->resident;
+
+        // 請求月に対応する税率を取得（履歴管理対応）
+        $billingDate = Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
+        $rates = TaxCalculator::getRatesForDate($billingDate);
+        $standardRate = $rates['standard'];
+        $reducedRate = $rates['reduced'];
+
+        // 期間境界
+        $startDate = $billingDate->copy()->startOfMonth()->format('Y-m-d H:i:s');
+        $endDate = $billingDate->copy()->endOfMonth()->endOfDay()->format('Y-m-d H:i:s');
+
+        // 日々課金集計
+        $dailyAggregates = $this->dailyChargeAggregator->aggregate([$resident->id], $startDate, $endDate);
+        $residentDailyAggregates = $dailyAggregates[$resident->id] ?? [
+            'standard' => 0,
+            'reduced' => 0,
+            'non_taxable' => 0,
+        ];
+
+        $serviceStandardTaxable = (int) ($residentDailyAggregates['standard'] ?? 0);
+        $serviceReducedTaxable = (int) ($residentDailyAggregates['reduced'] ?? 0);
+        $serviceNonTaxable = (int) ($residentDailyAggregates['non_taxable'] ?? 0);
+
+        // 定期課金集計
+        $recurringAggregates = $this->recurringChargeAggregator->aggregate([$resident->id], $yearMonth, $billingDate);
+        $residentRecurringAggregates = $recurringAggregates[$resident->id] ?? [
+            'standard' => 0,
+            'reduced' => 0,
+            'non_taxable' => 0,
+        ];
+
+        $serviceStandardTaxable += (int) ($residentRecurringAggregates['standard'] ?? 0);
+        $serviceReducedTaxable += (int) ($residentRecurringAggregates['reduced'] ?? 0);
+        $serviceNonTaxable += (int) ($residentRecurringAggregates['non_taxable'] ?? 0);
+
+        $serviceSubtotal = $serviceStandardTaxable + $serviceReducedTaxable + $serviceNonTaxable;
+
+        // 固定費（家賃＋管理費）の按分計算
+        $year = (int) substr($yearMonth, 0, 4);
+        $month = (int) substr($yearMonth, 5, 2);
+
+        $fixedCosts = $this->prorationCalculator->calculateFixedCosts($resident, $year, $month);
+        $rentSubtotal = $fixedCosts['rent'];
+        $managementSubtotal = $fixedCosts['management_fee'];
+
+        // 家賃は非課税、管理費は標準税率課税とする（仕様）
+        $rentNonTaxable = $rentSubtotal;
+        $managementStandardTaxable = $managementSubtotal;
+
+        // 税額計算
+        $standardTaxableTotal = $managementStandardTaxable + $serviceStandardTaxable;
+        $reducedTaxableTotal = $serviceReducedTaxable;
+        $nonTaxableTotal = $rentNonTaxable + $serviceNonTaxable;
+
+        $taxResult = $this->taxCalculator->calculate(
+            $standardTaxableTotal,
+            $reducedTaxableTotal,
+            $nonTaxableTotal,
+            $standardRate,
+            $reducedRate
+        );
+
+        $totalAmount = $rentSubtotal + $managementSubtotal + $serviceSubtotal;
+        $taxableAmount = $standardTaxableTotal + $reducedTaxableTotal;
+
+        // 請求書インスタンスに計算結果をセット（保存は呼び出し元で行う）
+        $invoice->rent_subtotal = $rentSubtotal;
+        $invoice->management_fee_subtotal = $managementSubtotal;
+        $invoice->service_subtotal = $serviceSubtotal;
+        $invoice->total_amount = $totalAmount;
+        $invoice->taxable_amount = $taxableAmount;
+        $invoice->tax_amount = $taxResult['total_tax'];
+        $invoice->tax_rate = $standardRate;
+        $invoice->tax_breakdown = $taxResult['tax_breakdown'];
+    }
+
+    /**
      * 指定年月の請求データを一括生成・再計算する
      *
      * @param  string  $yearMonth  'YYYY-MM' 形式 (例: '2026-10')

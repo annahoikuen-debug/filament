@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Facility extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $table = 'facilities';
 
@@ -34,6 +36,30 @@ class Facility extends Model
         'billing' => 'array',
         'is_active' => 'boolean',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'name',
+                'operator',
+                'postal_code',
+                'address',
+                'phone',
+                'fax',
+                'email',
+                'invoice_registration_number',
+                'bank',
+                'billing',
+                'is_active',
+                'notes',
+                'seal_path',
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $eventName) => "Facility {$eventName}")
+            ->useLogName('facility');
+    }
 
     /**
      * 入居者リレーション
