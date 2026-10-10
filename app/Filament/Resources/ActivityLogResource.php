@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ActivityLogResource\Pages\ListActivityLogs;
 use App\Filament\Resources\ActivityLogResource\Pages\ViewActivityLog;
+use App\Models\Facility;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -201,7 +202,7 @@ class ActivityLogResource extends Resource
                     ->form([
                         Forms\Components\Select::make('facility_id')
                             ->label('施設')
-                            ->relationship('facility', 'name')
+                            ->options(fn () => Facility::all()->pluck('name', 'id'))
                             ->searchable()
                             ->preload(),
                     ])

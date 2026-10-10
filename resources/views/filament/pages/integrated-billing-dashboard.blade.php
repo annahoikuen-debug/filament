@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <div class="fi-page">
         <div class="fi-page-header">
-            <h1 class="fi-page-title">{{ $getTitle() }}</h1>
+            <h1 class="fi-page-title">{{ heading() }}</h1>
         </div>
 
         <div class="fi-page-content">
