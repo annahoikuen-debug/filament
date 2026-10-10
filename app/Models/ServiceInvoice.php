@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\File;
 
 class ServiceInvoice extends Model
 {
@@ -74,10 +75,11 @@ class ServiceInvoice extends Model
      */
     public function getPdfFullPathAttribute(): ?string
     {
-        if (!$this->pdf_path) {
+        if (! $this->pdf_path) {
             return null;
         }
-        return storage_path('app/' . $this->pdf_path);
+
+        return storage_path('app/'.$this->pdf_path);
     }
 
     /**
@@ -85,7 +87,7 @@ class ServiceInvoice extends Model
      */
     public function hasPdf(): bool
     {
-        return $this->pdf_path && \Illuminate\Support\Facades\File::exists($this->pdf_full_path);
+        return $this->pdf_path && File::exists($this->pdf_full_path);
     }
 
     /**

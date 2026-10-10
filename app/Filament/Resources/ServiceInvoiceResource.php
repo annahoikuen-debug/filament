@@ -5,14 +5,13 @@ namespace App\Filament\Resources;
 use App\Enums\ServiceInvoiceStatus;
 use App\Enums\ServiceType;
 use App\Filament\Resources\ServiceInvoiceResource\Pages;
-use App\Models\Resident;
 use App\Models\ServiceInvoice;
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -51,7 +50,7 @@ class ServiceInvoiceResource extends Resource
                             ->required()
                             ->visible(fn () => Auth::user()?->isCorporateAdmin())
                             ->default(fn () => Auth::user()?->facility_id)
-                            ->disabled(fn () => !Auth::user()?->isCorporateAdmin()),
+                            ->disabled(fn () => ! Auth::user()?->isCorporateAdmin()),
 
                         Select::make('resident_id')
                             ->label('入居者')
@@ -147,6 +146,7 @@ class ServiceInvoiceResource extends Resource
                                 // 元ファイル名を保存
                                 $form->model?->update(['pdf_original_name' => $file->getClientOriginalName()]);
                                 $file->storeAs('service-invoices', $path);
+
                                 return $path;
                             })
                             ->deleteUploadedFileUsing(function ($path) {

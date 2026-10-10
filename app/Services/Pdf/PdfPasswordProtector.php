@@ -3,8 +3,9 @@
 namespace App\Services\Pdf;
 
 use App\Models\MonthlyInvoice;
-use setasign\Fpdi\Tcpdf\Fpdi;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use setasign\Fpdi\Tcpdf\Fpdi;
 
 /**
  * PDFパスワード保護サービス
@@ -63,7 +64,7 @@ class PdfPasswordProtector
             Log::error('PDF password protection failed', [
                 'error' => $e->getMessage(),
             ]);
-            throw new \RuntimeException('PDF password protection failed: ' . $e->getMessage(), 0, $e);
+            throw new \RuntimeException('PDF password protection failed: '.$e->getMessage(), 0, $e);
         } finally {
             @unlink($tempIn);
         }
@@ -120,9 +121,10 @@ class PdfPasswordProtector
             Log::warning('Password mode is resident_birthday but resident has no birth_date', [
                 'invoice_id' => $invoice->id,
             ]);
+
             return $this->fixedPassword();
         }
 
-        return \Illuminate\Support\Carbon::parse($birthday)->format('Ymd');
+        return Carbon::parse($birthday)->format('Ymd');
     }
 }

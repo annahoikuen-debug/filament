@@ -2,6 +2,7 @@
 
 use App\Enums\InvoiceStatus;
 use App\Enums\ResidentStatus;
+use App\Models\ChatbotFaq;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
@@ -148,7 +149,7 @@ test('存在しない名前は見つかりません応答になること', funct
 });
 
 test('FAQに一致する質問はFAQ回答が返ること', function () {
-    \App\Models\ChatbotFaq::create([
+    ChatbotFaq::create([
         'question' => '利用料の支払い方法を教えてください',
         'keywords' => ['支払い', '振込'],
         'answer' => '利用料は毎月25日に口座振込でのお支払いです。',

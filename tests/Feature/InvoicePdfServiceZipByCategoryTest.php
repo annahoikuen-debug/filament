@@ -50,7 +50,7 @@ test('カテゴリ別ZIPが生成されること', function () {
         ->and(File::size($zipPath))->toBeGreaterThan(0);
 
     // ZIPの中身を確認
-    $zip = new \ZipArchive;
+    $zip = new ZipArchive;
     $zip->open($zipPath);
     expect($zip->numFiles)->toBeGreaterThan(0);
 
@@ -122,7 +122,7 @@ test('介護サービスPDFがある場合は種別フォルダに入ること',
     expect(File::exists($zipPath))->toBeTrue();
 
     // ZIPの中身を確認
-    $zip = new \ZipArchive;
+    $zip = new ZipArchive;
     $zip->open($zipPath);
 
     $hasVisitingCare = false;
@@ -168,7 +168,7 @@ test('下書きステータスの介護サービスは除外されること', fu
 
     $zipPath = $this->service->generateMonthlyZipByCategory('2026-10');
 
-    $zip = new \ZipArchive;
+    $zip = new ZipArchive;
     $zip->open($zipPath);
 
     $hasVisitingCare = false;
@@ -208,7 +208,7 @@ test('異なる月の介護サービスは除外されること', function () {
 
     $zipPath = $this->service->generateMonthlyZipByCategory('2026-10');
 
-    $zip = new \ZipArchive;
+    $zip = new ZipArchive;
     $zip->open($zipPath);
 
     $hasVisitingCare = false;
@@ -249,7 +249,7 @@ test('includeMerged=falseで統合請求書が含まれないこと', function (
     // includeMerged=false
     $zipPath = $this->service->generateMonthlyZipByCategory('2026-10', null, false);
 
-    $zip = new \ZipArchive;
+    $zip = new ZipArchive;
     $zip->open($zipPath);
 
     $hasMerged = false;
@@ -289,7 +289,7 @@ test('サマリーCSVに正しいデータが含まれること', function () {
 
     $zipPath = $this->service->generateMonthlyZipByCategory('2026-10');
 
-    $zip = new \ZipArchive;
+    $zip = new ZipArchive;
     $zip->open($zipPath);
 
     $csvContent = '';

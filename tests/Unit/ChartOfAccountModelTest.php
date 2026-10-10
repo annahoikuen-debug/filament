@@ -5,7 +5,7 @@ use App\Models\Facility;
 
 test('fillableフィールドのみが一括代入で設定されること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     $chartOfAccount = ChartOfAccount::create([
         'facility_id' => $facility->id,
         'item_type' => 'rent',
@@ -39,7 +39,7 @@ test('fillableフィールドのみが一括代入で設定されること', fun
 
 test('fillable外のフィールド（id）が一括代入で無視されること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     $chartOfAccount = ChartOfAccount::create([
         'id' => 99999,
         'facility_id' => $facility->id,
@@ -54,7 +54,7 @@ test('fillable外のフィールド（id）が一括代入で無視されるこ�
 
 test('不正なフィールド名での一括代入は無視されること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     $chartOfAccount = ChartOfAccount::create([
         'facility_id' => $facility->id,
         'item_type' => 'rent',
@@ -70,7 +70,7 @@ test('不正なフィールド名での一括代入は無視されること', fu
 
 test('キャストが正しく動作すること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     $chartOfAccount = ChartOfAccount::create([
         'facility_id' => $facility->id,
         'item_type' => 'rent',
@@ -98,7 +98,7 @@ test('定数が正しく定義されていること', function () {
 
 test('facilityリレーションが正しく動作すること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     $chartOfAccount = ChartOfAccount::create([
         'facility_id' => $facility->id,
         'item_type' => 'rent',
@@ -113,13 +113,13 @@ test('facilityリレーションが正しく動作すること', function () {
 
 test('getAccountメソッドが正しく動作すること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     // 既存のデータを削除して一意制約違反を防ぐ
     ChartOfAccount::where('facility_id', $facility->id)
         ->where('item_type', 'rent')
         ->where('account_side', 'debit')
         ->delete();
-    
+
     // テスト用のアクティブな勘定科目を作成（ソート順序1）
     ChartOfAccount::create([
         'facility_id' => $facility->id,
@@ -139,7 +139,7 @@ test('getAccountメソッドが正しく動作すること', function () {
 
 test('getAccountメソッドで非アクティブなものは除外されること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     // 既存のデータを削除して一意制約違反を防ぐ
     ChartOfAccount::where('facility_id', $facility->id)
         ->where('item_type', 'rent')
@@ -180,14 +180,14 @@ test('getAccountメソッドで非アクティブなものは除外されるこ�
 
 test('存在しない条件の場合はnullが返ること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     $account = ChartOfAccount::getAccount($facility->id, 'rent', 'debit');
     expect($account)->toBeNull();
 });
 
 test('getAllForFacilityメソッドが正しく動作すること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     ChartOfAccount::create([
         'facility_id' => $facility->id,
         'item_type' => 'rent',
@@ -223,12 +223,12 @@ test('getAllForFacilityメソッドが正しく動作すること', function () 
 
 test('createDefaultsForFacilityメソッドが正しくデフォルトを作成すること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     ChartOfAccount::createDefaultsForFacility($facility->id);
 
     $accounts = ChartOfAccount::where('facility_id', $facility->id)->get();
     expect($accounts->count())->toBe(8);
-    
+
     // 各品目×方向の組み合わせが存在すること
     $types = ['rent', 'management_fee', 'service', 'advance_payment'];
     $sides = ['debit', 'credit'];
@@ -246,12 +246,12 @@ test('createDefaultsForFacilityメソッドが正しくデフォルトを作成�
 
 test('createDefaultsForFacilityメソッドで既存データは更新されること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     ChartOfAccount::createDefaultsForFacility($facility->id);
-    
+
     // 1回目の作成で8件
     expect(ChartOfAccount::where('facility_id', $facility->id)->count())->toBe(8);
-    
+
     // 2回実行しても件数は変わらない（updateOrCreateのため）
     ChartOfAccount::createDefaultsForFacility($facility->id);
     expect(ChartOfAccount::where('facility_id', $facility->id)->count())->toBe(8);
@@ -259,7 +259,7 @@ test('createDefaultsForFacilityメソッドで既存データは更新される�
 
 test('tagCodesアクセサが正しく動作すること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     $chartOfAccount = ChartOfAccount::create([
         'facility_id' => $facility->id,
         'item_type' => 'rent',
@@ -274,7 +274,7 @@ test('tagCodesアクセサが正しく動作すること', function () {
 
 test('tagCodesがnullの場合は空配列が返ること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     $chartOfAccount = ChartOfAccount::create([
         'facility_id' => $facility->id,
         'item_type' => 'rent',

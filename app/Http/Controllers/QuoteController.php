@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Mail\QuoteMail;
 use App\Models\Trial;
 use App\Services\MailService;
@@ -14,8 +13,7 @@ class QuoteController extends Controller
     public function __construct(
         private readonly QuoteService $quoteService,
         private readonly MailService $mailService,
-    ) {
-    }
+    ) {}
 
     /**
      * 見積り内容を取得
@@ -35,7 +33,7 @@ class QuoteController extends Controller
     {
         // 認可: 見積書はトライアル所有者のメールアドレスへ送信されるため、
         // プロビジョニングメールで通知されるトークンを要求する
-        if (!$trial->isValidConversionToken($request->input('conversion_token'))) {
+        if (! $trial->isValidConversionToken($request->input('conversion_token'))) {
             return response()->json([
                 'success' => false,
                 'message' => '見積書送信トークンが不正です。',

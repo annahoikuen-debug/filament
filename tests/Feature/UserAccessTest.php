@@ -1,14 +1,15 @@
 <?php
 
-use App\Models\User;
-use App\Models\Facility;
-use App\Models\Resident;
-use App\Models\MonthlyInvoice;
-use App\Models\DailyCharge;
-use App\Filament\Resources\ResidentResource;
-use App\Filament\Resources\MonthlyInvoiceResource;
-use App\Filament\Resources\DailyChargeResource;
+use App\Enums\InvoiceStatus;
 use App\Enums\ResidentStatus;
+use App\Filament\Resources\DailyChargeResource;
+use App\Filament\Resources\MonthlyInvoiceResource;
+use App\Filament\Resources\ResidentResource;
+use App\Models\DailyCharge;
+use App\Models\Facility;
+use App\Models\MonthlyInvoice;
+use App\Models\Resident;
+use App\Models\User;
 
 beforeEach(function () {
     // Create 2 facilities
@@ -59,14 +60,14 @@ beforeEach(function () {
         'facility_id' => $this->facility1->id,
         'resident_id' => $this->resident1->id,
         'billing_year_month' => '2026-01',
-        'status' => \App\Enums\InvoiceStatus::Billed,
+        'status' => InvoiceStatus::Billed,
     ]);
 
     $this->invoice2 = MonthlyInvoice::factory()->create([
         'facility_id' => $this->facility2->id,
         'resident_id' => $this->resident3->id,
         'billing_year_month' => '2026-01',
-        'status' => \App\Enums\InvoiceStatus::Billed,
+        'status' => InvoiceStatus::Billed,
     ]);
 
     // Create daily charges

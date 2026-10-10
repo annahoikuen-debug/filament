@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Facility;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Config;
 
 /**
@@ -18,7 +19,7 @@ class FacilityConfigService
     /**
      * 現在の施設設定を取得（DB優先、configフォールバック）
      *
-     * @param int|null $facilityId 施設ID（指定時はその施設、未指定時は最初の有効施設）
+     * @param  int|null  $facilityId  施設ID（指定時はその施設、未指定時は最初の有効施設）
      * @return array 設定配列（config/facility.php 互換形式）
      */
     public function getConfig(?int $facilityId = null): array
@@ -37,8 +38,9 @@ class FacilityConfigService
     /**
      * 指定施設の設定を取得（DBのみ、見つからない場合は例外）
      *
-     * @param int $facilityId 施設ID
+     * @param  int  $facilityId  施設ID
      * @return array 設定配列
+     *
      * @throws \RuntimeException 施設が見つからない場合
      */
     public function getConfigOrFail(int $facilityId): array
@@ -174,7 +176,7 @@ class FacilityConfigService
     /**
      * 全有効施設を取得
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Facility>
+     * @return Collection<int, Facility>
      */
     public function getAllActiveFacilities()
     {

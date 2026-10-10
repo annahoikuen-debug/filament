@@ -1,7 +1,9 @@
 <?php
 
-use App\Models\User;
 use App\Models\Facility;
+use App\Models\User;
+use Filament\Panel;
+use Illuminate\Support\Carbon;
 
 test('fillableフィールドのみが一括代入で設定されること', function () {
     $facility = Facility::factory()->create();
@@ -63,7 +65,7 @@ test('キャストが正しく動作すること', function () {
     $user->refresh(); // Refresh to ensure casts are applied
 
     expect($user->is_admin)->toBeTrue()
-        ->and($user->email_verified_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
+        ->and($user->email_verified_at)->toBeInstanceOf(Carbon::class)
         ->and($user->password)->toStartWith('$2y$'); // bcrypt хеш
 });
 
@@ -135,7 +137,7 @@ test('canAccessPanelメソッドが管理者フラグに基づいて判定され
     ]);
 
     // モックのPanelオブジェクトを作成
-    $panel = \Mockery::mock(\Filament\Panel::class);
+    $panel = Mockery::mock(Panel::class);
 
     expect($admin->canAccessPanel($panel))->toBeTrue()
         ->and($nonAdmin->canAccessPanel($panel))->toBeFalse()

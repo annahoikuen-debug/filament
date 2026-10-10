@@ -15,8 +15,7 @@ class ContractCompletedMail extends Mailable
         public readonly Trial $trial,
         public readonly string $plan,
         public readonly int $monthlyPrice,
-    ) {
-    }
+    ) {}
 
     public function build()
     {

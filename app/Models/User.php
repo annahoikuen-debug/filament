@@ -12,7 +12,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class User extends Authenticatable implements FilamentUser
 {
-    use HasFactory, Notifiable, LogsActivity;
+    use HasFactory, LogsActivity, Notifiable;
 
     protected $fillable = [
         'name',

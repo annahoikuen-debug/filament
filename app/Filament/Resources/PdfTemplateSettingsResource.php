@@ -6,6 +6,7 @@ use App\Filament\Resources\PdfTemplateSettingsResource\Pages;
 use App\Models\PdfTemplateSettings;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -417,12 +418,12 @@ class PdfTemplateSettingsResource extends Resource
                     ->color('info')
                     ->action(function (PdfTemplateSettings $record) {
                         $newRecord = $record->replicate();
-                        $newRecord->name = $record->name . ' (コピー)';
+                        $newRecord->name = $record->name.' (コピー)';
                         $newRecord->is_default = false;
                         $newRecord->version = 1;
                         $newRecord->save();
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->title('テンプレートを複製しました')
                             ->success()
                             ->send();
@@ -430,13 +431,14 @@ class PdfTemplateSettingsResource extends Resource
                     ->requiresConfirmation(),
 
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (PdfTemplateSettings $record) => !$record->is_default)
+                    ->visible(fn (PdfTemplateSettings $record) => ! $record->is_default)
                     ->before(function (PdfTemplateSettings $record) {
                         if ($record->is_default) {
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('デフォルトテンプレートは削除できません')
                                 ->danger()
                                 ->send();
+
                             return false;
                         }
                     }),
@@ -444,9 +446,10 @@ class PdfTemplateSettingsResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->before(function (Tables\Actions\DeleteBulkAction $action, \Illuminate\Database\Eloquent\Collection $records) {
+                        ->before(function (Tables\Actions\DeleteBulkAction $action, Collection $records) {
                             $records->filter(fn ($record) => $record->is_default)->each->delete();
-                            $records = $records->filter(fn ($record) => !$record->is_default);
+                            $records = $records->filter(fn ($record) => ! $record->is_default);
+
                             return $records;
                         })
                         ->requiresConfirmation(),

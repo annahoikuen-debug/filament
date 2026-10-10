@@ -2,6 +2,7 @@
 
 use App\Enums\InvoiceStatus;
 use App\Enums\ResidentStatus;
+use App\Models\ChatLog;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
@@ -95,7 +96,7 @@ test('facility_admin のログに facility_id が正しく記録されること'
         $this->facilityAdmin1
     );
 
-    $log = \App\Models\ChatLog::latest()->first();
+    $log = ChatLog::latest()->first();
 
     expect($log->facility_id)->toBe($this->facility1->id)
         ->and($log->user_id)->toBe($this->facilityAdmin1->id);
@@ -116,7 +117,7 @@ test('corporate_admin のログの facility_id は null になること', functi
         $this->corporateAdmin
     );
 
-    $log = \App\Models\ChatLog::latest()->first();
+    $log = ChatLog::latest()->first();
 
     expect($log->facility_id)->toBeNull();
 });

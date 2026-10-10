@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Facility;
+use App\Jobs\CheckAndNotifyTrialExpiries;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Models\Trial;
@@ -140,7 +140,7 @@ test('CheckAndNotifyTrialExpiriesが期限切れトライアルをexpiredにす�
     $trial = Trial::find($response->json('trial_id'));
     $trial->update(['trial_ends_at' => now()->subHour()]);
 
-    (new App\Jobs\CheckAndNotifyTrialExpiries())->handle();
+    (new CheckAndNotifyTrialExpiries)->handle();
 
     expect($trial->fresh()->status)->toBe('expired');
 });

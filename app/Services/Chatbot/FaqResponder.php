@@ -3,6 +3,7 @@
 namespace App\Services\Chatbot;
 
 use App\Models\ChatbotFaq;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class FaqResponder
@@ -72,8 +73,8 @@ class FaqResponder
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<ChatbotFaq>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<ChatbotFaq>
+     * @param  Builder<ChatbotFaq>  $query
+     * @return Builder<ChatbotFaq>
      */
     private function applyFacilityScope($query, ?int $facilityId)
     {

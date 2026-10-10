@@ -14,7 +14,7 @@ test('現在有効な税率設定を取得できること', function () {
     ]);
 
     $current = TaxSetting::current();
-    
+
     expect($current)->not->toBeNull()
         ->and($current->standard_rate)->toBe(10)
         ->and($current->reduced_rate)->toBe(8);
@@ -40,7 +40,7 @@ test('期限切れの設定は取得されないこと', function () {
     ]);
 
     $current = TaxSetting::current();
-    
+
     expect($current->standard_rate)->toBe(10);
 });
 
@@ -53,7 +53,7 @@ test('無効フラグの設定は取得されないこと', function () {
     ]);
 
     $current = TaxSetting::current();
-    
+
     expect($current)->toBeNull();
 });
 
@@ -83,10 +83,10 @@ test('指定日の税率を取得できること', function () {
 
     // 2020年の税率
     expect(TaxSetting::getRateForDate(Carbon::create(2020, 6, 1)))->toBe(5);
-    
+
     // 2022年の税率
     expect(TaxSetting::getRateForDate(Carbon::create(2022, 6, 1)))->toBe(8);
-    
+
     // 2024年の税率
     expect(TaxSetting::getRateForDate(Carbon::create(2024, 6, 1)))->toBe(10);
 });
@@ -94,7 +94,7 @@ test('指定日の税率を取得できること', function () {
 test('設定がない場合はデフォルト10%が返ること', function () {
     // 全設定を削除
     TaxSetting::query()->delete();
-    
+
     expect(TaxSetting::currentStandardRate())->toBe(10);
     expect(TaxSetting::currentReducedRate())->toBe(8);
 });
@@ -110,7 +110,7 @@ test('config配列への変換が正しく動作すること', function () {
     ]);
 
     $config = $setting->toConfigArray();
-    
+
     expect($config['standard_rate'])->toBe(10);
     expect($config['reduced_rate'])->toBe(8);
     expect($config['effective_from'])->toBe('2026-01-01');

@@ -10,6 +10,5 @@ final class IntentDTO
     public function __construct(
         public readonly string $intent,
         public readonly array $entities = [],
-    ) {
-    }
+    ) {}
 }

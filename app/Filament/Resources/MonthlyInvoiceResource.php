@@ -12,8 +12,6 @@ use App\Models\Resident;
 use App\Services\InvoiceCsvExportService;
 use App\Services\InvoicePdfService;
 use App\Services\MailService;
-use App\Services\Pdf\Contracts\RendererInterface;
-use App\Services\Pdf\Renderers\HtmlRenderer;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -22,7 +20,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 
 class MonthlyInvoiceResource extends Resource
@@ -400,7 +397,7 @@ class MonthlyInvoiceResource extends Resource
 
                         if ($sent) {
                             Notification::make()
-                                ->title("請求書を {$data['email']} へ送信しました" . ($data['include_care_services'] ? '（介護サービス含む）' : ''))
+                                ->title("請求書を {$data['email']} へ送信しました".($data['include_care_services'] ? '（介護サービス含む）' : ''))
                                 ->success()
                                 ->send();
                         } else {
@@ -414,301 +411,304 @@ class MonthlyInvoiceResource extends Resource
                 // 編集アクション: アーカイブ済み（請求済・入金済）は非表示
                 Tables\Actions\EditAction::make()
                     ->visible(fn (MonthlyInvoice $record) => $record->status && ! in_array($record->status, [InvoiceStatus::Paid, InvoiceStatus::Billed], true)
-                ),
+                    ),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('markAsBilled')
-                        ->label('一括「請求済」に変更')
-                        ->icon('heroicon-o-envelope')
-                        ->action(fn ($records) => $records->each->update(['status' => InvoiceStatus::Billed]))
-                        ->requiresConfirmation(),
+                    Tables\Actions\BulkActionGroup::make([
+                        Tables\Actions\BulkAction::make('markAsBilled')
+                            ->label('一括「請求済」に変更')
+                            ->icon('heroicon-o-envelope')
+                            ->action(fn ($records) => $records->each->update(['status' => InvoiceStatus::Billed]))
+                            ->requiresConfirmation(),
 
-                    Tables\Actions\BulkAction::make('bulkMarkAsPaid')
-                        ->label('一括「入金済（口座振替）」に変更')
-                        ->icon('heroicon-o-check-circle')
-                        ->form([
-                            Forms\Components\Select::make('receipt_date_mode')
-                                ->label('領収書日付モード')
-                                ->options([
-                                    'auto' => '入金日に基づく (自動)',
-                                    'manual' => '任意の日付を指定',
-                                ])
-                                ->default('auto')
-                                ->required()
-                                ->native(false)
-                                ->live()
-                                ->afterStateUpdated(fn (Forms\Set $set) => $set('custom_receipt_date', null)),
+                        Tables\Actions\BulkAction::make('bulkMarkAsPaid')
+                            ->label('一括「入金済（口座振替）」に変更')
+                            ->icon('heroicon-o-check-circle')
+                            ->form([
+                                Forms\Components\Select::make('receipt_date_mode')
+                                    ->label('領収書日付モード')
+                                    ->options([
+                                        'auto' => '入金日に基づく (自動)',
+                                        'manual' => '任意の日付を指定',
+                                    ])
+                                    ->default('auto')
+                                    ->required()
+                                    ->native(false)
+                                    ->live()
+                                    ->afterStateUpdated(fn (Forms\Set $set) => $set('custom_receipt_date', null)),
 
-                            Forms\Components\DatePicker::make('custom_receipt_date')
-                                ->label('領収書日付 (任意)')
-                                ->native(false)
-                                ->displayFormat('Y/m/d')
-                                ->visible(fn (Forms\Get $get) => $get('receipt_date_mode') === 'manual')
-                                ->helperText('領収書日付モードが「任意」の場合のみ入力'),
-                        ])
-                        ->action(function ($records, array $data) {
-                            $records->each(function (MonthlyInvoice $inv) use ($data) {
-                                $inv->markAsPaid(
-                                    PaymentMethod::DirectDebit,
-                                    paidAt: now()->toDateString(),
-                                    receiptDateMode: $data['receipt_date_mode'] ?? 'auto',
-                                    customReceiptDate: $data['custom_receipt_date'] ?? null
+                                Forms\Components\DatePicker::make('custom_receipt_date')
+                                    ->label('領収書日付 (任意)')
+                                    ->native(false)
+                                    ->displayFormat('Y/m/d')
+                                    ->visible(fn (Forms\Get $get) => $get('receipt_date_mode') === 'manual')
+                                    ->helperText('領収書日付モードが「任意」の場合のみ入力'),
+                            ])
+                            ->action(function ($records, array $data) {
+                                $records->each(function (MonthlyInvoice $inv) use ($data) {
+                                    $inv->markAsPaid(
+                                        PaymentMethod::DirectDebit,
+                                        paidAt: now()->toDateString(),
+                                        receiptDateMode: $data['receipt_date_mode'] ?? 'auto',
+                                        customReceiptDate: $data['custom_receipt_date'] ?? null
+                                    );
+                                });
+                            })
+                            ->requiresConfirmation(),
+
+                        // CSVエクスポート: 請求・入金一覧
+                        Tables\Actions\BulkAction::make('exportMonthlyListCsv')
+                            ->label('請求・入金一覧CSV出力')
+                            ->icon('heroicon-o-arrow-down-tray')
+                            ->color('info')
+                            ->form([
+                                Forms\Components\Select::make('year_month')
+                                    ->label('請求年月')
+                                    ->options(fn () => MonthlyInvoice::query()->distinct()->pluck('billing_year_month', 'billing_year_month')->toArray())
+                                    ->required()
+                                    ->default(now()->format('Y-m'))
+                                    ->native(false),
+                            ])
+                            ->action(function (array $data) {
+                                $service = app(InvoiceCsvExportService::class);
+                                $csv = $service->exportMonthlyListCsv($data['year_month']);
+                                $fileName = "請求入金一覧_{$data['year_month']}.csv";
+
+                                return response()->streamDownload(
+                                    fn () => print ($csv),
+                                    $fileName,
+                                    ['Content-Type' => 'text/csv; charset=UTF-8']
                                 );
-                            });
-                        })
-                        ->requiresConfirmation(),
+                            })
+                            ->requiresConfirmation(),
 
-                    // CSVエクスポート: 請求・入金一覧
-                    Tables\Actions\BulkAction::make('exportMonthlyListCsv')
-                        ->label('請求・入金一覧CSV出力')
-                        ->icon('heroicon-o-arrow-down-tray')
-                        ->color('info')
-                        ->form([
-                            Forms\Components\Select::make('year_month')
-                                ->label('請求年月')
-                                ->options(fn () => MonthlyInvoice::query()->distinct()->pluck('billing_year_month', 'billing_year_month')->toArray())
-                                ->required()
-                                ->default(now()->format('Y-m'))
-                                ->native(false),
-                        ])
-                        ->action(function (array $data) {
-                            $service = app(InvoiceCsvExportService::class);
-                            $csv = $service->exportMonthlyListCsv($data['year_month']);
-                            $fileName = "請求入金一覧_{$data['year_month']}.csv";
+                        // CSVエクスポート: 会計仕訳CSV (プロファイル対応版・介護サービス統合)
+                        Tables\Actions\BulkAction::make('exportAccountingJournalCsv')
+                            ->label('会計仕訳CSV出力(弥生/freee/MF/勘定奉行)')
+                            ->icon('heroicon-o-document-text')
+                            ->color('warning')
+                            ->form([
+                                Forms\Components\Select::make('year_month')
+                                    ->label('請求年月')
+                                    ->options(fn () => MonthlyInvoice::query()->distinct()->pluck('billing_year_month', 'billing_year_month')->toArray())
+                                    ->required()
+                                    ->default(now()->format('Y-m'))
+                                    ->native(false),
 
-                            return response()->streamDownload(
-                                fn () => print($csv),
-                                $fileName,
-                                ['Content-Type' => 'text/csv; charset=UTF-8']
-                            );
-                        })
-                        ->requiresConfirmation(),
+                                Forms\Components\Select::make('software_type')
+                                    ->label('会計ソフト')
+                                    ->options([
+                                        AccountingExportProfile::SOFTWARE_FREEE => 'freee',
+                                        AccountingExportProfile::SOFTWARE_MF => 'MFクラウド会計',
+                                        AccountingExportProfile::SOFTWARE_YAYOI => '弥生会計',
+                                        AccountingExportProfile::SOFTWARE_KANJOBUGYO => '勘定奉行',
+                                    ])
+                                    ->default(AccountingExportProfile::SOFTWARE_FREEE)
+                                    ->required()
+                                    ->native(false)
+                                    ->live()
+                                    ->afterStateUpdated(fn (Forms\Set $set) => $set('profile_id', null)),
 
-                    // CSVエクスポート: 会計仕訳CSV (プロファイル対応版・介護サービス統合)
-                    Tables\Actions\BulkAction::make('exportAccountingJournalCsv')
-                        ->label('会計仕訳CSV出力(弥生/freee/MF/勘定奉行)')
-                        ->icon('heroicon-o-document-text')
-                        ->color('warning')
-                        ->form([
-                            Forms\Components\Select::make('year_month')
-                                ->label('請求年月')
-                                ->options(fn () => MonthlyInvoice::query()->distinct()->pluck('billing_year_month', 'billing_year_month')->toArray())
-                                ->required()
-                                ->default(now()->format('Y-m'))
-                                ->native(false),
+                                Forms\Components\Select::make('profile_id')
+                                    ->label('エクスポートプロファイル')
+                                    ->options(function (Forms\Get $get) {
+                                        $softwareType = $get('software_type') ?? AccountingExportProfile::SOFTWARE_FREEE;
+                                        $facilityId = auth()->user()?->facility_id;
+                                        if (! $facilityId) {
+                                            return [];
+                                        }
+                                        $profiles = AccountingExportProfile::where('facility_id', $facilityId)
+                                            ->where('software_type', $softwareType)
+                                            ->where('is_active', true)
+                                            ->get();
 
-                            Forms\Components\Select::make('software_type')
-                                ->label('会計ソフト')
-                                ->options([
-                                    AccountingExportProfile::SOFTWARE_FREEE => 'freee',
-                                    AccountingExportProfile::SOFTWARE_MF => 'MFクラウド会計',
-                                    AccountingExportProfile::SOFTWARE_YAYOI => '弥生会計',
-                                    AccountingExportProfile::SOFTWARE_KANJOBUGYO => '勘定奉行',
-                                ])
-                                ->default(AccountingExportProfile::SOFTWARE_FREEE)
-                                ->required()
-                                ->native(false)
-                                ->live()
-                                ->afterStateUpdated(fn (Forms\Set $set) => $set('profile_id', null)),
+                                        return $profiles->pluck('name', 'id')->toArray();
+                                    })
+                                    ->searchable()
+                                    ->native(false)
+                                    ->placeholder('デフォルトプロファイルを使用')
+                                    ->helperText('未選択時はデフォルトプロファイルが使用されます'),
 
-                            Forms\Components\Select::make('profile_id')
-                                ->label('エクスポートプロファイル')
-                                ->options(function (Forms\Get $get) {
-                                    $softwareType = $get('software_type') ?? AccountingExportProfile::SOFTWARE_FREEE;
-                                    $facilityId = auth()->user()?->facility_id;
-                                    if (!$facilityId) {
-                                        return [];
+                                Forms\Components\Toggle::make('include_care_services')
+                                    ->label('介護サービス請求を含める')
+                                    ->default(true)
+                                    ->helperText('確定済みの介護サービス請求も仕訳に含めます'),
+                            ])
+                            ->action(function (array $data, InvoiceCsvExportService $service) {
+                                $csv = $service->exportAccountingJournalCsv(
+                                    $data['year_month'],
+                                    facilityId: auth()->user()?->facility_id,
+                                    softwareType: $data['software_type'],
+                                    profileId: $data['profile_id'] ?? null,
+                                    includeCareServices: $data['include_care_services'] ?? true
+                                );
+                                $fileName = "会計仕訳_{$data['year_month']}".($data['include_care_services'] ? '_統合' : '_住居費のみ').'.csv';
+
+                                return response()->streamDownload(
+                                    fn () => print ($csv),
+                                    $fileName,
+                                    ['Content-Type' => 'text/csv; charset=UTF-8']
+                                );
+                            })
+                            ->requiresConfirmation(),
+
+                        // 仕訳プレビューアクション
+                        Tables\Actions\BulkAction::make('previewAccountingJournal')
+                            ->label('会計仕訳プレビュー')
+                            ->icon('heroicon-o-eye')
+                            ->color('info')
+                            ->form([
+                                Forms\Components\Select::make('year_month')
+                                    ->label('請求年月')
+                                    ->options(fn () => MonthlyInvoice::query()->distinct()->pluck('billing_year_month', 'billing_year_month')->toArray())
+                                    ->required()
+                                    ->default(now()->format('Y-m'))
+                                    ->native(false),
+
+                                Forms\Components\Select::make('software_type')
+                                    ->label('会計ソフト')
+                                    ->options([
+                                        AccountingExportProfile::SOFTWARE_FREEE => 'freee',
+                                        AccountingExportProfile::SOFTWARE_MF => 'MFクラウド会計',
+                                        AccountingExportProfile::SOFTWARE_YAYOI => '弥生会計',
+                                        AccountingExportProfile::SOFTWARE_KANJOBUGYO => '勘定奉行',
+                                    ])
+                                    ->default(AccountingExportProfile::SOFTWARE_FREEE)
+                                    ->required()
+                                    ->native(false)
+                                    ->live()
+                                    ->afterStateUpdated(fn (Forms\Set $set) => $set('profile_id', null)),
+
+                                Forms\Components\Select::make('profile_id')
+                                    ->label('エクスポートプロファイル')
+                                    ->options(function (Forms\Get $get) {
+                                        $softwareType = $get('software_type') ?? AccountingExportProfile::SOFTWARE_FREEE;
+                                        $facilityId = auth()->user()?->facility_id;
+                                        if (! $facilityId) {
+                                            return [];
+                                        }
+                                        $profiles = AccountingExportProfile::where('facility_id', $facilityId)
+                                            ->where('software_type', $softwareType)
+                                            ->where('is_active', true)
+                                            ->get();
+
+                                        return $profiles->pluck('name', 'id')->toArray();
+                                    })
+                                    ->searchable()
+                                    ->native(false)
+                                    ->placeholder('デフォルトプロファイルを使用'),
+
+                                Forms\Components\Toggle::make('include_care_services')
+                                    ->label('介護サービス請求を含める')
+                                    ->default(true)
+                                    ->helperText('確定済みの介護サービス請求もプレビューに含めます'),
+                            ])
+                            ->action(function (array $data, InvoiceCsvExportService $service) {
+                                $preview = $service->previewAccountingJournal(
+                                    $data['year_month'],
+                                    facilityId: auth()->user()?->facility_id,
+                                    softwareType: $data['software_type'],
+                                    profileId: $data['profile_id'] ?? null,
+                                    includeCareServices: $data['include_care_services'] ?? true
+                                );
+
+                                // CSV形式でプレビューデータを出力
+                                $csv = '';
+                                if ($preview['entries']) {
+                                    $output = fopen('php://temp', 'r+');
+                                    if ($preview['profile']['bom'] ?? true) {
+                                        fwrite($output, "\xEF\xBB\xBF");
                                     }
-                                    $profiles = AccountingExportProfile::where('facility_id', $facilityId)
-                                        ->where('software_type', $softwareType)
-                                        ->where('is_active', true)
-                                        ->get();
-                                    return $profiles->pluck('name', 'id')->toArray();
-                                })
-                                ->searchable()
-                                ->native(false)
-                                ->placeholder('デフォルトプロファイルを使用')
-                                ->helperText('未選択時はデフォルトプロファイルが使用されます'),
-
-                            Forms\Components\Toggle::make('include_care_services')
-                                ->label('介護サービス請求を含める')
-                                ->default(true)
-                                ->helperText('確定済みの介護サービス請求も仕訳に含めます'),
-                        ])
-                        ->action(function (array $data, InvoiceCsvExportService $service) {
-                            $csv = $service->exportAccountingJournalCsv(
-                                $data['year_month'],
-                                facilityId: auth()->user()?->facility_id,
-                                softwareType: $data['software_type'],
-                                profileId: $data['profile_id'] ?? null,
-                                includeCareServices: $data['include_care_services'] ?? true
-                            );
-                            $fileName = "会計仕訳_{$data['year_month']}" . ($data['include_care_services'] ? '_統合' : '_住居費のみ') . ".csv";
-
-                            return response()->streamDownload(
-                                fn () => print($csv),
-                                $fileName,
-                                ['Content-Type' => 'text/csv; charset=UTF-8']
-                            );
-                        })
-                        ->requiresConfirmation(),
-
-                    // 仕訳プレビューアクション
-                    Tables\Actions\BulkAction::make('previewAccountingJournal')
-                        ->label('会計仕訳プレビュー')
-                        ->icon('heroicon-o-eye')
-                        ->color('info')
-                        ->form([
-                            Forms\Components\Select::make('year_month')
-                                ->label('請求年月')
-                                ->options(fn () => MonthlyInvoice::query()->distinct()->pluck('billing_year_month', 'billing_year_month')->toArray())
-                                ->required()
-                                ->default(now()->format('Y-m'))
-                                ->native(false),
-
-                            Forms\Components\Select::make('software_type')
-                                ->label('会計ソフト')
-                                ->options([
-                                    AccountingExportProfile::SOFTWARE_FREEE => 'freee',
-                                    AccountingExportProfile::SOFTWARE_MF => 'MFクラウド会計',
-                                    AccountingExportProfile::SOFTWARE_YAYOI => '弥生会計',
-                                    AccountingExportProfile::SOFTWARE_KANJOBUGYO => '勘定奉行',
-                                ])
-                                ->default(AccountingExportProfile::SOFTWARE_FREEE)
-                                ->required()
-                                ->native(false)
-                                ->live()
-                                ->afterStateUpdated(fn (Forms\Set $set) => $set('profile_id', null)),
-
-                            Forms\Components\Select::make('profile_id')
-                                ->label('エクスポートプロファイル')
-                                ->options(function (Forms\Get $get) {
-                                    $softwareType = $get('software_type') ?? AccountingExportProfile::SOFTWARE_FREEE;
-                                    $facilityId = auth()->user()?->facility_id;
-                                    if (!$facilityId) {
-                                        return [];
+                                    if ($preview['profile']['include_header'] ?? true) {
+                                        fputcsv($output, $preview['headers']);
                                     }
-                                    $profiles = AccountingExportProfile::where('facility_id', $facilityId)
-                                        ->where('software_type', $softwareType)
-                                        ->where('is_active', true)
-                                        ->get();
-                                    return $profiles->pluck('name', 'id')->toArray();
-                                })
-                                ->searchable()
-                                ->native(false)
-                                ->placeholder('デフォルトプロファイルを使用'),
-
-                            Forms\Components\Toggle::make('include_care_services')
-                                ->label('介護サービス請求を含める')
-                                ->default(true)
-                                ->helperText('確定済みの介護サービス請求もプレビューに含めます'),
-                        ])
-                        ->action(function (array $data, InvoiceCsvExportService $service) {
-                            $preview = $service->previewAccountingJournal(
-                                $data['year_month'],
-                                facilityId: auth()->user()?->facility_id,
-                                softwareType: $data['software_type'],
-                                profileId: $data['profile_id'] ?? null,
-                                includeCareServices: $data['include_care_services'] ?? true
-                            );
-
-                            // CSV形式でプレビューデータを出力
-                            $csv = '';
-                            if ($preview['entries']) {
-                                $output = fopen('php://temp', 'r+');
-                                if ($preview['profile']['bom'] ?? true) {
-                                    fwrite($output, "\xEF\xBB\xBF");
-                                }
-                                if ($preview['profile']['include_header'] ?? true) {
-                                    fputcsv($output, $preview['headers']);
-                                }
-                                foreach ($preview['entries'] as $entry) {
-                                    fputcsv($output, array_values($entry));
-                                }
-                                rewind($output);
-                                $csv = stream_get_contents($output);
-                                fclose($output);
-                            }
-
-                            $fileName = "会計仕訳プレビュー_{$data['year_month']}" . ($data['include_care_services'] ? '_統合' : '_住居費のみ') . ".csv";
-
-                            return response()->streamDownload(
-                                fn () => print($csv),
-                                $fileName,
-                                ['Content-Type' => 'text/csv; charset=UTF-8']
-                            );
-                        })
-                        ->requiresConfirmation(),
-
-                    // 一括請求書メール送信
-                    Tables\Actions\BulkAction::make('bulkSendInvoiceEmail')
-                        ->label('一括請求書送信')
-                        ->icon('heroicon-o-paper-airplane')
-                        ->color('success')
-                        ->form([
-                            Forms\Components\TextInput::make('email')
-                                ->label('送信先メールアドレス（共通）')
-                                ->email()
-                                ->required()
-                                ->placeholder('example@domain.com')
-                                ->helperText('個別のメールアドレスが設定されている場合はそちらが優先されます'),
-                            Forms\Components\Textarea::make('message')
-                                ->label('添え書き（任意・全件共通）')
-                                ->rows(3)
-                                ->placeholder('全請求書に共通で添えるメッセージ'),
-                            Forms\Components\Toggle::make('include_care_services')
-                                ->label('介護サービス請求書も同封する')
-                                ->default(false)
-                                ->helperText('確定済みの介護サービスPDFがあれば添付します'),
-                        ])
-                        ->action(function (array $data, $records, MailService $mailService) {
-                            $sentCount = 0;
-                            $failedCount = 0;
-
-                            foreach ($records as $record) {
-                                $email = $record->resident->email ?? $record->resident->facility?->email ?? $data['email'];
-                                
-                                if (!$email) {
-                                    $failedCount++;
-                                    continue;
+                                    foreach ($preview['entries'] as $entry) {
+                                        fputcsv($output, array_values($entry));
+                                    }
+                                    rewind($output);
+                                    $csv = stream_get_contents($output);
+                                    fclose($output);
                                 }
 
-                                $pdfUrl = URL::signedRoute('invoices.preview', [
-                                    'invoice' => $record->id,
-                                    'type' => 'invoice',
-                                ]);
+                                $fileName = "会計仕訳プレビュー_{$data['year_month']}".($data['include_care_services'] ? '_統合' : '_住居費のみ').'.csv';
 
-                                $mailable = new InvoiceMail($record, $pdfUrl, $data['message'] ?? null, $data['include_care_services'] ?? false);
-                                $sent = $mailService->send($mailable, $email);
+                                return response()->streamDownload(
+                                    fn () => print ($csv),
+                                    $fileName,
+                                    ['Content-Type' => 'text/csv; charset=UTF-8']
+                                );
+                            })
+                            ->requiresConfirmation(),
 
-                                if ($sent) {
-                                    $sentCount++;
-                                } else {
-                                    $failedCount++;
+                        // 一括請求書メール送信
+                        Tables\Actions\BulkAction::make('bulkSendInvoiceEmail')
+                            ->label('一括請求書送信')
+                            ->icon('heroicon-o-paper-airplane')
+                            ->color('success')
+                            ->form([
+                                Forms\Components\TextInput::make('email')
+                                    ->label('送信先メールアドレス（共通）')
+                                    ->email()
+                                    ->required()
+                                    ->placeholder('example@domain.com')
+                                    ->helperText('個別のメールアドレスが設定されている場合はそちらが優先されます'),
+                                Forms\Components\Textarea::make('message')
+                                    ->label('添え書き（任意・全件共通）')
+                                    ->rows(3)
+                                    ->placeholder('全請求書に共通で添えるメッセージ'),
+                                Forms\Components\Toggle::make('include_care_services')
+                                    ->label('介護サービス請求書も同封する')
+                                    ->default(false)
+                                    ->helperText('確定済みの介護サービスPDFがあれば添付します'),
+                            ])
+                            ->action(function (array $data, $records, MailService $mailService) {
+                                $sentCount = 0;
+                                $failedCount = 0;
+
+                                foreach ($records as $record) {
+                                    $email = $record->resident->email ?? $record->resident->facility?->email ?? $data['email'];
+
+                                    if (! $email) {
+                                        $failedCount++;
+
+                                        continue;
+                                    }
+
+                                    $pdfUrl = URL::signedRoute('invoices.preview', [
+                                        'invoice' => $record->id,
+                                        'type' => 'invoice',
+                                    ]);
+
+                                    $mailable = new InvoiceMail($record, $pdfUrl, $data['message'] ?? null, $data['include_care_services'] ?? false);
+                                    $sent = $mailService->send($mailable, $email);
+
+                                    if ($sent) {
+                                        $sentCount++;
+                                    } else {
+                                        $failedCount++;
+                                    }
                                 }
-                            }
 
-                            if ($sentCount > 0) {
-                                Notification::make()
-                                    ->title("{$sentCount} 件の請求書を送信しました" . ($data['include_care_services'] ? '（介護サービス含む）' : ''))
-                                    ->success()
-                                    ->send();
-                            }
-                            if ($failedCount > 0) {
-                                Notification::make()
-                                    ->title("{$failedCount} 件の送信に失敗しました（メール未設定または送信エラー）")
-                                    ->warning()
-                                    ->send();
-                            }
-                        })
-                        ->requiresConfirmation(),
+                                if ($sentCount > 0) {
+                                    Notification::make()
+                                        ->title("{$sentCount} 件の請求書を送信しました".($data['include_care_services'] ? '（介護サービス含む）' : ''))
+                                        ->success()
+                                        ->send();
+                                }
+                                if ($failedCount > 0) {
+                                    Notification::make()
+                                        ->title("{$failedCount} 件の送信に失敗しました（メール未設定または送信エラー）")
+                                        ->warning()
+                                        ->send();
+                                }
+                            })
+                            ->requiresConfirmation(),
 
-                    // 削除バルクアクション: アーカイブ済みは対象外
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn (MonthlyInvoice $record) => $record->status && ! in_array($record->status, [InvoiceStatus::Paid, InvoiceStatus::Billed], true)
-                        ),
-                ]),
+                        // 削除バルクアクション: アーカイブ済みは対象外
+                        Tables\Actions\DeleteBulkAction::make()
+                            ->visible(fn (MonthlyInvoice $record) => $record->status && ! in_array($record->status, [InvoiceStatus::Paid, InvoiceStatus::Billed], true)
+                            ),
+                    ]),
             ]);
     }
 
@@ -724,7 +724,7 @@ class MonthlyInvoiceResource extends Resource
     /**
      * 施設によるデータ分離
      */
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
 

@@ -2,14 +2,14 @@
 
 namespace Tests\Feature\Regression;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
-use App\Models\Resident;
 use App\Models\PdfTemplateSettings;
+use App\Models\Resident;
 use App\Services\Pdf\InvoicePdfGenerator;
-use Carbon\Carbon;
+use App\Services\Pdf\TemplateSettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class InvoiceCalculationBasisTest extends TestCase
@@ -19,7 +19,7 @@ class InvoiceCalculationBasisTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // デフォルトテンプレートを作成（計算根拠表示有効）
         PdfTemplateSettings::create([
             'key' => 'invoice',
@@ -235,9 +235,9 @@ class InvoiceCalculationBasisTest extends TestCase
             ->where('locale', 'ja')
             ->where('is_default', true)
             ->update(['show_calculation_basis' => false]);
-        
+
         // キャッシュをクリア
-        app(\App\Services\Pdf\TemplateSettingsService::class)->clearCache('invoice', 'ja', 'standard');
+        app(TemplateSettingsService::class)->clearCache('invoice', 'ja', 'standard');
 
         $facility = Facility::factory()->create();
         $resident = Resident::factory()->create([
@@ -274,7 +274,7 @@ class InvoiceCalculationBasisTest extends TestCase
     }
 
     /** @test */
-    public function 既存PDFレイアウトテストへの影響なし(): void
+    public function 既存_pd_fレイアウトテストへの影響なし(): void
     {
         // 既存のPDFレイアウトテストと同じデータで生成し、主要要素が保持されているか確認
         $facility = Facility::factory()->create([
@@ -321,7 +321,7 @@ class InvoiceCalculationBasisTest extends TestCase
     }
 
     /** @test */
-    public function 領収書PDFには計算根拠が表示されない(): void
+    public function 領収書_pd_fには計算根拠が表示されない(): void
     {
         $facility = Facility::factory()->create();
         $resident = Resident::factory()->create([
@@ -346,7 +346,7 @@ class InvoiceCalculationBasisTest extends TestCase
                 'reduced' => ['taxable_amount' => 0, 'rate' => 8, 'tax_amount' => 0],
                 'non_taxable' => ['amount' => 50000],
             ],
-            'status' => \App\Enums\InvoiceStatus::Paid,
+            'status' => InvoiceStatus::Paid,
         ]);
 
         $generator = app(InvoicePdfGenerator::class);

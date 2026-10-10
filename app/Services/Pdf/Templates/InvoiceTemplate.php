@@ -3,8 +3,8 @@
 namespace App\Services\Pdf\Templates;
 
 use App\Services\Pdf\Contracts\TemplateInterface;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\View;
 
 class InvoiceTemplate implements TemplateInterface
 {
@@ -12,7 +12,7 @@ class InvoiceTemplate implements TemplateInterface
     {
         // 共通CSS取得
         $css = $this->getCss();
-        
+
         // テンプレート設定をマージ
         $templateConfig = array_merge(
             config('pdf.default', []),
@@ -30,7 +30,7 @@ class InvoiceTemplate implements TemplateInterface
     public function getCss(): string
     {
         $cssPath = resource_path('css/pdf-invoice.css');
-        
+
         if (File::exists($cssPath)) {
             return File::get($cssPath);
         }

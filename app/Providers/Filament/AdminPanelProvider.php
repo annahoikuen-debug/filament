@@ -2,6 +2,11 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\ChatbotAssistant;
+use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\OnboardingWizard;
+use App\Filament\Widgets\TrialOverview;
+use App\Filament\Widgets\UnpaidInvoicesAlert;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -33,15 +38,15 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                \App\Filament\Pages\Dashboard::class,
-                \App\Filament\Pages\OnboardingWizard::class,
-                \App\Filament\Pages\ChatbotAssistant::class,
+                Dashboard::class,
+                OnboardingWizard::class,
+                ChatbotAssistant::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                \App\Filament\Widgets\TrialOverview::class,
-                \App\Filament\Widgets\UnpaidInvoicesAlert::class,
+                TrialOverview::class,
+                UnpaidInvoicesAlert::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -55,7 +60,7 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([
-                \Filament\Http\Middleware\Authenticate::class,
+                Authenticate::class,
             ]);
     }
 }

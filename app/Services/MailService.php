@@ -14,11 +14,12 @@ class MailService
      */
     public function send(Mailable $mailable, string $email): bool
     {
-        if (!$this->isMailConfigured()) {
+        if (! $this->isMailConfigured()) {
             Log::info('[MailService] メール設定が無いためログに記録します', [
                 'to' => $email,
                 'mailable' => get_class($mailable),
             ]);
+
             return false;
         }
 
@@ -31,6 +32,7 @@ class MailService
                 'to' => $email,
                 'mailable' => get_class($mailable),
             ]);
+
             return true;
         } catch (\Exception $e) {
             Log::error('[MailService] メールキューへの投入に失敗しました', [
@@ -38,6 +40,7 @@ class MailService
                 'mailable' => get_class($mailable),
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

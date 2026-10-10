@@ -62,7 +62,7 @@ test('レート制限が動作すること', function () {
 
     for ($i = 0; $i < 30; $i++) {
         $this->actingAs($this->corporateAdmin)->postJson('/api/chatbot/message', [
-            'message' => 'テストメッセージ' . $i,
+            'message' => 'テストメッセージ'.$i,
         ]);
     }
 

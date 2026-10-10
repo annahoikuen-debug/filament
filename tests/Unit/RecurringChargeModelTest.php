@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\ChargeItem;
+use App\Models\Facility;
 use App\Models\RecurringCharge;
 use App\Models\Resident;
-use App\Models\Facility;
-use App\Models\ChargeItem;
 use Carbon\Carbon;
 
 test('fillableフィールドのみが一括代入で設定されること', function () {
@@ -63,8 +63,8 @@ test('キャストが正しく動作すること', function () {
     ]);
 
     expect($recurringCharge->quantity)->toBe(2)
-        ->and($recurringCharge->start_date)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
-        ->and($recurringCharge->end_date)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
+        ->and($recurringCharge->start_date)->toBeInstanceOf(Illuminate\Support\Carbon::class)
+        ->and($recurringCharge->end_date)->toBeInstanceOf(Illuminate\Support\Carbon::class)
         ->and($recurringCharge->is_active)->toBeTrue();
 });
 

@@ -2,31 +2,22 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\AccountingExportProfile;
 use App\Models\ChargeItem;
 use App\Models\Facility;
-use App\Models\Resident;
-use App\Services\InvoiceCalculationService;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Facades\Filament;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use League\Csv\Reader;
 
 class OnboardingWizard extends Page implements HasActions, HasForms
 {
@@ -34,15 +25,23 @@ class OnboardingWizard extends Page implements HasActions, HasForms
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-rocket-launch';
+
     protected static ?string $navigationLabel = 'セットアップウィザード';
+
     protected static ?string $title = 'セットアップウィザード';
+
     protected static ?int $navigationSort = 100;
+
     protected static string $view = 'filament.pages.onboarding-wizard';
 
     public int $currentStep = 1;
+
     public array $formData = [];
+
     public array $presetItems = [];
+
     public ?array $csvPreview = null;
+
     public int $totalSteps = 5;
 
     public function mount(): void
@@ -161,10 +160,10 @@ class OnboardingWizard extends Page implements HasActions, HasForms
                     ->heading('品目マスタの設定')
                     ->description('日々の自費記録で使用する品目を選択してください')
                     ->schema([
-                        \Filament\Forms\Components\CheckboxList::make('preset_items')
+                        CheckboxList::make('preset_items')
                             ->label('プリセット品目')
-                            ->options(fn() => collect($this->presetItems)->pluck('name', 'name')->toArray())
-                            ->descriptions(fn() => collect($this->presetItems)->pluck('default_price', 'name')->map(fn($p) => "¥{$p}")->toArray())
+                            ->options(fn () => collect($this->presetItems)->pluck('name', 'name')->toArray())
+                            ->descriptions(fn () => collect($this->presetItems)->pluck('default_price', 'name')->map(fn ($p) => "¥{$p}")->toArray())
                             ->columns(2),
                     ]),
 
@@ -198,20 +197,20 @@ class OnboardingWizard extends Page implements HasActions, HasForms
                 ->label($this->currentStep === $this->totalSteps ? '完了' : '次へ')
                 ->icon('heroicon-o-arrow-right')
                 ->color('primary')
-                ->action(fn() => $this->nextStep()),
+                ->action(fn () => $this->nextStep()),
 
             Action::make('back')
                 ->label('戻る')
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
-                ->visible(fn() => $this->currentStep > 1)
-                ->action(fn() => $this->previousStep()),
+                ->visible(fn () => $this->currentStep > 1)
+                ->action(fn () => $this->previousStep()),
 
             Action::make('skip')
                 ->label('スキップ')
                 ->color('gray')
-                ->visible(fn() => $this->currentStep < $this->totalSteps)
-                ->action(fn() => $this->skipStep()),
+                ->visible(fn () => $this->currentStep < $this->totalSteps)
+                ->action(fn () => $this->skipStep()),
         ];
     }
 
@@ -239,6 +238,7 @@ class OnboardingWizard extends Page implements HasActions, HasForms
 
         if ($this->currentStep === $this->totalSteps) {
             $this->completeOnboarding();
+
             return;
         }
 
@@ -281,7 +281,7 @@ class OnboardingWizard extends Page implements HasActions, HasForms
         );
 
         // ユーザーに施設IDを紐付け
-        if (Auth::user() && !Auth::user()->facility_id) {
+        if (Auth::user() && ! Auth::user()->facility_id) {
             Auth::user()->update(['facility_id' => $facility->id]);
         }
 
@@ -296,8 +296,9 @@ class OnboardingWizard extends Page implements HasActions, HasForms
         $data = $this->formData;
         $facilityId = Auth::user()?->facility_id;
 
-        if (!$facilityId) {
+        if (! $facilityId) {
             Notification::make()->title('施設情報を先に保存してください')->danger()->send();
+
             return;
         }
 
@@ -353,11 +354,11 @@ class OnboardingWizard extends Page implements HasActions, HasForms
         $data = $this->formData;
         $facilityId = Auth::user()?->facility_id;
 
-        if (!$facilityId || empty($data['accounting_profile_name'])) {
+        if (! $facilityId || empty($data['accounting_profile_name'])) {
             return;
         }
 
-        \App\Models\AccountingExportProfile::updateOrCreate(
+        AccountingExportProfile::updateOrCreate(
             [
                 'facility_id' => $facilityId,
                 'software_type' => $data['accounting_software'],

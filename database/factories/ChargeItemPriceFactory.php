@@ -15,7 +15,7 @@ class ChargeItemPriceFactory extends Factory
     {
         $effectiveFrom = Carbon::today()->subDays(fake()->numberBetween(0, 30));
         $hasEndDate = fake()->boolean(30); // 30% chance of having an end date
-        
+
         return [
             'charge_item_id' => ChargeItem::factory(),
             'price' => fake()->numberBetween(500, 10000),

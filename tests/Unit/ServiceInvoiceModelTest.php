@@ -5,6 +5,7 @@ use App\Enums\ServiceType;
 use App\Models\Facility;
 use App\Models\Resident;
 use App\Models\ServiceInvoice;
+use Illuminate\Database\QueryException;
 
 beforeEach(function () {
     $this->facility = Facility::create([
@@ -210,5 +211,5 @@ test('ユニーク制約が正しく動作すること', function () {
         'tax_amount' => 3000,
         'tax_rate' => 10.00,
         'external_invoice_number' => 'VC-202610-001',
-    ]))->toThrow(\Illuminate\Database\QueryException::class);
+    ]))->toThrow(QueryException::class);
 });

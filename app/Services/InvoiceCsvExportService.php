@@ -8,8 +8,8 @@ use App\Models\AccountingExportProfile;
 use App\Models\ChartOfAccount;
 use App\Models\MonthlyInvoice;
 use App\Models\ServiceInvoice;
-use App\Models\Facility;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 
 class InvoiceCsvExportService
 {
@@ -66,7 +66,7 @@ class InvoiceCsvExportService
                 $inv->management_fee_subtotal,
                 $inv->service_subtotal,
                 $inv->taxable_amount,
-                rtrim(rtrim($inv->tax_rate, '0'), '.') . '%',
+                rtrim(rtrim($inv->tax_rate, '0'), '.').'%',
                 $inv->tax_amount,
                 $inv->total_amount,
                 $inv->status?->getLabel() ?? $inv->status,
@@ -220,6 +220,7 @@ class InvoiceCsvExportService
     public function getAvailableProfiles(int $facilityId): array
     {
         $profiles = AccountingExportProfile::getActiveForFacility($facilityId);
+
         return $profiles->map(fn ($p) => $this->profileToArray($p))->toArray();
     }
 
@@ -233,6 +234,7 @@ class InvoiceCsvExportService
             if ($facilityId && $profile->facility_id !== $facilityId) {
                 throw new \InvalidArgumentException('指定されたプロファイルは選択施設のものではありません。');
             }
+
             return $profile;
         }
 
@@ -284,13 +286,13 @@ class InvoiceCsvExportService
     /**
      * 仕訳エントリ構築（住居費＋介護サービス）
      *
-     * @param  \Illuminate\Database\Eloquent\Collection  $invoices  住居費請求
-     * @param  \Illuminate\Database\Eloquent\Collection  $careServiceInvoices  介護サービス請求
+     * @param  Collection  $invoices  住居費請求
+     * @param  Collection  $careServiceInvoices  介護サービス請求
      * @return array<int, array<string, mixed>>
      */
     private function buildJournalEntries(
-        \Illuminate\Database\Eloquent\Collection $invoices,
-        \Illuminate\Database\Eloquent\Collection $careServiceInvoices,
+        Collection $invoices,
+        Collection $careServiceInvoices,
         array $chartOfAccounts,
         AccountingExportProfile $profile
     ): array {
@@ -473,8 +475,8 @@ class InvoiceCsvExportService
             // 消費税分も別行で出力（税額がある場合）
             if ($si->tax_amount > 0) {
                 // 消費税預り金（借方：売掛金、貸方：仮受消費税等）
-                $taxDebitAccount = $facilityAccounts["tax_receivable.debit"][0] ?? null;
-                $taxCreditAccount = $facilityAccounts["tax_payable.credit"][0] ?? null;
+                $taxDebitAccount = $facilityAccounts['tax_receivable.debit'][0] ?? null;
+                $taxCreditAccount = $facilityAccounts['tax_payable.credit'][0] ?? null;
 
                 $taxDebitAccount = $taxDebitAccount ?? [
                     'account_code' => '1100',
@@ -544,7 +546,7 @@ class InvoiceCsvExportService
             // fputcsvはUTF-8前提なので、SJISの場合は手動で書き込み
             if ($profile->encoding === 'SJIS' || $profile->encoding === 'CP932') {
                 $line = implode(',', array_map(fn ($h) => $this->escapeCsvField($h), $headers));
-                fwrite($output, $line . $profile->getLineEnding());
+                fwrite($output, $line.$profile->getLineEnding());
             } else {
                 fputcsv($output, $headers);
             }
@@ -562,7 +564,7 @@ class InvoiceCsvExportService
 
             if ($profile->encoding === 'SJIS' || $profile->encoding === 'CP932') {
                 $line = implode(',', array_map(fn ($v) => $this->escapeCsvField($v), $row));
-                fwrite($output, $line . $profile->getLineEnding());
+                fwrite($output, $line.$profile->getLineEnding());
             } else {
                 fputcsv($output, $row);
             }
@@ -583,8 +585,9 @@ class InvoiceCsvExportService
     {
         $str = (string) $value;
         if (str_contains($str, ',') || str_contains($str, '"') || str_contains($str, "\n") || str_contains($str, "\r")) {
-            return '"' . str_replace('"', '""', $str) . '"';
+            return '"'.str_replace('"', '""', $str).'"';
         }
+
         return $str;
     }
 

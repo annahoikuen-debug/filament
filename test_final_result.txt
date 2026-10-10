@@ -1,0 +1,612 @@
+
+  [30;43;1m WARN [39;49;22m Your XML configuration validates against a deprecated schema. Migrate your XML configuration using "--migrate-configuration"!
+
+   PASS  Tests\Unit\AccountingExportProfileModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             5.12s  
+  ✓ fillable外のフィールド（id）が一括代入で無視されること                                                       0.14s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.08s  
+  ✓ キャストが正しく動作すること                                                                                 0.10s  
+  ✓ 定数が正しく定義されていること                                                                               0.06s  
+  ✓ facilityリレーションが正しく動作すること                                                                     0.06s  
+  ✓ getDefaultメソッドがデフォルトプロファイルを取得すること                                                     0.06s  
+  ✓ getDefaultメソッドで非アクティブなデフォルトは除外されること                                                 0.06s  
+  ✓ getActiveForFacilityメソッドが施設の有効なプロファイルを取得すること                                         0.09s  
+  ✓ createDefaultsForFacilityメソッドが正しくデフォルトを作成すること                                            0.11s  
+  ✓ buildHeaderメソッドがヘッダー行を生成すること                                                                0.09s  
+  ✓ getFieldMappingメソッドがフィールドマッピングを取得すること                                                  0.06s  
+  ✓ mapTaxCodeメソッドが税区分コードを変換すること                                                               0.06s  
+  ✓ formatDateメソッドが日付をフォーマットすること                                                               0.07s  
+  ✓ getLineEndingメソッドが改行コードを取得すること                                                              0.06s  
+  ✓ convertEncodingメソッドがエンコーディング変換を行うこと                                                      0.06s  
+
+   PASS  Tests\Unit\BookingModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             0.17s  
+  ✓ fillable外のフィールド（id）が一括代入で無視されること                                                       0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ isPendingメソッドが正しく判定されること                                                                      0.06s  
+  ✓ trialリレーションが正しく動作すること                                                                        0.06s  
+  ✓ 確定日時が設定されているか確認すること                                                                       0.08s  
+  ✓ ソフトデリートが動作すること                                                                                 0.06s  
+
+   PASS  Tests\Unit\ChargeItemModelTest
+  ✓ fillableフィールドが設定されること（ただしguardedなのでid以外は設定可能）                                    0.08s  
+  ✓ guardedがidのみで他のフィールドは一括代入可能であること                                                      0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ キャストが正しく動作すること                                                                                 0.06s  
+  ✓ dailyChargesリレーションが正しく動作すること                                                                 0.20s  
+  ✓ priceHistoryリレーションが正しく動作すること                                                                 0.09s  
+  ✓ currentPriceメソッドが現在有効な価格を取得すること                                                           0.06s  
+  ✓ currentPriceメソッドが履歴がない場合はデフォルト価格を返すこと                                               0.06s  
+  ✓ getPriceForDateメソッドが指定日の有効な価格を取得すること                                                    0.06s  
+  ✓ getPriceForDateメソッドが履歴がない場合はデフォルト価格を返すこと                                            0.06s  
+  ✓ getEffectivePriceメソッドがデフォルト単価が0より大きい場合は価格を返すこと                                   0.06s  
+  ✓ getEffectivePriceメソッドがデフォルト単価が0以下の場合はnullを返すこと                                       0.06s  
+  ✓ getEffectivePriceメソッドが価格履歴がない場合とデフォルト単価が0の場合はnullを返すこと                       0.06s  
+  ✓ scopeActiveメソッドが現在有効な品目のみ取得すること                                                          0.06s  
+
+   PASS  Tests\Unit\ChargeItemPriceModelTest
+  ✓ fillableフィールドが設定されること（ただしguardedなのでid以外は設定可能）                                    0.07s  
+  ✓ guardedがidのみで他のフィールドは一括代入可能であること                                                      0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ キャストが正しく動作すること                                                                                 0.06s  
+  ✓ chargeItemリレーションが正しく動作すること                                                                   0.06s  
+  ✓ scopeCurrentメソッドが現在有効な価格のみ取得すること                                                         0.06s  
+  ✓ scopeForDateメソッドが指定日の有効な価格を取得すること                                                       0.06s  
+  ✓ scopeForDateメソッドで境界条件を正しく扱うこと                                                               0.07s  
+
+   PASS  Tests\Unit\ChartOfAccountModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             0.10s  
+  ✓ fillable外のフィールド（id）が一括代入で無視されること                                                       0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ キャストが正しく動作すること                                                                                 0.06s  
+  ✓ 定数が正しく定義されていること                                                                               0.06s  
+  ✓ facilityリレーションが正しく動作すること                                                                     0.06s  
+  ✓ getAccountメソッドが正しく動作すること                                                                       0.06s  
+  ✓ getAccountメソッドで非アクティブなものは除外されること                                                       0.06s  
+  ✓ 存在しない条件の場合はnullが返ること                                                                         0.06s  
+  ✓ getAllForFacilityメソッドが正しく動作すること                                                                0.06s  
+  ✓ createDefaultsForFacilityメソッドが正しくデフォルトを作成すること                                            0.07s  
+  ✓ createDefaultsForFacilityメソッドで既存データは更新されること                                                0.07s  
+  ✓ tagCodesアクセサが正しく動作すること                                                                         0.06s  
+  ✓ tagCodesがnullの場合は空配列が返ること                                                                       0.06s  
+
+   PASS  Tests\Unit\Chatbot\FaqResponderTest
+  ✓ キーワード一致でFAQが検索されること                                                                          0.39s  
+  ✓ 無効なFAQは検索対象外になること                                                                              0.07s  
+  ✓ 施設固有FAQは他施設から検索されないこと                                                                      0.07s  
+  ✓ 共通FAQは全施設から検索されること                                                                            0.07s  
+  ✓ 一致なしは空コレクションを返すこと                                                                           0.07s  
+  ✓ キーワード一致数が多いほど上位に表示されること                                                               0.07s  
+
+   PASS  Tests\Unit\Chatbot\IntentRecognizerTest
+  ✓ 入居者名を含む質問が resident_lookup に分類されること                                                        0.09s  
+  ✓ 部屋番号の質問が resident_lookup に分類されること                                                            0.06s  
+  ✓ 請求額の質問が invoice_amount に分類されること                                                               0.06s  
+  ✓ 支払い状況の質問が invoice_status に分類されること                                                           0.06s  
+  ✓ 利用料の質問が daily_charge_total に分類されること                                                           0.06s  
+  ✓ 曖昧な質問は faq に分類されること                                                                            0.06s  
+  ✓ 空のメッセージは faq に分類されること                                                                        0.06s  
+
+   PASS  Tests\Unit\DailyChargeModelTest
+  ✓ resident_idなしの場合はバリデーションスキップされること（NOT NULL制約のため例外は想定内）                    0.08s  
+  ✓ リレーション未ロードでもresident_id経由で在籍期間バリデーションが機能すること                                0.06s  
+  ✓ リレーションロード済みの場合もバリデーションが正しく機能すること                                             0.06s  
+  ✓ 入居日ちょうどの利用日は保存可能であること                                                                   0.06s  
+  ✓ 退去日ちょうどの利用日は保存可能であること                                                                   0.07s  
+  ✓ 退去日翌日の利用日はDomainExceptionが発生すること                                                            0.06s  
+  ✓ 入居日前の利用日はDomainExceptionが発生すること                                                              0.06s  
+
+   PASS  Tests\Unit\FacilityModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             0.06s  
+  ✓ fillable外のフィールド（id）が一括代入で無視されること                                                       0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ キャストが正しく動作すること                                                                                 0.06s  
+  ✓ residentsリレーションが正しく動作すること                                                                    0.08s  
+  ✓ monthlyInvoicesリレーションが正しく動作すること                                                              0.12s  
+  ✓ dailyChargesリレーションが正しく動作すること                                                                 0.07s  
+  ✓ currentメソッドが施設ID指定時にその施設を返すこと                                                            0.06s  
+  ✓ currentメソッドが施設ID指定時に非アクティブな施設はnullを返すこと                                            0.06s  
+  ✓ currentメソッドが施設ID未指定時は最初の有効施設を返すこと                                                    0.06s  
+  ✓ currentメソッドが有効な施設がない場合はnullを返すこと                                                        0.06s  
+  ✓ toConfigArrayメソッドが正しい配列を返すこと                                                                  0.06s  
+  ✓ validateInvoiceNumberメソッドが適格請求書登録番号をバリデーションすること                                    0.06s  
+
+   PASS  Tests\Unit\InvoicePdfServiceTest
+  ✓ 銀行振込QRコードデータにBladeプレースホルダーが含まれないこと                                                0.18s  
+  ✓ 銀行振込QRコードデータが正しいフォーマットであること                                                         0.10s  
+  ✓ QRコード生成メソッドが有効なデータURIを返すこと                                                              0.69s  
+  ✓ QRコードが有効な場合でもPDFが一度しか生成されないこと                                                        1.78s  
+
+   PASS  Tests\Unit\MonthlyInvoiceLockingTest
+  ✓ バージョンカラムが追加され、新規作成時に0で初期化されること                                                  0.06s  
+  ✓ 更新時にバージョンがインクリメントされること                                                                 0.06s  
+  ✓ 複数回更新時にバージョンが正しくインクリメントされること                                                     0.07s  
+
+   PASS  Tests\Unit\MonthlyInvoiceModelTest
+  ✓ total_amountが内訳の合計に自動同期されること                                                                 0.07s  
+  ✓ update時にもtotal_amountが再計算されること                                                                   0.06s  
+  ✓ Observer削除後もtotal_amount同期が動作すること                                                               0.06s  
+  ✓ resident_idが9999以下の場合の領収書番号フォーマット確認                                                      0.07s  
+  ✓ resident_idが10000以上でも領収書番号が崩れないこと                                                           0.06s  
+  ✓ 既に領収書番号が設定されている場合は上書きされないこと                                                       0.06s  
+
+   PASS  Tests\Unit\MonthlyInvoiceObserverTest
+  ✓ MonthlyInvoice保存時に内訳の合算値が常にtotal_amountに自動同期されること                                     0.07s  
+  ✓ markAsPaidメソッドで入金消込と領収書情報が正しく記録されること                                               0.07s  
+
+   PASS  Tests\Unit\MonthlyInvoiceTaxTest
+  ✓ 税関連のアトリビュートが正しく計算されること                                                                 0.06s  
+  ✓ マークアズペイド後も税情報が保持されること                                                                   0.07s  
+
+   PASS  Tests\Unit\PdfTemplateSettingModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             0.06s  
+  ✓ fillable外のフィールド（id）が一括代入で無視されること                                                       0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ キャストが正しく動作すること                                                                                 0.06s  
+  ✓ getForKeyメソッドが有効なテンプレートを取得すること                                                          0.06s  
+  ✓ getForKeyメソッドでデフォルトが優先されること                                                                0.06s  
+  ✓ getForKeyメソッドでバージョンが新しい方が優先されること                                                      0.06s  
+  ✓ getForKeyメソッドで存在しないキーの場合はnullが返ること                                                      0.06s  
+  ✓ getDefaultメソッドがデフォルトテンプレートを取得すること                                                     0.06s  
+  ✓ getDefaultメソッドで非アクティブなデフォルトは除外されること                                                 0.06s  
+  ✓ toConfigArrayメソッドが正しい配列を返すこと                                                                  0.06s  
+  ✓ toCssVariablesメソッドが正しい配列を返すこと                                                                 0.06s  
+  ✓ toCssVariableStringメソッドが正しい文字列を返すこと                                                          0.06s  
+
+   PASS  Tests\Unit\Pdf\DtoTest
+  ✓ resident pdf data from model                                                                                 0.09s  
+  ✓ facility pdf data from config                                                                                0.10s  
+  ✓ tax info pdf data from invoice                                                                               0.08s  
+  ✓ daily charge pdf data from model                                                                             0.09s  
+
+   PASS  Tests\Unit\Pdf\InvoiceDataProviderTest
+  ✓ get invoice data                                                                                             0.07s  
+  ✓ get receipt data                                                                                             0.07s  
+  ✓ get monthly invoices data                                                                                    0.08s  
+  ✓ get monthly invoices data with facility filter                                                               0.08s  
+
+   PASS  Tests\Unit\Pdf\InvoicePdfGeneratorTest
+  ✓ preview invoice returns html                                                                                 0.69s  
+  ✓ preview receipt returns html                                                                                 0.19s  
+  ✓ generate invoice returns pdf bytes                                                                           0.09s  
+  ✓ generate receipt returns pdf bytes                                                                           0.08s  
+  ✓ generate invoice download returns response                                                                   0.35s  
+  ✓ stream invoice returns response                                                                              0.08s  
+  ✓ generate monthly batch                                                                                       0.10s  
+
+   PASS  Tests\Unit\Pdf\WindowsFontRegistryTest
+  ✓ get font families                                                                                            0.06s  
+  ✓ register fonts does not throw                                                                                0.13s  
+  ✓ register is idempotent                                                                                       0.06s  
+
+   PASS  Tests\Unit\RecurringChargeModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             0.08s  
+  ✓ guardedがidのみで他のフィールドは一括代入可能であること                                                      0.07s  
+  ✓ キャストが正しく動作すること                                                                                 0.06s  
+  ✓ residentリレーションが正しく動作すること                                                                     0.06s  
+  ✓ facilityリレーションが正しく動作すること                                                                     0.07s  
+  ✓ chargeItemリレーションが正しく動作すること                                                                   0.06s  
+  ✓ scopeActiveメソッドが有効な定期課金のみ取得すること                                                          0.06s  
+  ✓ scopeForYearMonthメソッドが指定月の有効な定期課金を取得すること                                              0.06s  
+  ✓ getApplicableDaysメソッドで月額の場合は月の日数を返すこと                                                    0.06s  
+  ✓ getApplicableDaysメソッドで日額の場合は期間日数を返すこと                                                    0.07s  
+  ✓ getApplicableDaysメソッドで入居日・退去日を考慮すること                                                      0.07s  
+  ✓ getApplicableDaysメソッドで開始日が終了日より後なら0を返すこと                                               0.06s  
+
+   PASS  Tests\Unit\ResidentModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             0.07s  
+  ✓ fillable外のフィールド（id）が一括代入で無視されること                                                       0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ fill可能フィールド一覧が正しいこと                                                                           0.06s  
+
+   PASS  Tests\Unit\ResidentProrationTest
+  ✓ 入居月の日割り計算が正しく行われること                                                                       0.06s  
+  ✓ 退去月の日割り計算が正しく行われること                                                                       0.06s  
+  ✓ 在籍期間外の月は0日となること                                                                                0.06s  
+  ✓ 月中入居かつ月中退去の場合の計算が正しいこと                                                                 0.06s  
+
+   PASS  Tests\Unit\ServiceInvoiceModelTest
+  ✓ ServiceInvoiceモデルが作成できること                                                                         0.11s  
+  ✓ サービス種別enumが正しく動作すること                                                                         0.06s  
+  ✓ ステータスenumが正しく動作すること                                                                           0.06s  
+  ✓ ステータス遷移メソッドが動作すること                                                                         0.06s  
+  ✓ スコープが正しく動作すること                                                                                 0.06s  
+  ✓ リレーションが正しく動作すること                                                                             0.07s  
+  ✓ ユニーク制約が正しく動作すること                                                                             0.07s  
+
+   PASS  Tests\Unit\SubscriptionModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             0.08s  
+  ✓ fillable外のフィールド（id）が一括代入で無視されること                                                       0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ キャストが正しく動作すること                                                                                 0.06s  
+  ✓ trialリレーションが正しく動作すること                                                                        0.06s  
+  ✓ facilityリレーションが正しく動作すること                                                                     0.06s  
+  ✓ isActiveメソッドが正しく判定されること                                                                       0.06s  
+  ✓ SoftDeletesが動作すること                                                                                    0.06s  
+
+   PASS  Tests\Unit\TaxSettingTest
+  ✓ 現在有効な税率設定を取得できること                                                                           0.07s  
+  ✓ 期限切れの設定は取得されないこと                                                                             0.06s  
+  ✓ 無効フラグの設定は取得されないこと                                                                           0.06s  
+  ✓ 指定日の税率を取得できること                                                                                 0.06s  
+  ✓ 設定がない場合はデフォルト10%が返ること                                                                      0.06s  
+  ✓ config配列への変換が正しく動作すること                                                                       0.06s  
+
+   PASS  Tests\Unit\TrialModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             0.07s  
+  ✓ fillable外のフィールド（id）が一括代入で無視されること                                                       0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ キャストが正しく動作すること                                                                                 0.06s  
+  ✓ 施設リレーションが正しく動作すること                                                                         0.08s  
+  ✓ isActiveメソッドが正しく判定されること                                                                       0.06s  
+  ✓ isExpiredメソッドが正しく判定されること                                                                      0.06s  
+  ✓ daysUntilExpiryメソッドが正しく日数を返すこと                                                                0.06s  
+  ✓ SoftDeletesが動作すること                                                                                    0.06s  
+
+   PASS  Tests\Unit\UserModelTest
+  ✓ fillableフィールドのみが一括代入で設定されること                                                             0.07s  
+  ✓ fillable外のフィールド（id）が一括代入で無視されること                                                       0.06s  
+  ✓ 不正なフィールド名での一括代入は無視されること                                                               0.06s  
+  ✓ キャストが正しく動作すること                                                                                 0.06s  
+  ✓ 施設リレーションが正しく動作すること                                                                         0.06s  
+  ✓ isCorporateAdminメソッドが正しく判定されること                                                               0.06s  
+  ✓ isFacilityAdminメソッドが正しく判定されること                                                                0.06s  
+  ✓ canAccessPanelメソッドが管理者フラグに基づいて判定されること                                                 0.08s  
+
+   PASS  Tests\Feature\ArchivePolicyTest
+  ✓ 入金済み請求書の更新はポリシーによって禁止されること                                                         0.09s  
+  ✓ 未請求の請求書は更新・削除が許可されること                                                                   0.07s  
+  ✓ 請求済み（未入金）の請求書は更新・削除が禁止されること                                                       0.06s  
+  ✓ Filamentリソースでアーカイブ済み請求書の編集アクションが非表示になること                                     0.07s  
+
+   PASS  Tests\Feature\Chatbot\ChatLogRetentionTest
+  ✓ 会話がログに記録されること                                                                                   0.15s  
+  ✓ 保持期間超過ログが削除されること                                                                             0.08s  
+  ✓ mask_names=true で氏名がマスキングされること                                                                 0.78s  
+  ✓ mask_names=false で氏名が保持されること                                                                      0.07s  
+
+   PASS  Tests\Feature\Chatbot\ChatbotApiTest
+  ✓ 未認証アクセスは401を返すこと                                                                                0.84s  
+  ✓ is_admin=false のユーザーは403を返すこと                                                                     0.15s  
+  ✓ 正規のメッセージでJSON応答が返ること                                                                         0.33s  
+  ✓ 空メッセージはバリデーションエラーになること                                                                 0.12s  
+  ✓ 長すぎるメッセージはバリデーションエラーになること                                                           0.07s  
+  ✓ レート制限が動作すること                                                                                     0.21s  
+
+   PASS  Tests\Feature\Chatbot\FacilityScopeTest
+  ✓ facility_admin は自施設の入居者情報を取得できること                                                          0.08s  
+  ✓ facility_admin が他施設の入居者名を質問しても情報が返らないこと                                              0.08s  
+  ✓ facility_admin が他施設の請求額を質問しても金額が漏洩しないこと                                              0.08s  
+  ✓ facility_admin のログに facility_id が正しく記録されること                                                   0.08s  
+  ✓ corporate_admin は全施設を検索できること                                                                     0.08s  
+  ✓ corporate_admin のログの facility_id は null になること                                                      0.08s  
+  ✓ 未認証ユーザーはAPIにアクセスできないこと                                                                    0.08s  
+  ✓ 他施設の入居者名を直接指定してもデータが漏洩しないこと（境界値）                                             0.08s  
+
+   PASS  Tests\Feature\Chatbot\FilamentChatbotFaqResourceTest
+  ✓ ChatbotFaqResource一覧画面が正常に表示されること                                                            18.69s  
+  ✓ corporate_admin でFAQ CRUDが可能であること                                                                   0.07s  
+  ✓ facility_admin は自施設FAQと共通FAQのみ一覧に表示されること                                                  0.07s  
+  ✓ FAQの変更が監査ログに記録されること                                                                          0.07s  
+
+   PASS  Tests\Feature\Chatbot\ResidentQueryTest
+  ✓ 名前で入居者検索ができること                                                                                 0.07s  
+  ✓ 部屋番号で入居者検索ができること                                                                             0.07s  
+  ✓ 最新請求書の金額が正しく返ること                                                                             0.07s  
+  ✓ 支払状況が正しく返ること                                                                                     0.07s  
+  ✓ 入金済の場合は入金日が表示されること                                                                         0.07s  
+  ✓ 月中途入居者の日割り根拠が応答に含まれること                                                                 0.07s  
+  ✓ 存在しない名前は見つかりません応答になること                                                                 0.07s  
+  ✓ FAQに一致する質問はFAQ回答が返ること                                                                         0.07s  
+
+   PASS  Tests\Feature\DatabaseIndexPerformanceTest
+  ✓ 複合インデックスが適切に機能することを確認する                                                               1.17s  
+  ✓ 日付範囲検索用インデックスが機能することを確認する                                                           0.11s  
+
+   PASS  Tests\Feature\EdgeCaseBillingTest
+  ✓ 月途中入居（10月15日入居）の10月請求が正しく生成されること                                                   0.32s  
+  ✓ 月途中退去（10月15日退去）の10月請求が正しく生成されること                                                   0.07s  
+  ✓ 入居日と退去日が同じ日でも請求が生成されること                                                               0.07s  
+  ✓ forceUpdate=trueで請求済データも上書き再計算されること                                                       0.08s  
+  ✓ 請求ステータスがUnbilled→Billed→Paidの順に遷移すること                                                       0.07s  
+  ✓ 入金済み請求書の再入金消込はstatusがPaidのまま維持されること                                                 0.07s  
+  ✓ 月途中入居者の自費記録が入居日前の場合はDomainExceptionとなること                                            0.06s  
+
+   PASS  Tests\Feature\ExternalInvoiceApiTest
+  ✓ 一括取り込みAPIで複数請求書を作成できること                                                                  0.59s  
+  ✓ 既存レコードは更新されること                                                                                 0.11s  
+  ✓ 異なる施設の入居者はエラーになること                                                                         0.07s  
+  ✓ 無効なサービス種別はバリデーションエラーになること                                                           0.07s  
+  ✓ 無効な請求年月フォーマットはバリデーションエラーになること                                                   0.07s  
+  ✓ 単一取り込みAPIが動作すること                                                                                0.07s  
+  ✓ 単一APIでupdateOrCreateが動作すること                                                                        0.07s  
+  ✓ 一覧取得APIが動作すること                                                                                    0.08s  
+  ✓ 不正なBase64 PDFはエラーになること                                                                           0.07s  
+
+   PASS  Tests\Feature\FacilityConfigTest
+  ✓ 正常な施設設定では例外が発生しないこと                                                                       0.06s  
+  ✓ 不正な請求書登録番号でRuntimeExceptionが発生すること                                                         0.09s  
+  ✓ Tから始まっても桁数が13桁でない登録番号でRuntimeExceptionが発生すること                                      0.06s  
+  ✓ 銀行情報に必須項目が不足している場合RuntimeExceptionが発生すること                                           0.06s  
+  ✓ facility設定が空の場合は例外が発生しないこと                                                                 0.06s  
+
+   PASS  Tests\Feature\FilamentChargeItemResourceTest
+  ✓ ChargeItemResource一覧画面がエラーなく正常に表示されること                                                   0.20s  
+  ✓ getEffectivePriceがデフォルト単価>0の場合に価格を返すこと                                                    0.06s  
+  ✓ getEffectivePriceがデフォルト単価0の場合にnullを返すこと                                                     0.06s  
+  ✓ デフォルト価格0でもデータ保存が可能であること                                                                0.06s  
+
+   PASS  Tests\Feature\FilamentDailyChargeResourceTest
+  ✓ DailyChargeResource一覧画面がエラーなく正常に表示されること                                                  2.65s  
+
+   PASS  Tests\Feature\FilamentMonthlyInvoiceResourceTest
+  ✓ MonthlyInvoiceResource一覧画面が正常に表示されること                                                         0.54s  
+  ✓ ヘッダーアクションから月次請求データ一括生成を実行できること                                                 2.37s  
+  ✓ 行アクションから入金消込を実行できること                                                                     1.01s  
+
+   PASS  Tests\Feature\FilamentResidentResourceTest
+  ✓ ResidentResource一覧画面がエラーなく正常に表示されること                                                     0.65s  
+  ✓ 退去日 < 入居日 の場合にバリデーションエラーとなること                                                       0.10s  
+  ✓ 退去日 = 入居日 の場合に有効であること                                                                       0.06s  
+  ✓ 退去日が null の場合に有効であること                                                                         0.06s  
+  ✓ Resident作成が正常に動作すること                                                                             0.06s  
+
+   PASS  Tests\Feature\FormSubmissionTest
+  ✓ it stores a catalog form submission                                                                          0.50s  
+  ✓ it stores an inquiry form submission with payload                                                            0.07s  
+  ✓ it rejects an unknown form type                                                                              0.08s  
+  ✓ it validates required fields per form type                                                                   0.07s  
+  ✓ it validates email format                                                                                    0.13s  
+  ✓ it rejects honeypot submissions silently without storing                                                     0.08s  
+  ✓ it rejects too-fast submissions as bots                                                                      0.07s  
+  ✓ it accepts normal-speed submissions                                                                          0.07s  
+  ✓ it sends a confirmation email on submission                                                                  0.21s  
+  ✓ it does not attach a download URL for non-downloadable form types                                            0.07s  
+  ✓ it serves document downloads via signed URL                                                                  0.24s  
+  ✓ it rejects unsigned download URLs                                                                            0.17s  
+
+   PASS  Tests\Feature\GenerateMonthlyInvoicesTest
+  ✓ 新規請求データが作成されること                                                                               0.47s  
+  ✓ 既存請求データが unbilledの場合は更新されること                                                              0.08s  
+  ✓ 確定済み請求はforceなしでスキップされること                                                                  0.07s  
+  ✓ forceオプションで確定済みも更新されること                                                                    0.08s  
+  ✓ 施設指定で該当施設のみ処理されること                                                                         0.07s  
+  ✓ 在籍期間外の入居者はスキップされること                                                                       0.07s  
+  ✓ dry runオプションではデータが保存されないこと                                                                0.07s  
+  ✓ 不正な年月形式でエラーになること                                                                             0.06s  
+  ✓ 自動判定で前月が対象になること                                                                               0.07s  
+  ✓ アクティビティログが記録されること                                                                           0.07s  
+
+   PASS  Tests\Feature\InvoiceCalculationServiceLockingTest
+  ✓ 一括請求生成時に楽観ロックが適用されバージョンがインクリメントされること                                     0.07s  
+  ✓ フォースアップデート時にステータスに関わらず更新されること                                                   0.07s  
+  ✓ 同時に同じレコードを更新しようとすると競合が発生すること（シミュレーション）                                 0.07s  
+
+   PASS  Tests\Feature\InvoiceCalculationServiceMonthlyFilterTest
+  ✓ 月途中入居（15日入居）の住民が対象月の請求生成に含まれること                                                 0.07s  
+  ✓ 月途中退去（15日退去）の住民が対象月の請求生成に含まれること                                                 0.07s  
+  ✓ 対象月より前に退去した住民は請求生成に含まれないこと                                                         0.06s  
+  ✓ 対象月より後に入居した住民は請求生成に含まれないこと                                                         0.06s  
+  ✓ 未来日付（まだ入居していない月）でも月内入居者は正しく処理されること                                         0.07s  
+  ✓ 月途中退去者の自費記録は退去日までのみ集計されること                                                         0.07s  
+
+   PASS  Tests\Feature\InvoiceCalculationServiceProrationTest
+  ✓ 月中入居者の請求が日割り計算されること                                                                       0.07s  
+  ✓ 月中退去者の請求が日割り計算されること                                                                       0.07s  
+  ✓ 月の最初日に入居した場合は満額請求されること                                                                 0.07s  
+  ✓ 月の最後に退去した場合は満額請求されること                                                                   0.07s  
+
+   PASS  Tests\Feature\InvoiceCalculationServiceTest
+  ✓ 入居中Resident25名分の月次請求書が一括で正しく生成されること                                                 0.14s  
+  ✓ 日々の自費記録(daily_charges)が正確に合算集計されること                                                      0.07s  
+  ✓ 請求済・入金済の請求書は通常スキップされ上書きされないこと                                                   0.08s  
+
+   PASS  Tests\Feature\InvoiceCsvExportServiceFilterTest
+  ✓ Unbilled請求書が会計CSVに含まれないこと                                                                      0.08s  
+  ✓ Billed請求書が会計CSVに含まれること                                                                          0.06s  
+  ✓ Paid請求書が会計CSVに含まれること                                                                            0.07s  
+  ✓ 金額と仕訳が正しく出力されること                                                                             0.06s  
+
+   PASS  Tests\Feature\InvoiceCsvExportServiceTest
+  ✓ 請求一覧台帳CSVがUTF-8 BOM付きで正しく出力されること                                                         0.07s  
+  ✓ 会計仕訳連携CSVがfreee標準プロファイル形式で出力されること                                                   0.06s  
+  ✓ 会計仕訳連携CSVがプレビュー機能で正しくデータを返すこと                                                      0.07s  
+  ✓ 会計仕訳連携CSVがMFクラウド会計プロファイルで出力されること                                                  0.07s  
+  ✓ 会計仕訳連携CSVが弥生会計プロファイルで出力されること                                                        0.07s  
+  ✓ 会計仕訳連携CSVが勘定奉行プロファイルで出力されること                                                        0.06s  
+
+   PASS  Tests\Feature\InvoiceMergeServiceTest
+  ✓ 介護サービスPDFなしの場合は住居費請求書のみ返すこと                                                          0.10s  
+  ✓ 介護サービスPDFありの場合は結合を試みること                                                                  0.26s  
+  ✓ getCareServicePdfsが正しくPDFパスを取得すること                                                              0.09s  
+  ✓ 異なる月のサービス請求は取得されないこと                                                                     0.10s  
+
+   PASS  InvoicePdfDesignSystemTest
+  ✓ design tokens are available in template config                                                               0.09s  
+  ✓ backward compatibility of existing config keys                                                               0.06s  
+  ✓ pdf generation works with new design system                                                                  1.46s  
+
+   PASS  InvoicePdfFeaturesTest
+  ✓ invoice pdf generates without error                                                                          0.61s  
+  ✓ receipt pdf generates after payment                                                                          0.59s  
+  ✓ template config includes compliance settings                                                                 0.10s  
+  ✓ qr code generation methods exist                                                                             0.06s  
+  ✓ qr code data is set when enabled                                                                             0.13s  
+  ✓ receipt qr code data is set when enabled                                                                     0.18s  
+  ✓ monthly zip still works with changes                                                                         0.08s  
+  ✓ registration number displayed prominently when configured                                                    0.10s  
+
+   PASS  InvoicePdfLayoutTest
+  ✓ invoice pdf contains expected layout elements                                                                0.08s  
+  ✓ receipt pdf contains expected layout elements                                                                0.08s  
+  ✓ consistent styling between invoice and receipt                                                               0.08s  
+  ✓ amount formatting consistency                                                                                0.08s  
+  ✓ page break present when details exist                                                                        0.08s  
+
+   PASS  Tests\Feature\InvoicePdfServiceRouteTest
+  ✓ サービス経由のPDFダウンロードが正常に動作すること                                                            0.09s  
+  ✓ コントローラー削除後もルートが正常に応答すること                                                             0.09s  
+  ✓ 未認証ユーザーはPDFルートにアクセスできないこと                                                              3.84s  
+  ✓ 領収書PDFもサービス経由で生成可能であること                                                                  0.56s  
+
+   PASS  Tests\Feature\InvoicePdfServiceTest
+  ✓ 請求書PDFが正常にビルドできること                                                                            0.78s  
+  ✓ 領収書PDFが入金済みデータから正常にビルドできること                                                          0.77s  
+  ✓ 全入居者分の請求書PDF一括ZIPアーカイブが生成できること                                                       0.12s  
+
+   PASS  Tests\Feature\InvoicePdfServiceZipByCategoryTest
+  ✓ カテゴリ別ZIPが生成されること                                                                                0.12s  
+  ✓ 介護サービスPDFがある場合は種別フォルダに入ること                                                            0.14s  
+  ✓ 下書きステータスの介護サービスは除外されること                                                               0.12s  
+  ✓ 異なる月の介護サービスは除外されること                                                                       0.12s  
+  ✓ includeMerged=falseで統合請求書が含まれないこと                                                              0.13s  
+  ✓ サマリーCSVに正しいデータが含まれること                                                                      0.14s  
+
+   PASS  Tests\Feature\InvoicePdfServiceZipTest
+  ✓ 通常動作でZIPファイルが生成され一時ディレクトリがクリーンアップされること                                    0.12s  
+  ✓ 既存ZIPファイルがある場合は上書きされること                                                                  0.12s  
+  ✓ 対象月に請求データがない場合もエラーなく処理が完了すること                                                   0.09s  
+  ✓ 例外発生時もZIPファイルがクリーンアップされること                                                            0.06s  
+
+   PASS  Tests\Feature\InvoicePreviewTest\InvoicePreviewTest
+  ✓ invoice preview returns html                                                                                 0.08s  
+  ✓ receipt preview returns html when paid                                                                       0.08s  
+  ✓ receipt preview 404 when not paid                                                                            0.10s  
+  ✓ invalid type returns 404                                                                                     0.07s  
+  ✓ unsigned url is rejected                                                                                     0.07s  
+  ✓ preview uses same templates as pdf                                                                           0.08s  
+
+   PASS  Tests\Feature\InvoiceTaxCalculationTest
+  ✓ 請求生成時に税情報が正しく設定されること                                                                     0.07s  
+  ✓ PDF生成時に税情報が正しく表示されること                                                                      0.77s  
+  ✓ CSV出力に税情報が含まれること                                                                                0.12s  
+  ✓ 領収書PDF生成時に税情報が正しく表示されること                                                                0.73s  
+
+   PASS  Tests\Feature\LoggingTest
+  ✓ 請求生成時にinfoログが出力されること                                                                         0.15s  
+  ✓ ログレベルinfoが適切に使用されていること                                                                     0.10s  
+
+   PASS  Tests\Feature\PdfTemplateSettingsResourceTest
+  ✓ resource class exists                                                                                        0.06s  
+  ✓ model relationship                                                                                           0.06s  
+  ✓ form schema has sections                                                                                     0.06s  
+  ✓ table columns                                                                                                0.06s  
+  ✓ seed defaults                                                                                                0.08s  
+  ✓ to config array                                                                                              0.06s  
+  ✓ get active template                                                                                          0.08s  
+  ✓ get default template                                                                                         0.08s  
+  ✓ template settings service                                                                                    0.08s  
+
+   PASS  Tests\Feature\Regression\ChargeItemDisplayNameTest
+  ✓ 表示名と説明フィールドが保存・取得できる                                                                     0.07s  
+  ✓ 表示名未設定時は品目名がフォールバックされる                                                                 0.06s  
+  ✓ 説明フィールドが長文でも保存できる                                                                           0.06s  
+  ✓ mass assignmentで表示名と説明が設定できる                                                                    0.06s  
+  ✓ 表示名と説明が更新できる                                                                                     0.06s  
+  ✓ 活動ログに表示名と説明の変更が記録される                                                                     0.07s  
+  ✓ factoryで表示名と説明が生成できる                                                                            0.06s  
+
+   PASS  Tests\Feature\Regression\ChatbotRegressionTest
+  ✓ チャットボット導入後も請求生成が正常動作すること                                                             0.07s  
+  ✓ チャットボット導入後も日割り計算が正常動作すること                                                           0.07s  
+  ✓ チャットボット導入後も入金処理が正常動作すること                                                             0.07s  
+  ✓ チャットボット用マイグレーションが既存テーブルに影響を与えないこと                                           0.06s  
+  ✓ チャットボット導入後もFilament既存リソースのCRUDが正常動作すること                                           0.58s  
+
+   WARN  Tests\Feature\Regression\DatabaseBackupRestoreTest
+  ✓ backup databaseコマンドが正常に実行される                                                                    0.07s  
+  ✓ storageバックアップが作成される                                                                              0.27s  
+  ✓ compressオプションで zi pファイルが作成される                                                                0.10s  
+  ✓ retention日数経過したバックアップが削除される                                                                0.12s  
+  ✓ restoreコマンドのdry runで実際の復元が行われない                                                             0.11s  
+  ✓ restoreコマンドで不正なパスはエラーになる                                                                    0.09s  
+  - restoreコマンドでsqliteデータベースが復元される → SQLiteのファイルDBが存在しないためスキップ                 0.51s  
+
+   PASS  Tests\Feature\Regression\InvoiceCalculationBasisTest
+  ✓ 通常月は月額そのまま表示で按分行なし                                                                         0.11s  
+  ✓ 月中途入居は日割り計算行が表示される                                                                         0.11s  
+  ✓ 月中退去は日割り計算行が表示される                                                                           0.08s  
+  ✓ 税額内訳が正しく表示される 標準軽減非課税                                                                    0.08s  
+  ✓ show calculation basis falseの施設では非表示                                                                 0.10s  
+  ✓ 既存 pd fレイアウトテストへの影響なし                                                                        0.08s  
+  ✓ 領収書 pd fには計算根拠が表示されない                                                                        0.08s  
+
+   PASS  Tests\Feature\Regression\LockingRegressionTest
+  ✓ 楽観ロック実装後も既存の請求生成機能が正常に動作すること                                                     0.07s  
+  ✓ 既存データの更新時にも楽観ロックが適用されずに正常に動作すること                                             0.07s  
+
+   PASS  Tests\Feature\Regression\PdfPasswordProtectionTest
+  ✓ 保護機能で pd fが暗号化されること                                                                            1.26s  
+  ✓ 無効な入力で例外が発生すること                                                                               0.09s  
+  ✓ 保護無効時は元のバイナリがそのまま返ること                                                                   0.26s  
+  ✓ fixedモードで固定パスワードが適用されること                                                                  0.32s  
+  ✓ resident birthdayモードで生年月日8桁がパスワードになること                                                   0.10s  
+  ✓ resident birthdayモードで生年月日が無い場合はfixedにフォールバックすること                                   0.07s  
+  ✓ 保護済み pd fは元 pd fと異なるバイト列であること                                                             0.28s  
+
+   PASS  Tests\Feature\Regression\ProrationRegressionTest
+  ✓ 既存の機能（満月在籍者）が変更されないこと                                                                   0.10s  
+  ✓ 入居日・退去日が未設定の場合の動作が変更されないこと                                                         0.07s  
+
+   PASS  Tests\Feature\Regression\TaxRegressionTest
+  ✓ 税関連カラム追加後も既存の合計金額計算が変わらないこと                                                       0.07s  
+  ✓ マークアズペイド機能が税情報を壊さないこと                                                                   0.08s  
+
+   PASS  Tests\Feature\SalesAutomationTest
+  ✓ リードスコアがトライアル作成時に自動算出されること                                                           0.19s  
+  ✓ リードスコアの帯判定が正しいこと                                                                             0.06s  
+  ✓ スコアリングの入力欠損時に0点加算でクラッシュしないこと                                                      0.06s  
+  ✓ 見積りAPIがプランと月額を返すこと                                                                            0.11s  
+  ✓ 見積りAPIが容量に応じたプランを推奨すること                                                                  0.06s  
+  ✓ 見積書メール送信APIが動作すること                                                                            0.09s  
+  ✓ 見積書メール送信はトークンなしで403を返すこと                                                                0.08s  
+  ✓ トライアルから本契約に移行できること                                                                         0.13s  
+  ✓ 移行トークンなしの本契約移行は403を返すこと                                                                  0.08s  
+  ✓ 本契約移行は冪等であること（二重移行でサブスクリプションが重複しない）                                       0.08s  
+  ✓ 本契約移行で施設名のトライアルプレフィックスが除去されること                                                 0.08s  
+  ✓ エンタープライズ移行には見積金額が必須であること                                                             0.08s  
+  ✓ 契約同意なしの移行は422を返すこと                                                                            0.08s  
+  ✓ 無効な請求書登録番号の移行は422を返すこと                                                                    0.08s  
+  ✓ デモ面談の予約を受け付けられること                                                                           0.09s  
+  ✓ 過去日のデモ予約は422を返すこと                                                                              0.07s  
+  ✓ 時刻形式が不正なデモ予約は422を返すこと                                                                      0.07s  
+  ✓ 同一日時の二重予約は409を返すこと                                                                            0.07s  
+  ✓ 予約一覧は認証なしではアクセスできないこと                                                                   0.08s  
+  ✓ ナーチャリングメールが経過日数に応じて送信されること                                                         0.09s  
+  ✓ ナーチャリングメールは同一ステージを重複送信しないこと                                                       0.08s  
+  ✓ MailServiceは未設定環境でログにフォールバックすること                                                        0.06s  
+
+   PASS  Tests\Feature\TrialApiTest
+  ✓ トライアル申込（サンプルデータあり）が201で環境をプロビジョニングすること                                    0.10s  
+  ✓ トライアル申込（サンプルデータなし）は入居者を作成しないこと                                                 0.08s  
+  ✓ 無効なfacility_typeは422を返すこと                                                                           0.07s  
+  ✓ 二重申込（同一email）は422を返すこと                                                                         0.08s  
+  ✓ ソフトデリート済みのemailは再申込可能であること                                                              0.08s  
+  ✓ 既存ユーザーのemailでもプロビジョニングがクラッシュしないこと                                                0.08s  
+  ✓ 同一企業の複数トライアルは施設が分離されること                                                               0.09s  
+  ✓ daysUntilExpiryは期限切れで0にクランプされること                                                             0.08s  
+  ✓ CheckAndNotifyTrialExpiriesが期限切れトライアルをexpiredにすること                                           0.37s  
+
+   PASS  Tests\Feature\UserAccessTest
+  ✓ 管理者ユーザー（is_admin=true）がFilamentパネルにアクセス可能であること                                      0.09s  
+  ✓ 一般ユーザー（is_admin=false）がFilamentパネルにアクセス不可であること                                       0.09s  
+  ✓ is_admin=nullのユーザーがFilamentパネルにアクセス不可であること                                              0.09s  
+  ✓ 一般ユーザーは管理画面ログイン後にadminページへアクセスできないこと                                          0.10s  
+  ✓ 管理者ユーザーは管理画面へアクセスできること                                                                 0.44s  
+  ✓ 法人管理者は全施設の入居者を閲覧できること                                                                   0.36s  
+  ✓ 施設管理者は自施設の入居者のみ閲覧できること                                                                 0.30s  
+  ✓ 施設管理者は他施設の入居者を閲覧できないこと                                                                 0.14s  
+  ✓ 法人管理者は全施設の月次請求を閲覧できること                                                                 0.37s  
+  ✓ 施設管理者は自施設の月次請求のみ閲覧できること                                                               0.34s  
+  ✓ 施設管理者は他施設の月次請求を閲覧できないこと                                                               0.10s  
+  ✓ 法人管理者は全施設の自費記録を閲覧できること                                                                 0.33s  
+  ✓ 施設管理者は自施設の自費記録のみ閲覧できること                                                               0.30s  
+  ✓ 施設管理者は他施設の自費記録を閲覧できないこと                                                               0.10s  
+  ✓ User::isCorporateAdmin()が正しく判定されること                                                               0.09s  
+  ✓ User::isFacilityAdmin()が正しく判定されること                                                                0.08s  
+  ✓ 施設管理者のfacility_idが正しく設定されること                                                                0.08s  
+  ✓ 法人管理者と施設管理者の両方がパネルにアクセス可能であること                                                 0.08s  
+
+  Tests:    1 skipped, 461 passed (2006 assertions)
+  Duration: 95.55s
+

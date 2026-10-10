@@ -17,8 +17,7 @@ class FormConfirmationMail extends Mailable
     public function __construct(
         public readonly FormSubmission $submission,
         public readonly ?string $downloadUrl = null,
-    ) {
-    }
+    ) {}
 
     public function build()
     {

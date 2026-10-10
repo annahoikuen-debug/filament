@@ -2,15 +2,15 @@
 
 namespace App\Jobs;
 
+use App\Mail\TrialExpiredMail;
+use App\Mail\TrialExpiryWarningMail;
+use App\Models\Trial;
+use App\Services\MailService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Trial;
-use App\Mail\TrialExpiredMail;
-use App\Mail\TrialExpiryWarningMail;
-use App\Services\MailService;
 use Log;
 
 class SendTrialExpiryNotification implements ShouldQueue

@@ -26,8 +26,8 @@ class InvoiceDataProvider
         $query = MonthlyInvoice::with([
             'resident.dailyCharges' => function ($q) use ($yearMonth) {
                 $q->forYearMonth($yearMonth)
-                  ->with('chargeItem')
-                  ->orderBy('date');
+                    ->with('chargeItem')
+                    ->orderBy('date');
             },
         ])->forYearMonth($yearMonth);
 

@@ -14,8 +14,7 @@ class TrialExpiryWarningMail extends Mailable
     public function __construct(
         public readonly Trial $trial,
         public readonly int $daysLeft,
-    ) {
-    }
+    ) {}
 
     public function build()
     {

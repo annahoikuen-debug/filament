@@ -10,7 +10,6 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Spatie\Activitylog\Facades\Activity;
 
 class GenerateMonthlyInvoices extends Command
 {
@@ -35,15 +34,16 @@ class GenerateMonthlyInvoices extends Command
         $force = $this->option('force');
         $dryRun = $this->option('dry-run');
 
-        $this->info("=== 月次請求生成開始 ===");
+        $this->info('=== 月次請求生成開始 ===');
         $this->info("対象年月: {$yearMonth}");
-        $this->info("対象施設: " . ($facilityId ? "ID {$facilityId}" : "全施設"));
-        $this->info("強制再計算: " . ($force ? "ON" : "OFF"));
-        $this->info("ドライラン: " . ($dryRun ? "ON (保存しない)" : "OFF"));
+        $this->info('対象施設: '.($facilityId ? "ID {$facilityId}" : '全施設'));
+        $this->info('強制再計算: '.($force ? 'ON' : 'OFF'));
+        $this->info('ドライラン: '.($dryRun ? 'ON (保存しない)' : 'OFF'));
 
         // 年月形式バリデーション
-        if (!preg_match('/^\d{4}-\d{2}$/', $yearMonth)) {
+        if (! preg_match('/^\d{4}-\d{2}$/', $yearMonth)) {
             $this->error("年月形式が不正です: {$yearMonth} (YYYY-MM形式で指定してください)");
+
             return self::FAILURE;
         }
 
@@ -99,8 +99,8 @@ class GenerateMonthlyInvoices extends Command
 
         // 対象入居者を取得（指定年月に在籍している入居者）
         $query = Resident::query()
-            ->whereHas('facility', fn($q) => $q->where('is_active', true))
-            ->when($facilityId, fn($q) => $q->where('facility_id', $facilityId));
+            ->whereHas('facility', fn ($q) => $q->where('is_active', true))
+            ->when($facilityId, fn ($q) => $q->where('facility_id', $facilityId));
 
         $residents = $query->get();
 
@@ -113,9 +113,10 @@ class GenerateMonthlyInvoices extends Command
         foreach ($residents as $resident) {
             try {
                 // 指定年月に在籍しているかチェック
-                if (!$resident->isLivingAt(Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth())) {
+                if (! $resident->isLivingAt(Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth())) {
                     $skipped++;
                     $progressBar->advance();
+
                     continue;
                 }
 
@@ -126,13 +127,14 @@ class GenerateMonthlyInvoices extends Command
 
                 if ($existingInvoice) {
                     // 確定済みで force オプションがない場合はスキップ
-                    if (!$force && $existingInvoice->status !== InvoiceStatus::Unbilled) {
+                    if (! $force && $existingInvoice->status !== InvoiceStatus::Unbilled) {
                         $skipped++;
                         $progressBar->advance();
+
                         continue;
                     }
 
-                    if (!$dryRun) {
+                    if (! $dryRun) {
                         // 再計算・更新
                         $this->calculationService->calculate($existingInvoice);
                         $existingInvoice->save();
@@ -140,7 +142,7 @@ class GenerateMonthlyInvoices extends Command
                     $updated++;
                 } else {
                     // 新規作成
-                    if (!$dryRun) {
+                    if (! $dryRun) {
                         $invoice = new MonthlyInvoice([
                             'resident_id' => $resident->id,
                             'facility_id' => $resident->facility_id,
@@ -174,7 +176,7 @@ class GenerateMonthlyInvoices extends Command
     private function outputResults(array $result, bool $dryRun): void
     {
         $this->newLine();
-        $this->info("=== 実行結果 " . ($dryRun ? "(ドライラン)" : "") . " ===");
+        $this->info('=== 実行結果 '.($dryRun ? '(ドライラン)' : '').' ===');
         $this->table(
             ['項目', '件数'],
             [
@@ -190,7 +192,7 @@ class GenerateMonthlyInvoices extends Command
         }
 
         if ($dryRun) {
-            $this->warn("ドライランモードのため、データは保存されていません。実際に実行するには --dry-run オプションを外してください。");
+            $this->warn('ドライランモードのため、データは保存されていません。実際に実行するには --dry-run オプションを外してください。');
         }
     }
 }

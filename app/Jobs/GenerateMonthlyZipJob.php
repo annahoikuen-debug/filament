@@ -3,11 +3,12 @@
 namespace App\Jobs;
 
 use App\Models\MonthlyInvoice;
+use App\Services\FacilityConfigService;
 use App\Services\InvoicePdfService;
 use App\Services\Pdf\InvoicePdfGenerator;
-use App\Services\FacilityConfigService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -21,7 +22,9 @@ class GenerateMonthlyZipJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 600;
+
     public int $tries = 2;
+
     public int $backoff = 120;
 
     public function __construct(
@@ -114,7 +117,7 @@ class GenerateMonthlyZipJob implements ShouldQueue
      * 従来版（互換性維持用・キャッシュ活用）
      */
     private function buildZipWithChunks(
-        \Illuminate\Database\Eloquent\Builder $query,
+        Builder $query,
         InvoicePdfService $pdfService,
         FacilityConfigService $configService,
         string $progressKey,

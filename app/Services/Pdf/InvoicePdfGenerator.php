@@ -3,14 +3,12 @@
 namespace App\Services\Pdf;
 
 use App\DTOs\Pdf\InvoicePdfData;
-use App\DTOs\Pdf\ReceiptPdfData;
 use App\Models\MonthlyInvoice;
 use App\Services\Pdf\Contracts\RendererInterface;
 use App\Services\Pdf\DataProviders\InvoiceDataProvider;
 use App\Services\Pdf\Renderers\DomPdfRenderer;
 use App\Services\Pdf\Templates\InvoiceTemplate;
 use App\Services\Pdf\Templates\ReceiptTemplate;
-use App\Services\Pdf\TemplateSettingsService;
 
 class InvoicePdfGenerator
 {
@@ -40,6 +38,7 @@ class InvoicePdfGenerator
         $templateConfig = $this->templateSettings->getSettings('invoice');
         $data = $this->dataProvider->getInvoiceData($invoice, $facility, $templateConfig);
         $html = $this->invoiceTemplate->render(array_merge($data->toArray(), ['template' => $templateConfig]));
+
         return $this->renderer->stream($html, $this->invoiceFilename($invoice));
     }
 
@@ -61,6 +60,7 @@ class InvoicePdfGenerator
         $data = $this->dataProvider->getReceiptData($invoice, $facility);
         $templateConfig = $this->templateSettings->getSettings('receipt');
         $html = $this->receiptTemplate->render(array_merge($data->toArray(), ['template' => $templateConfig]));
+
         return $this->renderer->stream($html, $this->receiptFilename($invoice));
     }
 
@@ -68,6 +68,7 @@ class InvoicePdfGenerator
     {
         $templateConfig = $this->templateSettings->getSettings('invoice');
         $data = $this->dataProvider->getInvoiceData($invoice, $facility, $templateConfig);
+
         return $this->invoiceTemplate->render(array_merge($data->toArray(), ['template' => $templateConfig]));
     }
 
@@ -75,6 +76,7 @@ class InvoicePdfGenerator
     {
         $data = $this->dataProvider->getReceiptData($invoice, $facility);
         $templateConfig = $this->templateSettings->getSettings('receipt');
+
         return $this->receiptTemplate->render(array_merge($data->toArray(), ['template' => $templateConfig]));
     }
 
@@ -84,6 +86,7 @@ class InvoicePdfGenerator
     public function previewInvoiceFromData(array $data): string
     {
         $templateConfig = $this->templateSettings->getSettings('invoice');
+
         return $this->invoiceTemplate->render(array_merge($data, ['template' => $templateConfig]));
     }
 
@@ -138,6 +141,7 @@ class InvoicePdfGenerator
             foreach ($this->generateMonthlyBatchStream($yearMonth, $facilityId) as $item) {
                 $items[] = $item;
             }
+
             return $this->renderer->renderBatchToZip($items, $zip);
         }
 
@@ -147,6 +151,7 @@ class InvoicePdfGenerator
             $zip->addFromString($item['filename'], $this->renderer->render($item['html']));
             $count++;
         }
+
         return $count;
     }
 

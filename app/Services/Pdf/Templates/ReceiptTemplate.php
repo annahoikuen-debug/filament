@@ -3,15 +3,15 @@
 namespace App\Services\Pdf\Templates;
 
 use App\Services\Pdf\Contracts\TemplateInterface;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\View;
 
 class ReceiptTemplate implements TemplateInterface
 {
     public function render(array $data): string
     {
         $css = $this->getCss();
-        
+
         $templateConfig = array_merge(
             config('pdf.default', []),
             config('pdf.receipt', []),
@@ -28,7 +28,7 @@ class ReceiptTemplate implements TemplateInterface
     public function getCss(): string
     {
         $cssPath = resource_path('css/pdf-receipt.css');
-        
+
         if (File::exists($cssPath)) {
             return File::get($cssPath);
         }

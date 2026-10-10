@@ -1,8 +1,8 @@
 <?php
 
+use App\Enums\TaxType;
 use App\Models\ChargeItem;
 use App\Models\ChargeItemPrice;
-use App\Enums\TaxType;
 use Carbon\Carbon;
 
 test('fillableフィールドが設定されること（ただしguardedなのでid以外は設定可能）', function () {
@@ -108,7 +108,7 @@ test('getPriceForDateメソッドが指定日の有効な価格を取得する�
     ]);
 
     $targetDate = Carbon::create(2026, 10, 15);
-    
+
     // 指定日の有効な価格履歴
     ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,

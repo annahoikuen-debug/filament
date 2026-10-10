@@ -130,6 +130,7 @@ class MonthlyInvoice extends Model
         if ($this->tax_breakdown && isset($this->tax_breakdown['standard']['taxable_amount'], $this->tax_breakdown['reduced']['taxable_amount'])) {
             return (int) $this->tax_breakdown['standard']['taxable_amount'] + (int) $this->tax_breakdown['reduced']['taxable_amount'];
         }
+
         return $this->taxable_amount ?? ($this->management_fee_subtotal + $this->service_subtotal);
     }
 
@@ -142,6 +143,7 @@ class MonthlyInvoice extends Model
         if ($this->tax_breakdown && isset($this->tax_breakdown['standard']['tax_amount'], $this->tax_breakdown['reduced']['tax_amount'])) {
             return (int) $this->tax_breakdown['standard']['tax_amount'] + (int) $this->tax_breakdown['reduced']['tax_amount'];
         }
+
         return $this->tax_amount ?? (int) round($this->getTaxableAmountAttribute() * (($this->tax_rate ?? 10) / 100));
     }
 

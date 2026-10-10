@@ -1,12 +1,13 @@
 <?php
 
+use App\Models\Facility;
 use App\Models\Subscription;
 use App\Models\Trial;
-use App\Models\Facility;
+use Illuminate\Support\Carbon;
 
 test('fillableフィールドのみが一括代入で設定されること', function () {
     // 必要な依存関係を作成（ファクトリがないので手動で作成）
-    $trial = \App\Models\Trial::create([
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial@example.com',
@@ -17,7 +18,7 @@ test('fillableフィールドのみが一括代入で設定されること', fun
         'trial_started_at' => '2026-01-01 00:00:00',
         'trial_ends_at' => '2026-12-31 23:59:59',
     ]);
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
 
     $subscription = Subscription::create([
         'trial_id' => $trial->id,
@@ -40,7 +41,7 @@ test('fillableフィールドのみが一括代入で設定されること', fun
 
 test('fillable外のフィールド（id）が一括代入で無視されること', function () {
     // 必要な依存関係を作成（ファクトリがないので手動で作成）
-    $trial = \App\Models\Trial::create([
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial@example.com',
@@ -51,7 +52,7 @@ test('fillable外のフィールド（id）が一括代入で無視されるこ�
         'trial_started_at' => '2026-01-01 00:00:00',
         'trial_ends_at' => '2026-12-31 23:59:59',
     ]);
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
 
     $subscription = Subscription::create([
         'id' => 99999,
@@ -67,7 +68,7 @@ test('fillable外のフィールド（id）が一括代入で無視されるこ�
 
 test('不正なフィールド名での一括代入は無視されること', function () {
     // 必要な依存関係を作成（ファクトリがないので手動で作成）
-    $trial = \App\Models\Trial::create([
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial@example.com',
@@ -78,7 +79,7 @@ test('不正なフィールド名での一括代入は無視されること', fu
         'trial_started_at' => '2026-01-01 00:00:00',
         'trial_ends_at' => '2026-12-31 23:59:59',
     ]);
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
 
     $subscription = Subscription::create([
         'trial_id' => $trial->id,
@@ -95,7 +96,7 @@ test('不正なフィールド名での一括代入は無視されること', fu
 
 test('キャストが正しく動作すること', function () {
     // 必要な依存関係を作成（ファクトリがないので手動で作成）
-    $trial = \App\Models\Trial::create([
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial@example.com',
@@ -106,7 +107,7 @@ test('キャストが正しく動作すること', function () {
         'trial_started_at' => '2026-01-01 00:00:00',
         'trial_ends_at' => '2026-12-31 23:59:59',
     ]);
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
 
     $subscription = Subscription::create([
         'trial_id' => $trial->id,
@@ -120,15 +121,15 @@ test('キャストが正しく動作すること', function () {
     ]);
 
     expect($subscription->monthly_price)->toBe(50000)
-        ->and($subscription->started_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
-        ->and($subscription->ends_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
-        ->and($subscription->contract_accepted_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        ->and($subscription->started_at)->toBeInstanceOf(Carbon::class)
+        ->and($subscription->ends_at)->toBeInstanceOf(Carbon::class)
+        ->and($subscription->contract_accepted_at)->toBeInstanceOf(Carbon::class);
 });
 
 test('trialリレーションが正しく動作すること', function () {
     // 必要な依存関係を作成（ファクトリがないので手動で作成）
-    $facility = \App\Models\Facility::factory()->create();
-    $trial = \App\Models\Trial::create([
+    $facility = Facility::factory()->create();
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial@example.com',
@@ -158,8 +159,8 @@ test('trialリレーションが正しく動作すること', function () {
 
 test('facilityリレーションが正しく動作すること', function () {
     // 必要な依存関係を作成（ファクトリがないので手動で作成）
-    $facility = \App\Models\Facility::factory()->create();
-    $trial = \App\Models\Trial::create([
+    $facility = Facility::factory()->create();
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial@example.com',
@@ -189,7 +190,7 @@ test('facilityリレーションが正しく動作すること', function () {
 
 test('isActiveメソッドが正しく判定されること', function () {
     // 必要な依存関係を作成（ファクトリがないので手動で作成）
-    $trial = \App\Models\Trial::create([
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial@example.com',
@@ -200,7 +201,7 @@ test('isActiveメソッドが正しく判定されること', function () {
         'trial_started_at' => '2026-01-01 00:00:00',
         'trial_ends_at' => '2026-12-31 23:59:59',
     ]);
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
 
     $activeSubscription = Subscription::create([
         'trial_id' => $trial->id,
@@ -224,7 +225,7 @@ test('isActiveメソッドが正しく判定されること', function () {
 
 test('SoftDeletesが動作すること', function () {
     // 必要な依存関係を作成（ファクトリがないので手動で作成）
-    $trial = \App\Models\Trial::create([
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial@example.com',
@@ -235,7 +236,7 @@ test('SoftDeletesが動作すること', function () {
         'trial_started_at' => '2026-01-01 00:00:00',
         'trial_ends_at' => '2026-12-31 23:59:59',
     ]);
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
 
     $subscription = Subscription::create([
         'trial_id' => $trial->id,

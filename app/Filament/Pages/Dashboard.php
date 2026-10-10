@@ -3,9 +3,11 @@
 namespace App\Filament\Pages;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\ResidentStatus;
+use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Models\Facility;
 use App\Services\InvoiceCalculationService;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -14,26 +16,32 @@ use Filament\Actions\Contracts\HasActions;
 use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Support\Enums\IconPosition;
-use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class Dashboard extends BaseDashboard implements HasActions
 {
     use InteractsWithActions;
 
     protected static ?string $navigationIcon = 'heroicon-o-home';
+
     protected static ?string $navigationLabel = 'ダッシュボード';
+
     protected static ?string $title = 'ダッシュボード';
+
     protected static ?int $navigationSort = 0;
+
     protected static string $view = 'filament.pages.dashboard';
 
     public ?string $currentYearMonth = null;
+
     public array $billingStats = [];
+
     public array $unpaidResidents = [];
+
     public array $quickStats = [];
+
     public ?Facility $facility = null;
+
     public array $yearMonthOptions = [];
 
     public function mount(): void
@@ -50,25 +58,25 @@ class Dashboard extends BaseDashboard implements HasActions
         if ($this->facility) {
             $query->where('facility_id', $this->facility->id);
         }
-        
+
         $months = $query->distinct()->orderBy('billing_year_month', 'desc')->pluck('billing_year_month')->toArray();
-        
+
         // 過去12ヶ月＋未来3ヶ月を追加
         for ($i = 11; $i >= 0; $i--) {
             $month = now()->subMonths($i)->format('Y-m');
-            if (!in_array($month, $months)) {
+            if (! in_array($month, $months)) {
                 $months[] = $month;
             }
         }
         for ($i = 1; $i <= 3; $i++) {
             $month = now()->addMonths($i)->format('Y-m');
-            if (!in_array($month, $months)) {
+            if (! in_array($month, $months)) {
                 $months[] = $month;
             }
         }
-        
+
         rsort($months);
-        $this->yearMonthOptions = array_combine($months, array_map(fn($m) => \Carbon\Carbon::createFromFormat('Y-m', $m)->format('Y年m月'), $months));
+        $this->yearMonthOptions = array_combine($months, array_map(fn ($m) => Carbon::createFromFormat('Y-m', $m)->format('Y年m月'), $months));
     }
 
     public function updatedCurrentYearMonth(): void
@@ -82,6 +90,7 @@ class Dashboard extends BaseDashboard implements HasActions
         if ($user && $user->isFacilityAdmin() && $user->facility_id) {
             return Facility::find($user->facility_id);
         }
+
         return null;
     }
 
@@ -121,7 +130,7 @@ class Dashboard extends BaseDashboard implements HasActions
         $query = MonthlyInvoice::query()
             ->where('billing_year_month', $this->currentYearMonth)
             ->whereIn('status', [InvoiceStatus::Unbilled, InvoiceStatus::Billed])
-            ->with(['resident' => fn($q) => $q->select('id', 'room_number', 'name', 'facility_id')]);
+            ->with(['resident' => fn ($q) => $q->select('id', 'room_number', 'name', 'facility_id')]);
 
         if ($this->facility) {
             $query->where('facility_id', $this->facility->id);
@@ -146,7 +155,7 @@ class Dashboard extends BaseDashboard implements HasActions
 
     protected function loadQuickStats(): void
     {
-        $residentQuery = Resident::query()->where('status', \App\Enums\ResidentStatus::Active);
+        $residentQuery = Resident::query()->where('status', ResidentStatus::Active);
         $invoiceQuery = MonthlyInvoice::query();
 
         if ($this->facility) {
@@ -175,6 +184,7 @@ class Dashboard extends BaseDashboard implements HasActions
             ->get()
             ->map(function ($invoice) {
                 $billingDate = Carbon::createFromFormat('Y-m', $this->currentYearMonth)->startOfMonth();
+
                 return $billingDate->diffInDays(Carbon::parse($invoice->paid_at));
             })
             ->average() ?? 0;
@@ -192,14 +202,14 @@ class Dashboard extends BaseDashboard implements HasActions
 
     protected function calculateOccupancyRate(): float
     {
-        if (!$this->facility) {
+        if (! $this->facility) {
             return 0;
         }
 
         // 施設の定員情報があれば使用、なければ入居者数ベースで概算
         $capacity = $this->facility->billing['capacity'] ?? null;
         $currentResidents = Resident::where('facility_id', $this->facility->id)
-            ->where('status', \App\Enums\ResidentStatus::Active)
+            ->where('status', ResidentStatus::Active)
             ->count();
 
         if ($capacity && $capacity > 0) {
@@ -225,13 +235,13 @@ class Dashboard extends BaseDashboard implements HasActions
                 ->action(function () {
                     $this->generateBilling();
                 })
-                ->visible(fn() => $this->canGenerateBilling()),
+                ->visible(fn () => $this->canGenerateBilling()),
 
             Action::make('refreshStats')
                 ->label('更新')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
-                ->action(fn() => $this->loadData()),
+                ->action(fn () => $this->loadData()),
         ];
     }
 
@@ -239,6 +249,7 @@ class Dashboard extends BaseDashboard implements HasActions
     {
         // 翌月以降のみ生成可能（当月は生成済みの可能性があるため）
         $currentMonth = now()->format('Y-m');
+
         return $this->currentYearMonth >= $currentMonth;
     }
 
@@ -271,12 +282,13 @@ class Dashboard extends BaseDashboard implements HasActions
     public function markAsPaid(int $invoiceId): void
     {
         $invoice = MonthlyInvoice::find($invoiceId);
-        if (!$invoice) {
+        if (! $invoice) {
             Notification::make()->title('請求データが見つかりません')->danger()->send();
+
             return;
         }
 
-        $invoice->markAsPaid(\App\Enums\PaymentMethod::BankTransfer);
+        $invoice->markAsPaid(PaymentMethod::BankTransfer);
 
         Notification::make()
             ->title("入金消込が完了しました (領収書番号: {$invoice->receipt_number})")

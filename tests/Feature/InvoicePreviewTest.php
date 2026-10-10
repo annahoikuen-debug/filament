@@ -2,20 +2,23 @@
 
 namespace Tests\Feature\InvoicePreviewTest;
 
-use App\Models\MonthlyInvoice;
-use App\Models\Resident;
-use App\Models\Facility;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
-use Tests\TestCase;
+use App\Models\Facility;
+use App\Models\MonthlyInvoice;
+use App\Models\Resident;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
+use Tests\TestCase;
 
 class InvoicePreviewTest extends TestCase
 {
     use RefreshDatabase;
 
     private Resident $resident;
+
     private MonthlyInvoice $invoice;
+
     private Facility $facility;
 
     protected function setUp(): void
@@ -62,12 +65,12 @@ class InvoicePreviewTest extends TestCase
 
     public function test_invoice_preview_returns_html()
     {
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'invoice']);
+        $url = URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'invoice']);
         $response = $this->get($url);
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
-        
+
         $html = $response->getContent();
         $this->assertStringContainsString('<!DOCTYPE html>', $html);
         $this->assertStringContainsString('御 請 求 書', $html);
@@ -80,12 +83,12 @@ class InvoicePreviewTest extends TestCase
     {
         $this->invoice->markAsPaid(PaymentMethod::BankTransfer);
 
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'receipt']);
+        $url = URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'receipt']);
         $response = $this->get($url);
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
-        
+
         $html = $response->getContent();
         $this->assertStringContainsString('<!DOCTYPE html>', $html);
         $this->assertStringContainsString('領収証', $html);
@@ -96,7 +99,7 @@ class InvoicePreviewTest extends TestCase
     public function test_receipt_preview_404_when_not_paid()
     {
         // Unpaid invoice should 404 for receipt preview
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'receipt']);
+        $url = URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'receipt']);
         $response = $this->get($url);
 
         $response->assertStatus(404);
@@ -104,7 +107,7 @@ class InvoicePreviewTest extends TestCase
 
     public function test_invalid_type_returns_404()
     {
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'invalid']);
+        $url = URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'invalid']);
         $response = $this->get($url);
 
         $response->assertStatus(404);
@@ -120,7 +123,7 @@ class InvoicePreviewTest extends TestCase
 
     public function test_preview_uses_same_templates_as_pdf()
     {
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'invoice']);
+        $url = URL::temporarySignedRoute('invoices.preview', now()->addMinutes(30), ['invoice' => $this->invoice->id, 'type' => 'invoice']);
         $response = $this->get($url);
 
         $html = $response->getContent();

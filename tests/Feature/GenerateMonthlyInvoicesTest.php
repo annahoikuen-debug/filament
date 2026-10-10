@@ -2,12 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Console\Commands\GenerateMonthlyInvoices;
 use App\Enums\InvoiceStatus;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Services\InvoiceCalculationService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -29,7 +27,7 @@ class GenerateMonthlyInvoicesTest extends TestCase
     {
         // 施設作成
         $facility = Facility::factory()->create(['is_active' => true]);
-        
+
         // 入居者作成（前月に在籍）
         $resident = Resident::factory()->create([
             'facility_id' => $facility->id,
@@ -62,7 +60,7 @@ class GenerateMonthlyInvoicesTest extends TestCase
     }
 
     /** @test */
-    public function 既存請求データがUnbilledの場合は更新されること()
+    public function 既存請求データが_unbilledの場合は更新されること()
     {
         $facility = Facility::factory()->create(['is_active' => true]);
         $resident = Resident::factory()->create([
@@ -223,13 +221,13 @@ class GenerateMonthlyInvoicesTest extends TestCase
     public function 在籍期間外の入居者はスキップされること()
     {
         $facility = Facility::factory()->create(['is_active' => true]);
-        
+
         // 9月以降に入居（9月請求対象外）
         $resident1 = Resident::factory()->create([
             'facility_id' => $facility->id,
             'move_in_date' => Carbon::parse('2026-10-01'),
         ]);
-        
+
         // 8月に退去（9月請求対象外）
         $resident2 = Resident::factory()->create([
             'facility_id' => $facility->id,

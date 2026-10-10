@@ -53,6 +53,7 @@ class InvoicePersister
                     ]);
                     // 少し待機してからリトライ
                     usleep(100_000 * $attempt); // 100ms, 200ms, 300ms...
+
                     continue;
                 }
                 throw $e;
@@ -138,6 +139,7 @@ class InvoicePersister
         // 既に請求済・入金済の場合は通常保護（強制フラグがない限りスキップ）
         if ($invoice->status !== InvoiceStatus::Unbilled && ! $data['force_update']) {
             $stats['skipped']++;
+
             return $stats;
         }
 

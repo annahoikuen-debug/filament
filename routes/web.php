@@ -5,6 +5,7 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\FormDownloadController;
 use App\Http\Controllers\InvoiceZipDownloadController;
 use App\Services\InvoicePdfService;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -35,7 +36,7 @@ Route::middleware(['web', 'signed'])->group(function () {
     Route::get('/invoices/{invoice}/preview/{type}', [InvoicePdfService::class, 'previewHtml'])
         ->name('invoices.preview')
         ->where('type', 'invoice|receipt')
-        ->withoutMiddleware([\Illuminate\Auth\Middleware\Authenticate::class]);
+        ->withoutMiddleware([Authenticate::class]);
 });
 
 // チャットボットAPI（職員向け・認証必須）

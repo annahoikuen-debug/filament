@@ -2,18 +2,17 @@
 
 namespace Tests\Unit\Pdf;
 
-use App\DTOs\Pdf\ResidentPdfData;
-use App\DTOs\Pdf\FacilityPdfData;
-use App\DTOs\Pdf\TaxInfoPdfData;
 use App\DTOs\Pdf\DailyChargePdfData;
-use App\DTOs\Pdf\InvoicePdfData;
-use App\DTOs\Pdf\ReceiptPdfData;
-use App\Models\Resident;
-use App\Models\MonthlyInvoice;
-use App\Models\DailyCharge;
+use App\DTOs\Pdf\FacilityPdfData;
+use App\DTOs\Pdf\ResidentPdfData;
+use App\DTOs\Pdf\TaxInfoPdfData;
+use App\Enums\ResidentStatus;
 use App\Models\ChargeItem;
-use Tests\TestCase;
+use App\Models\DailyCharge;
+use App\Models\MonthlyInvoice;
+use App\Models\Resident;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class DtoTest extends TestCase
 {
@@ -25,7 +24,7 @@ class DtoTest extends TestCase
             'name' => 'テスト太郎',
             'name_kana' => 'テストタロウ',
             'room_number' => '101',
-            'status' => \App\Enums\ResidentStatus::Active,
+            'status' => ResidentStatus::Active,
         ]);
 
         $dto = ResidentPdfData::fromModel($resident);

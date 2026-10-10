@@ -13,8 +13,7 @@ final class ChatResponse
         public readonly string $intent,
         public readonly array $data = [],
         public readonly array $sources = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

@@ -44,7 +44,7 @@ class UnpaidInvoicesAlert extends BaseWidget
                 ->color($unpaidCount > 0 ? 'warning' : 'success')
                 ->chart([7, 3, 5, 2, 8, 4, $unpaidCount]),
 
-            Stat::make('未入金総額', '¥' . number_format($unpaidTotal))
+            Stat::make('未入金総額', '¥'.number_format($unpaidTotal))
                 ->description('回収見込み額')
                 ->descriptionIcon('heroicon-m-currency-yen')
                 ->color('warning')
@@ -56,7 +56,7 @@ class UnpaidInvoicesAlert extends BaseWidget
                 ->color($overdueCount > 0 ? 'danger' : 'success')
                 ->chart([2, 1, 0, 3, 1, 0, $overdueCount]),
 
-            Stat::make('期限超過総額', '¥' . number_format($overdueTotal))
+            Stat::make('期限超過総額', '¥'.number_format($overdueTotal))
                 ->description('至急回収が必要')
                 ->descriptionIcon('heroicon-m-exclamation-circle')
                 ->color($overdueTotal > 0 ? 'danger' : 'success')

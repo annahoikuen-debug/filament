@@ -40,14 +40,18 @@ class ChartOfAccount extends Model
      * 品目タイプ
      */
     public const ITEM_TYPE_RENT = 'rent';
+
     public const ITEM_TYPE_MANAGEMENT_FEE = 'management_fee';
+
     public const ITEM_TYPE_SERVICE = 'service';
+
     public const ITEM_TYPE_ADVANCE_PAYMENT = 'advance_payment';
 
     /**
      * 勘定方向
      */
     public const ACCOUNT_SIDE_DEBIT = 'debit';
+
     public const ACCOUNT_SIDE_CREDIT = 'credit';
 
     /**

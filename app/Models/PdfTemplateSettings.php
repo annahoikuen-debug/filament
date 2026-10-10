@@ -3,8 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Storage;
 
 class PdfTemplateSettings extends Model
@@ -140,20 +138,28 @@ class PdfTemplateSettings extends Model
 
         // 1. 指定ロケールのデフォルト
         $template = self::getDefault($key, $locale);
-        if ($template) return $template;
+        if ($template) {
+            return $template;
+        }
 
         // 2. 指定ロケールのアクティブ
         $template = self::getActive($key, $locale);
-        if ($template) return $template;
+        if ($template) {
+            return $template;
+        }
 
         // 3. フォールバックロケールのデフォルト
         if ($locale !== $fallbackLocale) {
             $template = self::getDefault($key, $fallbackLocale);
-            if ($template) return $template;
+            if ($template) {
+                return $template;
+            }
 
             // 4. フォールバックロケールのアクティブ
             $template = self::getActive($key, $fallbackLocale);
-            if ($template) return $template;
+            if ($template) {
+                return $template;
+            }
         }
 
         return null;
@@ -278,10 +284,10 @@ class PdfTemplateSettings extends Model
     {
         // テーマのデフォルト設定をベースにする
         $themeDefaults = self::getThemeDefaults($this->theme ?? 'standard');
-        
+
         // theme_configで上書き
         $themeConfig = $this->theme_config ?? [];
-        
+
         // 色設定をマージ（theme_config > インスタンス > テーマデフォルト）
         $colors = array_merge(
             $themeDefaults,
@@ -360,8 +366,8 @@ class PdfTemplateSettings extends Model
                     'description_of_items',
                     'total_amount_with_tax',
                     'consumption_tax_amount',
-                    'applicable_tax_rate'
-                ]
+                    'applicable_tax_rate',
+                ],
             ],
             'version' => $this->version,
         ];
@@ -374,26 +380,26 @@ class PdfTemplateSettings extends Model
     {
         $locale = $locale ?? $this->locale;
         $translations = $this->translations ?? [];
-        
+
         // ネストしたキー対応（ドット区切り）
-        $value = data_get($translations, $locale . '.' . $key);
-        
+        $value = data_get($translations, $locale.'.'.$key);
+
         // フォールバック: 設定されたフォールバックロケール
         if ($value === null && $locale !== config('app.fallback_locale', 'ja')) {
-            $value = data_get($translations, config('app.fallback_locale', 'ja') . '.' . $key);
+            $value = data_get($translations, config('app.fallback_locale', 'ja').'.'.$key);
         }
-        
+
         if ($value === null) {
             return $key;
         }
-        
+
         // パラメータ置換
-        if (!empty($params)) {
+        if (! empty($params)) {
             foreach ($params as $paramKey => $paramValue) {
-                $value = str_replace('{' . $paramKey . '}', $paramValue, $value);
+                $value = str_replace('{'.$paramKey.'}', $paramValue, $value);
             }
         }
-        
+
         return $value;
     }
 
@@ -408,7 +414,7 @@ class PdfTemplateSettings extends Model
         foreach ($locales as $locale) {
             foreach ($themes as $theme) {
                 $isDefault = ($locale === 'ja' && $theme === 'standard');
-                
+
                 foreach (['invoice', 'receipt'] as $key) {
                     self::firstOrCreate(
                         ['key' => $key, 'locale' => $locale, 'theme' => $theme, 'is_default' => $isDefault],
@@ -446,8 +452,8 @@ class PdfTemplateSettings extends Model
 
         $baseName = $names[$locale][$key] ?? $names['ja'][$key];
         $themeName = self::getAvailableThemes()[$theme] ?? $theme;
-        
-        return $baseName . '（' . $themeName . '）';
+
+        return $baseName.'（'.$themeName.'）';
     }
 
     /**
@@ -475,7 +481,7 @@ class PdfTemplateSettings extends Model
     private static function getDefaultAttributes(string $theme): array
     {
         $themeDefaults = self::getThemeDefaults($theme);
-        
+
         return array_merge([
             'paper_size' => 'a4',
             'paper_orientation' => 'portrait',

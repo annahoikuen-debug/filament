@@ -1,12 +1,12 @@
 <?php
 
+use App\Jobs\SendTrialNurtureEmails;
 use App\Models\Booking;
 use App\Models\Subscription;
 use App\Models\Trial;
-use App\Models\User;
 use App\Services\LeadScoringService;
+use App\Services\MailService;
 use App\Services\QuoteService;
-use Illuminate\Support\Facades\Hash;
 
 $validPayload = [
     'company_name' => 'テスト法人',
@@ -61,7 +61,7 @@ test('リードスコアがトライアル作成時に自動算出されるこ�
 });
 
 test('リードスコアの帯判定が正しいこと', function () {
-    $service = new LeadScoringService();
+    $service = new LeadScoringService;
 
     expect($service->tier(90))->toBe('hot')
         ->and($service->tier(60))->toBe('warm')
@@ -69,7 +69,7 @@ test('リードスコアの帯判定が正しいこと', function () {
 });
 
 test('スコアリングの入力欠損時に0点加算でクラッシュしないこと', function () {
-    $service = new LeadScoringService();
+    $service = new LeadScoringService;
 
     expect($service->score([]))->toBe(0);
 });
@@ -91,7 +91,7 @@ test('見積りAPIがプランと月額を返すこと', function () use ($valid
 });
 
 test('見積りAPIが容量に応じたプランを推奨すること', function () {
-    $service = new QuoteService();
+    $service = new QuoteService;
 
     $small = new Trial(['resident_capacity' => 'under_30']);
     $large = new Trial(['resident_capacity' => 'over_200']);
@@ -314,7 +314,7 @@ test('ナーチャリングメールが経過日数に応じて送信される�
     // 3日経過したことにする
     $trial->update(['trial_started_at' => now()->subDays(3)]);
 
-    (new App\Jobs\SendTrialNurtureEmails())->handle(app(App\Services\MailService::class));
+    (new SendTrialNurtureEmails)->handle(app(MailService::class));
 
     expect($trial->fresh()->trial_config['emails_sent'])->toContain('checkin_3d');
 });
@@ -328,9 +328,9 @@ test('ナーチャリングメールは同一ステージを重複送信しな�
     $trial = Trial::find($response->json('trial_id'));
     $trial->update(['trial_started_at' => now()->subDays(3)]);
 
-    $job = new App\Jobs\SendTrialNurtureEmails();
-    $job->handle(app(App\Services\MailService::class));
-    $job->handle(app(App\Services\MailService::class));
+    $job = new SendTrialNurtureEmails;
+    $job->handle(app(MailService::class));
+    $job->handle(app(MailService::class));
 
     // emails_sent に checkin_3d が1回だけ記録
     expect(array_count_values($trial->fresh()->trial_config['emails_sent'])['checkin_3d'])->toBe(1);
@@ -339,7 +339,7 @@ test('ナーチャリングメールは同一ステージを重複送信しな�
 // ==================== メール送信基盤 ====================
 
 test('MailServiceは未設定環境でログにフォールバックすること', function () {
-    $service = app(App\Services\MailService::class);
+    $service = app(MailService::class);
 
     // テスト環境の mail.default は log
     expect($service->isMailConfigured())->toBeFalse();

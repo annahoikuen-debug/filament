@@ -14,8 +14,7 @@ class TrialNurtureMail extends Mailable
     public function __construct(
         public readonly Trial $trial,
         public readonly string $stage, // checkin_3d, case_7d, convert_10d
-    ) {
-    }
+    ) {}
 
     public function build()
     {

@@ -74,14 +74,14 @@ test('キャストが正しく動作すること', function () {
                 'branch_name' => 'テスト支店',
                 'account_type' => '普通',
                 'account_number' => '1234567',
-                'account_holder' => 'テスト施設'
-            ]
+                'account_holder' => 'テスト施設',
+            ],
         ],
         'billing' => [
             [
                 'direct_debit_day' => 27,
-                'bank_transfer_due_days' => 30
-            ]
+                'bank_transfer_due_days' => 30,
+            ],
         ],
         'is_active' => true,
     ]);
@@ -274,7 +274,7 @@ test('validateInvoiceNumberメソッドが適格請求書登録番号をバリ�
     expect(Facility::validateInvoiceNumber('T1234567890123'))->toBeTrue()
         ->and(Facility::validateInvoiceNumber('T0000000000000'))->toBeTrue()
         ->and(Facility::validateInvoiceNumber('T9999999999999'))->toBeTrue();
-    
+
     // 不正な形式
     expect(Facility::validateInvoiceNumber('1234567890123'))->toBeFalse(); // Tで始まらない
     expect(Facility::validateInvoiceNumber('TX1234567890123'))->toBeFalse(); // 14桁

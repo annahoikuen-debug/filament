@@ -11,6 +11,8 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class InvoiceMail extends Mailable implements ShouldQueue
@@ -29,6 +31,7 @@ class InvoiceMail extends Mailable implements ShouldQueue
         $residentName = $this->invoice->resident->name ?? '入居者様';
         $yearMonth = $this->invoice->billing_year_month;
         $suffix = $this->includeCareServices ? '（介護サービス含む）' : '';
+
         return new Envelope(
             subject: "【請求書】{$yearMonth}月分 {$residentName}様{$suffix}",
         );
@@ -36,7 +39,7 @@ class InvoiceMail extends Mailable implements ShouldQueue
 
     public function content(): Content
     {
-        $careServices = $this->includeCareServices 
+        $careServices = $this->includeCareServices
             ? ServiceInvoice::where('resident_id', $this->invoice->resident_id)
                 ->where('billing_year_month', $this->invoice->billing_year_month)
                 ->where('status', '!=', 'draft')
@@ -64,7 +67,7 @@ class InvoiceMail extends Mailable implements ShouldQueue
         if ($this->pdfUrl) {
             try {
                 // 署名付きURLからPDFを取得
-                $response = \Illuminate\Support\Facades\Http::timeout(30)->get($this->pdfUrl);
+                $response = Http::timeout(30)->get($this->pdfUrl);
                 if ($response->successful()) {
                     $attachments[] = Attachment::fromData(
                         fn () => $response->body(),
@@ -72,7 +75,7 @@ class InvoiceMail extends Mailable implements ShouldQueue
                     )->withMime('application/pdf');
                 }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('住居費PDF添付失敗', ['url' => $this->pdfUrl, 'error' => $e->getMessage()]);
+                Log::warning('住居費PDF添付失敗', ['url' => $this->pdfUrl, 'error' => $e->getMessage()]);
             }
         }
 
@@ -94,7 +97,7 @@ class InvoiceMail extends Mailable implements ShouldQueue
                             "{$label}_請求書_{$careInvoice->billing_year_month}_{$this->invoice->resident->room_number}号室_{$this->invoice->resident->name}.pdf"
                         )->withMime('application/pdf');
                     } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::warning('介護サービスPDF添付失敗', ['invoice_id' => $careInvoice->id, 'error' => $e->getMessage()]);
+                        Log::warning('介護サービスPDF添付失敗', ['invoice_id' => $careInvoice->id, 'error' => $e->getMessage()]);
                     }
                 }
             }

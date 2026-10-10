@@ -3,11 +3,12 @@
 use App\Models\Booking;
 use App\Models\Facility;
 use App\Models\Trial;
+use Illuminate\Support\Carbon;
 
 test('fillableフィールドのみが一括代入で設定されること', function () {
     // 必要な依存関係を作成（ファクトリがないので手動で作成）
-    $facility = \App\Models\Facility::factory()->create();
-    $trial = \App\Models\Trial::create([
+    $facility = Facility::factory()->create();
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial@example.com',
@@ -36,7 +37,7 @@ test('fillableフィールドのみが一括代入で設定されること', fun
         ->and($booking->name)->toBe('テスト予約')
         ->and($booking->email)->toBe('test@example.com')
         ->and($booking->phone)->toBe('090-1234-5678')
-        ->and($booking->preferred_date)->toEqual(\Illuminate\Support\Carbon::parse('2026-10-15'))
+        ->and($booking->preferred_date)->toEqual(Carbon::parse('2026-10-15'))
         ->and($booking->preferred_time)->toBe('14:00')
         ->and($booking->notes)->toBe('テストメモ')
         ->and($booking->status)->toBe('pending');
@@ -44,8 +45,8 @@ test('fillableフィールドのみが一括代入で設定されること', fun
 
 test('fillable外のフィールド（id）が一括代入で無視されること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
-    $trial = \App\Models\Trial::create([
+    $facility = Facility::factory()->create();
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial2@example.com',
@@ -73,8 +74,8 @@ test('fillable外のフィールド（id）が一括代入で無視されるこ�
 
 test('不正なフィールド名での一括代入は無視されること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
-    $trial = \App\Models\Trial::create([
+    $facility = Facility::factory()->create();
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial3@example.com',
@@ -103,8 +104,8 @@ test('不正なフィールド名での一括代入は無視されること', fu
 
 test('isPendingメソッドが正しく判定されること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
-    $trial = \App\Models\Trial::create([
+    $facility = Facility::factory()->create();
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial4@example.com',
@@ -152,8 +153,8 @@ test('isPendingメソッドが正しく判定されること', function () {
 
 test('trialリレーションが正しく動作すること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
-    $trial = \App\Models\Trial::create([
+    $facility = Facility::factory()->create();
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial5@example.com',
@@ -181,8 +182,8 @@ test('trialリレーションが正しく動作すること', function () {
 
 test('確定日時が設定されているか確認すること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
-    $trial = \App\Models\Trial::create([
+    $facility = Facility::factory()->create();
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial6@example.com',
@@ -213,14 +214,14 @@ test('確定日時が設定されているか確認すること', function () {
         'preferred_time' => '14:00',
     ]);
 
-    expect($bookingWithConfirmedAt->confirmed_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
+    expect($bookingWithConfirmedAt->confirmed_at)->toBeInstanceOf(Carbon::class)
         ->and($bookingWithoutConfirmedAt->confirmed_at)->toBeNull();
 });
 
 test('ソフトデリートが動作すること', function () {
     // 必要な依存関係を作成
-    $facility = \App\Models\Facility::factory()->create();
-    $trial = \App\Models\Trial::create([
+    $facility = Facility::factory()->create();
+    $trial = Trial::create([
         'company_name' => 'テスト会社',
         'contact_name' => 'テスト太郎',
         'email' => 'trial7@example.com',

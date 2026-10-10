@@ -1,8 +1,10 @@
 <?php
 
+use App\Filament\Resources\ChatbotFaqResource;
 use App\Models\ChatbotFaq;
 use App\Models\Facility;
 use App\Models\User;
+use Spatie\Activitylog\Models\Activity;
 
 beforeEach(function () {
     $this->facility = Facility::factory()->create();
@@ -13,7 +15,7 @@ beforeEach(function () {
 test('ChatbotFaqResource一覧画面が正常に表示されること', function () {
     $this->actingAs($this->corporateAdmin);
 
-    $this->get(\App\Filament\Resources\ChatbotFaqResource::getUrl('index'))
+    $this->get(ChatbotFaqResource::getUrl('index'))
         ->assertSuccessful();
 });
 
@@ -57,10 +59,10 @@ test('facility_admin は自施設FAQと共通FAQのみ一覧に表示される�
         'facility_id' => $otherFacility->id,
     ]);
 
-    $query = \App\Filament\Resources\ChatbotFaqResource::getEloquentQuery();
+    $query = ChatbotFaqResource::getEloquentQuery();
     // getEloquentQuery は Auth::user() を参照するため、ユーザー切替後に再取得
     $this->actingAs($this->facilityAdmin);
-    $query = \App\Filament\Resources\ChatbotFaqResource::getEloquentQuery();
+    $query = ChatbotFaqResource::getEloquentQuery();
     $results = $query->get();
 
     expect($results)->toHaveCount(2)
@@ -81,7 +83,7 @@ test('FAQの変更が監査ログに記録されること', function () {
 
     $faq->update(['answer' => '毎月25日に口座振込（更新）']);
 
-    $log = \Spatie\Activitylog\Models\Activity::where('log_name', 'chatbot_faq')
+    $log = Activity::where('log_name', 'chatbot_faq')
         ->where('subject_id', $faq->id)
         ->where('event', 'updated')
         ->first();

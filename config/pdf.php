@@ -87,8 +87,8 @@ return [
                 'description_of_items',
                 'total_amount_with_tax',
                 'consumption_tax_amount',
-                'applicable_tax_rate'
-            ]
+                'applicable_tax_rate',
+            ],
         ],
 
         // Date mode: 'auto' (請求書主導) or 'manual' (任意選択)

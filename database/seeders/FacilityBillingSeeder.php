@@ -31,7 +31,7 @@ class FacilityBillingSeeder extends Seeder
 
         // 1. デフォルト施設を取得または作成
         $facility = Facility::first();
-        if (!$facility) {
+        if (! $facility) {
             $facility = Facility::create([
                 'name' => 'ケアレジデンス ひまわり',
                 'operator' => '株式会社ひまわりケア',
