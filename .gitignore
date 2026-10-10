@@ -15,6 +15,17 @@
 /.vscode
 /*.log
 *.sqlite
+# デバッグ・一時ファイル
+/debug_*.php
+/final_debug.php
+/test_kernel*.php
+/test_route.php
+/install_composer.php
+/download_composer.php
+/update_facility*.php
+/storage/app/debug_*
+/storage/app/final_debug_*
+/storage/app/test_*
 database/database.sqlite
 /storage/app/service-invoices/*
 /storage/app/private/service-invoices/*

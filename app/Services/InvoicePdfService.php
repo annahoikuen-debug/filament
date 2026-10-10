@@ -2,18 +2,33 @@
 
 namespace App\Services;
 
+use App\Enums\InvoiceStatus;
+use App\Jobs\GenerateMonthlyZipJob;
 use App\Models\MonthlyInvoice;
 use App\Models\ServiceInvoice;
 use App\Services\Pdf\Contracts\FontRegistryInterface;
 use App\Services\Pdf\Contracts\RendererInterface;
+use App\Services\Pdf\DataProviders\InvoiceDataProvider;
 use App\Services\Pdf\InvoicePdfGenerator;
 use App\Services\Pdf\PdfPasswordProtector;
+use App\Services\Pdf\Templates\InvoiceTemplate;
+use App\Services\Pdf\Templates\ReceiptTemplate;
 use App\Services\Pdf\TemplateSettingsService;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
+use Barryvdh\DomPDF\PDF;
 use Barryvdh\DomPDF\PDF as DomPdfInstance;
-use Illuminate\Http\Response;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
-use Illuminate\Filesystem\Filesystem;
 use Illuminate\Contracts\View\Factory as ViewFactory;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 class InvoicePdfService
 {
@@ -34,7 +49,7 @@ class InvoicePdfService
             return $this->passwordProtector->protectInvoice($pdfBinary, $invoice);
         } catch (\Throwable $e) {
             // 保護に失敗した場合は安全のためPDFを返さずエラーとする
-            \Illuminate\Support\Facades\Log::error('PDF password protection failed', [
+            Log::error('PDF password protection failed', [
                 'invoice_id' => $invoice->id,
                 'error' => $e->getMessage(),
             ]);
@@ -48,6 +63,7 @@ class InvoicePdfService
     public function generateInvoicePdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
         $html = $this->generator->previewInvoice($invoice, $facility);
+
         return $this->createDomPdfInstance($html);
     }
 
@@ -57,24 +73,25 @@ class InvoicePdfService
     public function generateReceiptPdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
         $html = $this->generator->previewReceipt($invoice, $facility);
+
         return $this->createDomPdfInstance($html);
     }
 
     private function createDomPdfInstance(string $html): DomPdfInstance
     {
-        $options = new \Dompdf\Options([
+        $options = new Options([
             'font_dir' => storage_path('fonts'),
             'font_cache' => storage_path('fonts'),
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => true,
             'defaultFont' => 'ipaexg',
         ]);
-        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf = new Dompdf($options);
         $this->fontRegistry->register($dompdf);
         $dompdf->loadHtml($html);
         $dompdf->render();
 
-        $pdf = new \Barryvdh\DomPDF\PDF(
+        $pdf = new PDF(
             $dompdf,
             app(ConfigRepository::class),
             app(Filesystem::class),
@@ -96,7 +113,7 @@ class InvoicePdfService
 
         return response($pdfBinary, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $this->generator->generateInvoiceFilename($invoice) . '"',
+            'Content-Disposition' => 'attachment; filename="'.$this->generator->generateInvoiceFilename($invoice).'"',
         ]);
     }
 
@@ -112,16 +129,14 @@ class InvoicePdfService
 
         return response($pdfBinary, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . $this->generator->generateInvoiceFilename($invoice) . '"',
+            'Content-Disposition' => 'inline; filename="'.$this->generator->generateInvoiceFilename($invoice).'"',
         ]);
     }
 
     /**
      * HTMLプレビュー表示（Webアプリ用・同一テンプレートをHTMLで返却）
      *
-     * @param  \App\Models\MonthlyInvoice  $invoice
      * @param  string  $type  'invoice' または 'receipt'
-     * @return \Illuminate\Http\Response
      */
     public function previewHtml(MonthlyInvoice $invoice, string $type = 'invoice'): Response
     {
@@ -130,7 +145,7 @@ class InvoicePdfService
         }
 
         // 領収書プレビューは入金済みのみ許可
-        if ($type === 'receipt' && $invoice->status !== \App\Enums\InvoiceStatus::Paid) {
+        if ($type === 'receipt' && $invoice->status !== InvoiceStatus::Paid) {
             abort(404);
         }
 
@@ -139,7 +154,7 @@ class InvoicePdfService
                 ? $this->generator->previewInvoice($invoice, $invoice->resident->facility?->toConfigArray())
                 : $this->generator->previewReceipt($invoice, $invoice->resident->facility?->toConfigArray());
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Preview HTML generation failed', [
+            Log::error('Preview HTML generation failed', [
                 'invoice_id' => $invoice->id,
                 'type' => $type,
                 'error' => $e->getMessage(),
@@ -188,10 +203,10 @@ class InvoicePdfService
 
         $zipPath = storage_path("app/temp/請求書一括_{$yearMonth}.zip");
 
-        \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($zipPath));
+        File::ensureDirectoryExists(dirname($zipPath));
 
-        if (\Illuminate\Support\Facades\File::exists($zipPath)) {
-            \Illuminate\Support\Facades\File::delete($zipPath);
+        if (File::exists($zipPath)) {
+            File::delete($zipPath);
         }
 
         $zip = new \ZipArchive;
@@ -209,8 +224,8 @@ class InvoicePdfService
             return $zipPath;
         } catch (\Throwable $e) {
             $zip->close();
-            if (\Illuminate\Support\Facades\File::exists($zipPath)) {
-                \Illuminate\Support\Facades\File::delete($zipPath);
+            if (File::exists($zipPath)) {
+                File::delete($zipPath);
             }
             throw $e;
         }
@@ -229,11 +244,11 @@ class InvoicePdfService
         ?int $facilityId = null,
         bool $includeMerged = true
     ): string {
-        $mergeService = app(\App\Services\InvoiceMergeService::class);
+        $mergeService = app(InvoiceMergeService::class);
 
         // 対象月の請求データを取得
         $query = MonthlyInvoice::where('billing_year_month', $yearMonth)
-            ->where('status', '!=', \App\Enums\InvoiceStatus::Unbilled);
+            ->where('status', '!=', InvoiceStatus::Unbilled);
         if ($facilityId) {
             $query->where('facility_id', $facilityId);
         }
@@ -241,10 +256,10 @@ class InvoicePdfService
 
         $zipPath = storage_path("app/temp/請求書一括_カテゴリ別_{$yearMonth}.zip");
 
-        \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($zipPath));
+        File::ensureDirectoryExists(dirname($zipPath));
 
-        if (\Illuminate\Support\Facades\File::exists($zipPath)) {
-            \Illuminate\Support\Facades\File::delete($zipPath);
+        if (File::exists($zipPath)) {
+            File::delete($zipPath);
         }
 
         $zip = new \ZipArchive;
@@ -290,7 +305,7 @@ class InvoicePdfService
 
             foreach ($serviceInvoices as $si) {
                 if ($si->hasPdf()) {
-                    $pdfContent = \Illuminate\Support\Facades\File::get($si->pdf_full_path);
+                    $pdfContent = File::get($si->pdf_full_path);
                     $label = $serviceLabels[$si->service_type->value] ?? $si->service_type->value;
 
                     $fileName = sprintf(
@@ -309,7 +324,7 @@ class InvoicePdfService
             if ($includeMerged) {
                 foreach ($invoices as $invoice) {
                     $carePdfs = $mergeService->getCareServicePdfs($invoice);
-                    if (!empty($carePdfs)) {
+                    if (! empty($carePdfs)) {
                         $content = $mergeService->mergeInvoices($invoice, $carePdfs);
 
                         $fileName = sprintf(
@@ -325,15 +340,15 @@ class InvoicePdfService
 
             // 4. サマリーCSV
             $csvContent = $this->generateCategorySummaryCsv($yearMonth, $facilityId);
-            $zip->addFromString('サマリー/請求内訳サマリー_' . $yearMonth . '.csv', $csvContent);
+            $zip->addFromString('サマリー/請求内訳サマリー_'.$yearMonth.'.csv', $csvContent);
 
             $zip->close();
 
             return $zipPath;
         } catch (\Throwable $e) {
             $zip->close();
-            if (\Illuminate\Support\Facades\File::exists($zipPath)) {
-                \Illuminate\Support\Facades\File::delete($zipPath);
+            if (File::exists($zipPath)) {
+                File::delete($zipPath);
             }
             throw $e;
         }
@@ -345,7 +360,7 @@ class InvoicePdfService
     private function generateCategorySummaryCsv(string $yearMonth, ?int $facilityId): string
     {
         $query = MonthlyInvoice::where('billing_year_month', $yearMonth)
-            ->where('status', '!=', \App\Enums\InvoiceStatus::Unbilled);
+            ->where('status', '!=', InvoiceStatus::Unbilled);
         if ($facilityId) {
             $query->where('facility_id', $facilityId);
         }
@@ -447,7 +462,7 @@ class InvoicePdfService
         $bom = "\xEF\xBB\xBF";
         $csv = $bom;
         foreach ($rows as $row) {
-            $csv .= implode(',', array_map(fn ($v) => '"' . str_replace('"', '""', (string)$v) . '"', $row)) . "\n";
+            $csv .= implode(',', array_map(fn ($v) => '"'.str_replace('"', '""', (string) $v).'"', $row))."\n";
         }
 
         return $csv;
@@ -461,8 +476,8 @@ class InvoicePdfService
      */
     public function generateMonthlyZipAsync(string $yearMonth, ?int $facilityId = null): string
     {
-        $jobId = 'zip_' . $yearMonth . '_' . ($facilityId ?? 'all') . '_' . uniqid();
-        \App\Jobs\GenerateMonthlyZipJob::dispatch($yearMonth, $facilityId, $jobId);
+        $jobId = 'zip_'.$yearMonth.'_'.($facilityId ?? 'all').'_'.uniqid();
+        GenerateMonthlyZipJob::dispatch($yearMonth, $facilityId, $jobId);
 
         return $jobId;
     }
@@ -474,7 +489,7 @@ class InvoicePdfService
      */
     public function getZipProgress(string $jobId): ?array
     {
-        return \App\Jobs\GenerateMonthlyZipJob::getProgress($jobId);
+        return GenerateMonthlyZipJob::getProgress($jobId);
     }
 
     /**
@@ -482,7 +497,7 @@ class InvoicePdfService
      */
     public function getZipResult(string $jobId): ?string
     {
-        return \App\Jobs\GenerateMonthlyZipJob::getResult($jobId);
+        return GenerateMonthlyZipJob::getResult($jobId);
     }
 
     /**
@@ -490,7 +505,7 @@ class InvoicePdfService
      */
     public function clearZipProgress(string $jobId): void
     {
-        \App\Jobs\GenerateMonthlyZipJob::clearProgress($jobId);
+        GenerateMonthlyZipJob::clearProgress($jobId);
     }
 
     /**
@@ -506,7 +521,7 @@ class InvoicePdfService
      */
     public function hasCachedPdf(string $yearMonth, int $invoiceId): bool
     {
-        return \Illuminate\Support\Facades\File::exists($this->getCachedPdfPath($yearMonth, $invoiceId));
+        return File::exists($this->getCachedPdfPath($yearMonth, $invoiceId));
     }
 
     /**
@@ -519,8 +534,8 @@ class InvoicePdfService
         $cachePath = $this->getCachedPdfPath($yearMonth, $invoice->id);
 
         // 既に存在する場合は即座に返す（読み取りは競合しない）
-        if (\Illuminate\Support\Facades\File::exists($cachePath)) {
-            return \Illuminate\Support\Facades\File::get($cachePath);
+        if (File::exists($cachePath)) {
+            return File::get($cachePath);
         }
 
         $html = $this->generator->previewInvoice($invoice, $facility);
@@ -528,21 +543,21 @@ class InvoicePdfService
         $pdfContent = $pdf->output();
 
         // アトミック書き込み: 一時ファイルに書いてから rename（POSIXでアトミック）
-        $tempPath = $cachePath . '.tmp.' . uniqid('', true);
-        \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($cachePath));
-        \Illuminate\Support\Facades\File::put($tempPath, $pdfContent);
+        $tempPath = $cachePath.'.tmp.'.uniqid('', true);
+        File::ensureDirectoryExists(dirname($cachePath));
+        File::put($tempPath, $pdfContent);
 
         // rename でアトミックに移動（既存ファイルがあれば上書き）
         @rename($tempPath, $cachePath);
 
         // 稀に rename 後にファイルが消えている場合のフォールバック
-        if (! \Illuminate\Support\Facades\File::exists($cachePath)) {
+        if (! File::exists($cachePath)) {
             // 別プロセスが書き込んだ可能性 → 再読み取り
-            if (\Illuminate\Support\Facades\File::exists($cachePath)) {
-                return \Illuminate\Support\Facades\File::get($cachePath);
+            if (File::exists($cachePath)) {
+                return File::get($cachePath);
             }
             // それでもなければ自分で書き込み直し（最後の手段）
-            \Illuminate\Support\Facades\File::put($cachePath, $pdfContent);
+            File::put($cachePath, $pdfContent);
         }
 
         return $pdfContent;
@@ -554,8 +569,8 @@ class InvoicePdfService
     public function clearInvoiceCache(string $yearMonth): void
     {
         $cacheDir = storage_path("app/invoices/{$yearMonth}");
-        if (\Illuminate\Support\Facades\File::exists($cacheDir)) {
-            \Illuminate\Support\Facades\File::deleteDirectory($cacheDir);
+        if (File::exists($cacheDir)) {
+            File::deleteDirectory($cacheDir);
         }
     }
 
@@ -563,9 +578,10 @@ class InvoicePdfService
      * チャンク処理でPDFを生成し、コールバックで処理する（メモリ効率化版・非推奨）
      *
      * @deprecated Use InvoicePdfGenerator::generateMonthlyBatchStream() instead for memory-efficient streaming.
+     *
      * @param  string  $yearMonth  'YYYY-MM'
      * @param  callable  $callback  function(MonthlyInvoice $invoice, string $pdfContent): void
-     * @param  int  $facilityId 施設ID
+     * @param  int  $facilityId  施設ID
      * @param  int  $chunkSize  チャンクサイズ
      */
     public function chunkGeneratePdfs(
@@ -574,7 +590,7 @@ class InvoicePdfService
         ?int $facilityId = null,
         int $chunkSize = 10
     ): void {
-        $dataProvider = app(\App\Services\Pdf\DataProviders\InvoiceDataProvider::class);
+        $dataProvider = app(InvoiceDataProvider::class);
         $invoicesData = $dataProvider->getMonthlyInvoicesData($yearMonth, $facilityId);
 
         foreach (array_chunk($invoicesData, $chunkSize) as $chunk) {
@@ -599,11 +615,12 @@ class InvoicePdfService
      * ビュー名とテンプレートデータを組み立てる（後方互換性用・非推奨）
      *
      * @deprecated Use InvoicePdfGenerator::previewInvoice() or previewReceipt() instead.
+     *
      * @return array{0: string, 1: array} [ビュー名, データ]
      */
     public function prepareViewData(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): array
     {
-        $dataProvider = app(\App\Services\Pdf\DataProviders\InvoiceDataProvider::class);
+        $dataProvider = app(InvoiceDataProvider::class);
 
         if ($type === 'invoice') {
             $data = $dataProvider->getInvoiceData($invoice, $facility);
@@ -617,11 +634,11 @@ class InvoicePdfService
         if ($templateConfig['show_qr_code'] ?? false) {
             if ($type === 'invoice') {
                 $qrCodeData = $this->getBankTransferQrCodeData($invoice, $facility ?? config('facility'));
-                $cacheKey = 'qr_invoice_' . md5($qrCodeData);
+                $cacheKey = 'qr_invoice_'.md5($qrCodeData);
                 $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData, $cacheKey);
             } else {
                 $qrCodeData = $this->getReceiptVerificationQrCodeData($invoice);
-                $cacheKey = 'qr_receipt_' . md5($qrCodeData);
+                $cacheKey = 'qr_receipt_'.md5($qrCodeData);
                 $templateConfig['qr_code_data'] = $this->generatePaymentQrCode($qrCodeData, $cacheKey);
             }
         }
@@ -629,9 +646,9 @@ class InvoicePdfService
         $view = $type === 'invoice' ? 'pdf.invoice' : 'pdf.receipt';
 
         // CSSを取得（テンプレートクラスから）
-        $templateClass = $type === 'invoice' 
-            ? app(\App\Services\Pdf\Templates\InvoiceTemplate::class)
-            : app(\App\Services\Pdf\Templates\ReceiptTemplate::class);
+        $templateClass = $type === 'invoice'
+            ? app(InvoiceTemplate::class)
+            : app(ReceiptTemplate::class);
         $css = $templateClass->getCss();
 
         return [$view, [
@@ -645,11 +662,12 @@ class InvoicePdfService
      * 共通PDF生成メソッド（請求書・領収書を統合・後方互換性用・非推奨）
      *
      * @deprecated Use InvoicePdfGenerator::generateInvoice() or generateReceipt() instead.
+     *
      * @param  string  $type  'invoice' または 'receipt'
      */
     public function generatePdfFromInvoice(MonthlyInvoice $invoice, string $type = 'invoice', ?array $facility = null): DomPdfInstance
     {
-        $html = $type === 'invoice' 
+        $html = $type === 'invoice'
             ? $this->generator->previewInvoice($invoice, $facility)
             : $this->generator->previewReceipt($invoice, $facility);
 
@@ -660,8 +678,9 @@ class InvoicePdfService
      * 振込用QRコードデータを生成（後方互換性用・非推奨）
      *
      * @deprecated Use InvoicePdfGenerator or a dedicated QR code service instead.
-     * @param MonthlyInvoice $invoice 請求書データ
-     * @param array $facility 施設情報
+     *
+     * @param  MonthlyInvoice  $invoice  請求書データ
+     * @param  array  $facility  施設情報
      * @return string QRコード用データ文字列
      */
     public function getBankTransferQrCodeData(MonthlyInvoice $invoice, array $facility): string
@@ -670,7 +689,7 @@ class InvoicePdfService
         $data = sprintf(
             "STU{\n振:%s\n種:振込\n金:%d\n名:%s\n  共同:%s %s\n 口:%s %s\n 住:%s\nREF:%s-%s}",
             $facility['bank']['account_number'] ?? '012345',
-            (int)$invoice->total_with_tax,
+            (int) $invoice->total_with_tax,
             $facility['bank']['account_holder'] ?? '',
             $facility['bank']['name'] ?? '',
             $facility['bank']['branch_name'] ?? '',
@@ -688,7 +707,8 @@ class InvoicePdfService
      * 領収書用検証QRコードデータを生成（後方互換性用・非推奨）
      *
      * @deprecated Use InvoicePdfGenerator or a dedicated QR code service instead.
-     * @param MonthlyInvoice $invoice 領収書データ
+     *
+     * @param  MonthlyInvoice  $invoice  領収書データ
      * @return string QRコード用データ文字列
      */
     public function getReceiptVerificationQrCodeData(MonthlyInvoice $invoice): string
@@ -701,7 +721,7 @@ class InvoicePdfService
             'amount' => $invoice->total_with_tax,
             'date' => $invoice->paid_at ? $invoice->paid_at->format('Y-m-d') : now()->format('Y-m-d'),
             'issued_by' => config('facility.name'),
-            'timestamp' => now()->timestamp
+            'timestamp' => now()->timestamp,
         ], JSON_UNESCAPED_UNICODE);
 
         return base64_encode($data);
@@ -711,26 +731,28 @@ class InvoicePdfService
      * QRコードを生成するヘルパーメソッド（キャッシュ対応・後方互換性用・非推奨）
      *
      * @deprecated Use a dedicated QR code service (e.g., BaconQrCode directly) instead.
-     * @param string $data エンコードするデータ
-     * @param string|null $cacheKey キャッシュキー（指定時はキャッシュから取得・保存）
+     *
+     * @param  string  $data  エンコードするデータ
+     * @param  string|null  $cacheKey  キャッシュキー（指定時はキャッシュから取得・保存）
      * @return string base64エンコードされたSVGデータURI
+     *
      * @throws \RuntimeException QRコード生成に失敗した場合
      */
     public function generatePaymentQrCode(string $data, ?string $cacheKey = null): string
     {
         // キャッシュキーが指定されている場合はキャッシュから取得を試みる
         if ($cacheKey !== null) {
-            $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            $cached = Cache::get($cacheKey);
             if ($cached !== null) {
                 return $cached;
             }
         }
 
         try {
-            $rendererStyle = new \BaconQrCode\Renderer\RendererStyle\RendererStyle(70);
-            $imageBackEnd = new \BaconQrCode\Renderer\Image\SvgImageBackEnd();
-            $renderer = new \BaconQrCode\Renderer\ImageRenderer($rendererStyle, $imageBackEnd);
-            $writer = new \BaconQrCode\Writer($renderer);
+            $rendererStyle = new RendererStyle(70);
+            $imageBackEnd = new SvgImageBackEnd;
+            $renderer = new ImageRenderer($rendererStyle, $imageBackEnd);
+            $writer = new Writer($renderer);
             // 日本語を含むデータを扱うため UTF-8 を指定（既定の ISO-8859-1 では多バイト文字のエンコードに失敗する）
             $svg = $writer->writeString($data, 'UTF-8');
 
@@ -738,13 +760,13 @@ class InvoicePdfService
 
             // キャッシュに保存（24時間）
             if ($cacheKey !== null) {
-                \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addHours(24));
+                Cache::put($cacheKey, $result, now()->addHours(24));
             }
 
             return $result;
         } catch (\Throwable $e) {
             // QRコード生成失敗をログ出力（デバッグ用）
-            \Illuminate\Support\Facades\Log::error('QRコード生成に失敗しました', [
+            Log::error('QRコード生成に失敗しました', [
                 'data_length' => strlen($data),
                 'cache_key' => $cacheKey,
                 'error' => $e->getMessage(),
@@ -752,7 +774,7 @@ class InvoicePdfService
             ]);
 
             // 例外を再スローして呼び出し元でハンドリングできるようにする
-            throw new \RuntimeException('QRコードの生成に失敗しました: ' . $e->getMessage(), 0, $e);
+            throw new \RuntimeException('QRコードの生成に失敗しました: '.$e->getMessage(), 0, $e);
         }
     }
 }

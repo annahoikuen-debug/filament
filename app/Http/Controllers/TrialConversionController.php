@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Trial;
 use App\Services\TrialConversionService;
 use Illuminate\Http\Request;
@@ -13,8 +12,7 @@ class TrialConversionController extends Controller
 {
     public function __construct(
         private readonly TrialConversionService $conversionService,
-    ) {
-    }
+    ) {}
 
     /**
      * トライアルを本契約に移行
@@ -22,7 +20,7 @@ class TrialConversionController extends Controller
     public function convert(Request $request, Trial $trial)
     {
         // 認可: トライアル所有者のみが移行可能（プロビジョニングメールで通知されるトークン）
-        if (!$trial->isValidConversionToken($request->input('conversion_token'))) {
+        if (! $trial->isValidConversionToken($request->input('conversion_token'))) {
             return response()->json([
                 'success' => false,
                 'message' => '移行トークンが不正です。',

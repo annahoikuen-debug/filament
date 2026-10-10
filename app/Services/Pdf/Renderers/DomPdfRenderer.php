@@ -20,6 +20,7 @@ class DomPdfRenderer implements RendererInterface
     {
         $pdf = $this->createPdfInstance();
         $pdf->loadHtml($html);
+
         return $pdf->output();
     }
 
@@ -31,7 +32,7 @@ class DomPdfRenderer implements RendererInterface
 
         return ResponseFacade::make($content, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
         ]);
     }
 
@@ -43,7 +44,7 @@ class DomPdfRenderer implements RendererInterface
 
         return ResponseFacade::make($content, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 
@@ -52,7 +53,6 @@ class DomPdfRenderer implements RendererInterface
      * 同一インスタンスを再利用してフォント登録のオーバーヘッドを削減
      *
      * @param  array<int, array{html: string, filename: string}>  $items
-     * @param  \ZipArchive  $zip
      * @return int 追加したファイル数
      */
     public function renderBatchToZip(array $items, \ZipArchive $zip): int

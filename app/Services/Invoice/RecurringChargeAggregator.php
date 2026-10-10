@@ -3,7 +3,6 @@
 namespace App\Services\Invoice;
 
 use App\Enums\TaxType;
-use App\Models\ChargeItem;
 use App\Models\RecurringCharge;
 use App\Models\Resident;
 use Carbon\Carbon;

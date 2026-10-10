@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PdfTemplateSettingsResource\Pages;
 
 use App\Filament\Resources\PdfTemplateSettingsResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListPdfTemplateSettings extends ListRecords
@@ -12,7 +13,7 @@ class ListPdfTemplateSettings extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make()
+            CreateAction::make()
                 ->label('新規テンプレート作成')
                 ->icon('heroicon-o-plus-circle'),
         ];

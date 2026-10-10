@@ -2,20 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Mail\BookingConfirmationMail;
 use App\Models\Booking;
 use App\Services\MailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class BookingController extends Controller
 {
     public function __construct(
         private readonly MailService $mailService,
-    ) {
-    }
+    ) {}
 
     /**
      * デモ面談の予約を受付
@@ -91,7 +88,7 @@ class BookingController extends Controller
             ], 401);
         }
 
-        if (!$user->is_admin) {
+        if (! $user->is_admin) {
             return response()->json([
                 'success' => false,
                 'message' => '管理者権限が必要です。',

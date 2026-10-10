@@ -2,11 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\InvoiceStatus;
 use App\Enums\ResidentStatus;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Models\TaxSetting;
 use App\Services\Invoice\DailyChargeAggregator;
 use App\Services\Invoice\InvoicePersister;
 use App\Services\Invoice\ProrationCalculator;
@@ -31,8 +29,7 @@ class InvoiceCalculationService
     /**
      * 単一請求書の計算・更新（GenerateMonthlyInvoicesコマンド用）
      *
-     * @param MonthlyInvoice $invoice 計算対象の請求書インスタンス
-     * @return void
+     * @param  MonthlyInvoice  $invoice  計算対象の請求書インスタンス
      */
     public function calculate(MonthlyInvoice $invoice): void
     {
@@ -180,8 +177,6 @@ class InvoiceCalculationService
         $baseQuery->select('id', 'facility_id', 'room_number', 'name', 'base_rent', 'base_management_fee', 'move_in_date', 'move_out_date')
             ->chunkById(self::CHUNK_SIZE, function ($residents) use (
                 $yearMonth,
-                $startDate,
-                $endDate,
                 $forceUpdate,
                 &$stats,
                 $standardRate,
@@ -190,7 +185,7 @@ class InvoiceCalculationService
                 $recurringAggregates,
                 $billingDate
             ) {
-                DB::transaction(function () use ($residents, $yearMonth, $startDate, $endDate, $forceUpdate, &$stats, $standardRate, $reducedRate, $dailyAggregates, $recurringAggregates, $billingDate) {
+                DB::transaction(function () use ($residents, $yearMonth, $forceUpdate, &$stats, $standardRate, $reducedRate, $dailyAggregates, $recurringAggregates, $billingDate) {
                     foreach ($residents as $resident) {
                         $this->processResidentInvoice(
                             $resident,

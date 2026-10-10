@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Services\Chatbot\ChatbotService;
 use App\Services\Chatbot\DTO\ChatRequest;
 use Illuminate\Http\JsonResponse;
@@ -13,8 +12,7 @@ class ChatbotController extends Controller
 {
     public function __construct(
         private readonly ChatbotService $chatbotService,
-    ) {
-    }
+    ) {}
 
     public function message(Request $request): JsonResponse
     {

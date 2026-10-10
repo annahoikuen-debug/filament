@@ -4,8 +4,9 @@ namespace Tests\Feature\Regression;
 
 use App\Models\ChargeItem;
 use App\Models\Facility;
-use Filament\Facades\Filament;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
 class ChargeItemDisplayNameTest extends TestCase
@@ -77,10 +78,10 @@ class ChargeItemDisplayNameTest extends TestCase
     }
 
     /** @test */
-    public function massAssignmentで表示名と説明が設定できる(): void
+    public function mass_assignmentで表示名と説明が設定できる(): void
     {
         $facility = Facility::factory()->create();
-        
+
         // mass assignmentでの作成テスト
         $chargeItem = ChargeItem::create([
             'facility_id' => $facility->id,
@@ -101,7 +102,7 @@ class ChargeItemDisplayNameTest extends TestCase
     public function 表示名と説明が更新できる(): void
     {
         $facility = Facility::factory()->create();
-        
+
         $chargeItem = ChargeItem::create([
             'facility_id' => $facility->id,
             'name' => 'diaper',
@@ -127,7 +128,7 @@ class ChargeItemDisplayNameTest extends TestCase
     public function 活動ログに表示名と説明の変更が記録される(): void
     {
         $facility = Facility::factory()->create();
-        $admin = \App\Models\User::factory()->create([
+        $admin = User::factory()->create([
             'role' => 'corporate_admin',
             'facility_id' => $facility->id,
         ]);
@@ -151,15 +152,15 @@ class ChargeItemDisplayNameTest extends TestCase
             'description' => '大人用おむつ（テープタイプ）1枚あたりの単価',
         ]);
 
-        $logs = \Spatie\Activitylog\Models\Activity::all();
+        $logs = Activity::all();
         $this->assertNotEmpty($logs);
 
         $lastLog = $logs->last();
         $this->assertEquals('updated', $lastLog->event);
-        
+
         // changesプロパティはCollectionなのでtoArray()で配列化して確認
         $changes = $lastLog->changes->toArray();
-        
+
         // Spatie ActivityLogのchangesは attributes (新しい値) と old (古い値) の構造になっている
         // attributesの中に display_name と description が含まれていることを確認
         $this->assertArrayHasKey('attributes', $changes);
@@ -167,7 +168,7 @@ class ChargeItemDisplayNameTest extends TestCase
         $this->assertArrayHasKey('description', $changes['attributes']);
         $this->assertEquals('おむつ代（テープ）', $changes['attributes']['display_name']);
         $this->assertEquals('大人用おむつ（テープタイプ）1枚あたりの単価', $changes['attributes']['description']);
-        
+
         // oldにも古い値が記録されていることを確認
         $this->assertArrayHasKey('old', $changes);
         $this->assertArrayHasKey('display_name', $changes['old']);

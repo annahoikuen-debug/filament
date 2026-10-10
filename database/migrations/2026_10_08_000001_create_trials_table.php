@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('facility_type');
             $table->string('resident_capacity');
             $table->enum('status', ['pending', 'provisioning', 'active', 'expired', 'converted', 'cancelled'])
-                  ->default('pending');
+                ->default('pending');
             $table->timestamp('trial_started_at')->nullable();
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamps();

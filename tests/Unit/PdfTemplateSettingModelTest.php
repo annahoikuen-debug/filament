@@ -100,7 +100,7 @@ test('キャストが正しく動作すること', function () {
         ->and($template->margin_bottom)->toBe(20)
         ->and($template->margin_left)->toBe(15)
         ->and($template->font_size)->toBe(10)
-        ->and((float)$template->line_height)->toBe(1.5)
+        ->and((float) $template->line_height)->toBe(1.5)
         ->and($template->show_facility_logo)->toBeTrue()
         ->and($template->show_facility_info)->toBeFalse()
         ->and($template->show_tax_breakdown)->toBeTrue()
@@ -115,7 +115,7 @@ test('キャストが正しく動作すること', function () {
 test('getForKeyメソッドが有効なテンプレートを取得すること', function () {
     // テーブルをトリンケートしてシーダーデータを削除
     PdfTemplateSetting::truncate();
-    
+
     // 初期状態: アクティブだがデフォルトでないテンプレートを作成
     $template = PdfTemplateSetting::create([
         'key' => 'invoice',
@@ -154,7 +154,7 @@ test('getForKeyメソッドが有効なテンプレートを取得すること',
 test('getForKeyメソッドでデフォルトが優先されること', function () {
     // テーブルをトリンケートしてシーダーデータを削除
     PdfTemplateSetting::truncate();
-    
+
     // 初期状態: アクティブだがデフォルトでないテンプレートを作成
     $template = PdfTemplateSetting::create([
         'key' => 'receipt',
@@ -191,7 +191,7 @@ test('getForKeyメソッドでデフォルトが優先されること', function
 test('getForKeyメソッドでバージョンが新しい方が優先されること', function () {
     // テーブルをトリンケートしてシーダーデータを削除
     PdfTemplateSetting::truncate();
-    
+
     // 初期状態: アクティブなテンプレートを作成（バージョン1）
     $template = PdfTemplateSetting::create([
         'key' => 'invoice',
@@ -231,7 +231,7 @@ test('getForKeyメソッドで存在しないキーの場合はnullが返るこ�
 test('getDefaultメソッドがデフォルトテンプレートを取得すること', function () {
     // テーブルをトリンケートしてシーダーデータを削除
     PdfTemplateSetting::truncate();
-    
+
     // 初期状態: アクティブだがデフォルトでないテンプレートを作成
     $template = PdfTemplateSetting::create([
         'key' => 'invoice',
@@ -263,7 +263,7 @@ test('getDefaultメソッドがデフォルトテンプレートを取得する�
 test('getDefaultメソッドで非アクティブなデフォルトは除外されること', function () {
     // テーブルをトリンケートしてシーダーデータを削除
     PdfTemplateSetting::truncate();
-    
+
     // 初期状態: アクティブなテンプレートを作成（デフォルトでない）
     $template = PdfTemplateSetting::create([
         'key' => 'invoice',

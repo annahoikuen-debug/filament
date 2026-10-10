@@ -2,13 +2,14 @@
 
 namespace Tests\Unit\Pdf;
 
-use App\Services\Pdf\DataProviders\InvoiceDataProvider;
+use App\DTOs\Pdf\InvoicePdfData;
+use App\DTOs\Pdf\ReceiptPdfData;
+use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Models\DailyCharge;
-use App\Models\ChargeItem;
-use Tests\TestCase;
+use App\Services\Pdf\DataProviders\InvoiceDataProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class InvoiceDataProviderTest extends TestCase
 {
@@ -19,8 +20,8 @@ class InvoiceDataProviderTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->provider = new InvoiceDataProvider();
-        
+        $this->provider = new InvoiceDataProvider;
+
         // Run tax columns migration
         $this->artisan('migrate', ['--path' => 'database/migrations/2026_10_07_000001_add_tax_columns_to_monthly_invoices.php']);
     }
@@ -45,7 +46,7 @@ class InvoiceDataProviderTest extends TestCase
 
         $data = $this->provider->getInvoiceData($invoice);
 
-        $this->assertInstanceOf(\App\DTOs\Pdf\InvoicePdfData::class, $data);
+        $this->assertInstanceOf(InvoicePdfData::class, $data);
         $this->assertEquals('テスト太郎', $data->resident->name);
         $this->assertEquals('101', $data->resident->roomNumber);
         $this->assertEquals('2026-10', $data->billingYearMonth);
@@ -79,7 +80,7 @@ class InvoiceDataProviderTest extends TestCase
 
         $data = $this->provider->getReceiptData($invoice);
 
-        $this->assertInstanceOf(\App\DTOs\Pdf\ReceiptPdfData::class, $data);
+        $this->assertInstanceOf(ReceiptPdfData::class, $data);
         $this->assertEquals('テスト太郎', $data->resident->name);
         $this->assertEquals('101', $data->resident->roomNumber);
         $this->assertEquals('2026-10', $data->billingYearMonth);
@@ -118,8 +119,8 @@ class InvoiceDataProviderTest extends TestCase
 
     public function test_get_monthly_invoices_data_with_facility_filter()
     {
-        $facility1 = \App\Models\Facility::factory()->create(['id' => 1, 'name' => '施設A']);
-        $facility2 = \App\Models\Facility::factory()->create(['id' => 2, 'name' => '施設B']);
+        $facility1 = Facility::factory()->create(['id' => 1, 'name' => '施設A']);
+        $facility2 = Facility::factory()->create(['id' => 2, 'name' => '施設B']);
 
         $resident1 = Resident::factory()->create(['facility_id' => 1]);
         $resident2 = Resident::factory()->create(['facility_id' => 2]);

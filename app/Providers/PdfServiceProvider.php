@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use App\Services\Pdf\Contracts\FontRegistryInterface;
 use App\Services\Pdf\Contracts\RendererInterface;
+use App\Services\Pdf\DataProviders\InvoiceDataProvider;
 use App\Services\Pdf\Fonts\WindowsFontRegistry;
 use App\Services\Pdf\InvoicePdfGenerator;
-use App\Services\Pdf\DataProviders\InvoiceDataProvider;
 use App\Services\Pdf\Renderers\DomPdfRenderer;
 use App\Services\Pdf\Renderers\HtmlRenderer;
 use App\Services\Pdf\Templates\InvoiceTemplate;
@@ -23,7 +23,7 @@ class PdfServiceProvider extends ServiceProvider
         $this->app->singleton(RendererInterface::class, function ($app) {
             $fontRegistry = $app->make(FontRegistryInterface::class);
             $config = config('pdf.default', []);
-            
+
             return new DomPdfRenderer($fontRegistry, [
                 'isHtml5ParserEnabled' => true,
                 'isRemoteEnabled' => true,
@@ -53,7 +53,5 @@ class PdfServiceProvider extends ServiceProvider
         });
     }
 
-    public function boot(): void
-    {
-    }
+    public function boot(): void {}
 }

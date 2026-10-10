@@ -23,8 +23,7 @@ class FormController extends Controller
      */
     public function __construct(
         private readonly MailService $mailService,
-    ) {
-    }
+    ) {}
 
     public function store(Request $request, string $type)
     {
@@ -82,7 +81,7 @@ class FormController extends Controller
             if ($field === 'email') {
                 $rules['email'] = ['required', 'email', 'max:255'];
             } else {
-                $rules[$field] = ['required', 'string', 'max:' . ($field === 'message' ? '2000' : '255')];
+                $rules[$field] = ['required', 'string', 'max:'.($field === 'message' ? '2000' : '255')];
             }
         }
 

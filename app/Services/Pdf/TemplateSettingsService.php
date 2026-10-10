@@ -3,12 +3,14 @@
 namespace App\Services\Pdf;
 
 use App\Models\PdfTemplateSettings;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 
 class TemplateSettingsService
 {
     private const CACHE_TTL = 3600; // 1時間
+
     private const CACHE_PREFIX = 'pdf_template_settings_';
 
     /**
@@ -17,14 +19,13 @@ class TemplateSettingsService
      * @param  string  $key  'invoice' or 'receipt'
      * @param  string|null  $locale  ロケール（省略時はapp locale）
      * @param  string|null  $theme  テーマ（省略時はstandard）
-     * @return array
      */
     public function getSettings(string $key, ?string $locale = null, ?string $theme = null): array
     {
         $locale = $locale ?? app()->getLocale();
         $theme = $theme ?? 'standard';
 
-        $cacheKey = self::CACHE_PREFIX . "{$key}_{$locale}_{$theme}";
+        $cacheKey = self::CACHE_PREFIX."{$key}_{$locale}_{$theme}";
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($key, $locale, $theme) {
             // DBからアクティブなテンプレートを取得（ロケール・テーマ指定）
@@ -52,13 +53,13 @@ class TemplateSettingsService
     public function clearCache(?string $key = null, ?string $locale = null, ?string $theme = null): void
     {
         if ($key && $locale && $theme) {
-            Cache::forget(self::CACHE_PREFIX . "{$key}_{$locale}_{$theme}");
+            Cache::forget(self::CACHE_PREFIX."{$key}_{$locale}_{$theme}");
         } else {
             // 全キャッシュクリア（プレフィックス一致で削除するためタグ使用推奨だが、ここでは全キー列挙）
             foreach (['invoice', 'receipt'] as $k) {
                 foreach (['ja', 'en'] as $loc) {
                     foreach (['standard', 'minimal', 'classic', 'modern', 'compact'] as $th) {
-                        Cache::forget(self::CACHE_PREFIX . "{$k}_{$loc}_{$th}");
+                        Cache::forget(self::CACHE_PREFIX."{$k}_{$loc}_{$th}");
                     }
                 }
             }
@@ -69,7 +70,7 @@ class TemplateSettingsService
      * 全テンプレート一覧取得
      *
      * @param  string|null  $key  フィルタするkey
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getAll(?string $key = null)
     {
@@ -88,7 +89,7 @@ class TemplateSettingsService
     public function create(array $data): PdfTemplateSettings
     {
         // is_defaultがtrueの場合、他のデフォルトを解除
-        if (!empty($data['is_default'])) {
+        if (! empty($data['is_default'])) {
             PdfTemplateSettings::where('key', $data['key'])
                 ->where('is_default', true)
                 ->update(['is_default' => false]);
@@ -113,7 +114,7 @@ class TemplateSettingsService
     public function update(PdfTemplateSettings $template, array $data): PdfTemplateSettings
     {
         // is_default変更時の処理
-        if (isset($data['is_default']) && $data['is_default'] && !$template->is_default) {
+        if (isset($data['is_default']) && $data['is_default'] && ! $template->is_default) {
             PdfTemplateSettings::where('key', $template->key)
                 ->where('id', '!=', $template->id)
                 ->where('is_default', true)

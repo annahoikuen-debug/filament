@@ -3,8 +3,6 @@
 namespace App\Services\Invoice;
 
 use App\Enums\TaxType;
-use App\Models\ChargeItem;
-use App\Models\DailyCharge;
 use Illuminate\Support\Facades\DB;
 
 class DailyChargeAggregator

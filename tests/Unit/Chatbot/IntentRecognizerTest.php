@@ -3,7 +3,7 @@
 use App\Services\Chatbot\IntentRecognizer;
 
 beforeEach(function () {
-    $this->recognizer = new IntentRecognizer();
+    $this->recognizer = new IntentRecognizer;
 });
 
 test('入居者名を含む質問が resident_lookup に分類されること', function () {

@@ -13,6 +13,7 @@ class QuoteService
     ];
 
     public const STARTER_PRICE = 15000;
+
     public const STANDARD_PRICE = 35000;
 
     /**

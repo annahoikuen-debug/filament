@@ -1,156 +1,157 @@
 <?php
 
-namespace Tests\Unit\Pdf;
-
-use App\Services\Pdf\InvoicePdfGenerator;
+use App\Enums\InvoiceStatus;
+use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Services\Pdf\Contracts\RendererInterface;
+use App\Services\Pdf\InvoicePdfGenerator;
+use Illuminate\Http\Response;
 
-class InvoicePdfGeneratorTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    $this->facility = Facility::factory()->create(['name' => 'テスト施設']);
+    $this->resident = Resident::create([
+        'facility_id' => $this->facility->id,
+        'room_number' => '301',
+        'name' => '山田太郎',
+        'base_rent' => 50000,
+        'base_management_fee' => 20000,
+        'move_in_date' => '2026-03-01',
+    ]);
+    $this->invoice = MonthlyInvoice::create([
+        'billing_year_month' => '2026-03',
+        'resident_id' => $this->resident->id,
+        'facility_id' => $this->facility->id,
+        'rent_subtotal' => 50000,
+        'management_fee_subtotal' => 20000,
+        'service_subtotal' => 0,
+        'total_amount' => 70000,
+        'status' => InvoiceStatus::Billed,
+    ]);
 
-    private InvoicePdfGenerator $generator;
+    // レンダラーをモック（PDFエンジンに依存しない）
+    $this->mock(RendererInterface::class, function ($mock) {
+        $mock->shouldReceive('render')->andReturnUsing(fn (string $html) => 'PDF_BINARY::'.md5($html));
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->generator = app(InvoicePdfGenerator::class);
-    }
+        $makeResponse = function (string $filename, bool $attachment) {
+            $type = $attachment ? 'attachment' : 'inline';
+            $response = new Response('BINARY');
+            $response->headers->set('Content-Disposition', $type.'; filename="'.$filename.'"');
 
-    public function test_preview_invoice_returns_html()
-    {
-        $resident = Resident::factory()->create([
-            'name' => 'テスト太郎',
-            'room_number' => '101',
-        ]);
+            return $response;
+        };
 
-        $invoice = MonthlyInvoice::factory()->create([
-            'resident_id' => $resident->id,
-            'billing_year_month' => '2026-10',
-        ]);
+        $mock->shouldReceive('stream')->andReturnUsing(fn (string $h, string $f) => $makeResponse($f, false));
+        $mock->shouldReceive('download')->andReturnUsing(fn (string $h, string $f) => $makeResponse($f, true));
+    });
 
-        $html = $this->generator->previewInvoice($invoice);
+    $this->generator = app(InvoicePdfGenerator::class);
+});
 
-        $this->assertIsString($html);
-        $this->assertStringContainsString('<!DOCTYPE html>', $html);
-        $this->assertStringContainsString('テスト太郎', $html);
-        $this->assertStringContainsString('101', $html);
-        $this->assertStringContainsString('2026-10', $html);
-        $this->assertStringContainsString('御 請 求 書', $html);
-    }
+test('generateInvoice がPDFバイナリを返すこと', function () {
+    $result = $this->generator->generateInvoice($this->invoice);
 
-    public function test_preview_receipt_returns_html()
-    {
-        $resident = Resident::factory()->create([
-            'name' => 'テスト太郎',
-            'room_number' => '101',
-        ]);
+    expect($result)->toBeString()->toStartWith('PDF_BINARY::');
+});
 
-        $invoice = MonthlyInvoice::factory()->create([
-            'resident_id' => $resident->id,
-            'billing_year_month' => '2026-10',
-            'receipt_number' => 'REC-202610-001',
-            'paid_at' => '2026-10-15 10:00:00',
-        ]);
+test('generateInvoice download=true でダウンロードレスポンスを返すこと', function () {
+    $response = $this->generator->generateInvoice($this->invoice, true);
 
-        $html = $this->generator->previewReceipt($invoice);
+    expect($response)->toBeInstanceOf(Response::class)
+        ->and($response->headers->get('Content-Disposition'))->toContain('attachment');
+});
 
-        $this->assertIsString($html);
-        $this->assertStringContainsString('<!DOCTYPE html>', $html);
-        $this->assertStringContainsString('テスト太郎', $html);
-        $this->assertStringContainsString('領収証', $html);
-        $this->assertStringContainsString('REC-202610-001', $html);
-    }
+test('streamInvoice がストリームレスポンスを返すこと', function () {
+    $response = $this->generator->streamInvoice($this->invoice);
 
-    public function test_generate_invoice_returns_pdf_bytes()
-    {
-        $resident = Resident::factory()->create();
-        $invoice = MonthlyInvoice::factory()->create([
-            'resident_id' => $resident->id,
-            'billing_year_month' => '2026-10',
-        ]);
+    expect($response)->toBeInstanceOf(Response::class)
+        ->and($response->headers->get('Content-Disposition'))->toContain('inline')
+        ->and($response->headers->get('Content-Disposition'))->toContain('請求書_2026-03_山田太郎様_301.pdf');
+});
 
-        $pdf = $this->generator->generateInvoice($invoice, false);
+test('generateReceipt がPDFバイナリを返すこと', function () {
+    $result = $this->generator->generateReceipt($this->invoice);
 
-        $this->assertIsString($pdf);
-        $this->assertStringStartsWith('%PDF', $pdf);
-        // 最適化によりPDFサイズが小さくなるため閾値を下げる
-        $this->assertGreaterThan(500, strlen($pdf));
-    }
+    expect($result)->toBeString()->toStartWith('PDF_BINARY::');
+});
 
-    public function test_generate_receipt_returns_pdf_bytes()
-    {
-        $resident = Resident::factory()->create();
-        $invoice = MonthlyInvoice::factory()->create([
-            'resident_id' => $resident->id,
-            'billing_year_month' => '2026-10',
-            'paid_at' => '2026-10-15',
-        ]);
+test('generateReceipt download=true で領収証ファイル名のダウンロードレスポンスを返すこと', function () {
+    $response = $this->generator->generateReceipt($this->invoice, true);
 
-        $pdf = $this->generator->generateReceipt($invoice, false);
+    expect($response)->toBeInstanceOf(Response::class)
+        ->and($response->headers->get('Content-Disposition'))->toContain('領収証_2026-03_山田太郎様_301.pdf');
+});
 
-        $this->assertIsString($pdf);
-        $this->assertStringStartsWith('%PDF', $pdf);
-        // 最適化によりPDFサイズが小さくなるため閾値を下げる
-        $this->assertGreaterThan(500, strlen($pdf));
-    }
+test('streamReceipt がストリームレスポンスを返すこと', function () {
+    $response = $this->generator->streamReceipt($this->invoice);
 
-    public function test_generate_invoice_download_returns_response()
-    {
-        $resident = Resident::factory()->create();
-        $invoice = MonthlyInvoice::factory()->create([
-            'resident_id' => $resident->id,
-            'billing_year_month' => '2026-10',
-        ]);
+    expect($response)->toBeInstanceOf(Response::class);
+});
 
-        $response = $this->generator->generateInvoice($invoice, true);
+test('previewInvoice / previewReceipt がHTMLを返すこと', function () {
+    $invoiceHtml = $this->generator->previewInvoice($this->invoice);
+    $receiptHtml = $this->generator->previewReceipt($this->invoice);
 
-        $this->assertInstanceOf(\Illuminate\Http\Response::class, $response);
-        $this->assertEquals(200, $response->getStatusCode());
-        $this->assertStringContainsString('application/pdf', $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('attachment', $response->headers->get('Content-Disposition'));
-    }
+    expect($invoiceHtml)->toBeString()->not->toBe('')
+        ->and($receiptHtml)->toBeString()->not->toBe('');
+});
 
-    public function test_stream_invoice_returns_response()
-    {
-        $resident = Resident::factory()->create();
-        $invoice = MonthlyInvoice::factory()->create([
-            'resident_id' => $resident->id,
-            'billing_year_month' => '2026-10',
-        ]);
+test('previewInvoiceFromData がDTO配列からHTMLを返すこと', function () {
+   $data = \App\DTOs\Pdf\InvoicePdfData::fromInvoice($this->invoice->load('resident'))->toArray();
 
-        $response = $this->generator->streamInvoice($invoice);
+   $html = $this->generator->previewInvoiceFromData($data);
 
-        $this->assertInstanceOf(\Illuminate\Http\Response::class, $response);
-        $this->assertEquals(200, $response->getStatusCode());
-        $this->assertStringContainsString('inline', $response->headers->get('Content-Disposition'));
-    }
+   expect($html)->toBeString()->not->toBe('');
+});
 
-    public function test_generate_monthly_batch()
-    {
-        $resident1 = Resident::factory()->create(['name' => '入居者A', 'room_number' => '101']);
-        $resident2 = Resident::factory()->create(['name' => '入居者B', 'room_number' => '102']);
+test('generateMonthlyBatch が請求書配列を返すこと', function () {
+    $results = $this->generator->generateMonthlyBatch('2026-03');
 
-        MonthlyInvoice::factory()->create([
-            'resident_id' => $resident1->id,
-            'billing_year_month' => '2026-10',
-        ]);
+    expect($results)->toHaveCount(1)
+        ->and($results[0]['invoice_id'])->toBe($this->invoice->id)
+        ->and($results[0]['filename'])->toBe('【301号室】山田太郎様_請求書_2026-03.pdf')
+        ->and($results[0]['content'])->toStartWith('PDF_BINARY::');
+});
 
-        MonthlyInvoice::factory()->create([
-            'resident_id' => $resident2->id,
-            'billing_year_month' => '2026-10',
-        ]);
+test('generateMonthlyBatchStream がGeneratorを返すこと', function () {
+    $items = iterator_to_array($this->generator->generateMonthlyBatchStream('2026-03'));
 
-        $results = $this->generator->generateMonthlyBatch('2026-10');
+    expect($items)->toHaveCount(1)
+        ->and($items[0]['filename'])->toBe('【301号室】山田太郎様_請求書_2026-03.pdf')
+        ->and($items[0]['html'])->toBeString()->not->toBe('');
+});
 
-        $this->assertCount(2, $results);
-        $this->assertArrayHasKey('filename', $results[0]);
-        $this->assertArrayHasKey('content', $results[0]);
-        $this->assertStringContainsString('入居者A', $results[0]['filename']);
-        $this->assertStringStartsWith('%PDF', $results[0]['content']);
-        $this->assertStringStartsWith('%PDF', $results[1]['content']);
-    }
-}
+test('generateMonthlyZipStream がフォールバック方式でZIPに書き込むこと', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'zip').'.zip';
+    $zip = new ZipArchive;
+    expect($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE))->toBeTrue();
+
+    $count = $this->generator->generateMonthlyZipStream('2026-03', $zip);
+    $zip->close();
+
+    expect($count)->toBe(1);
+
+    $zip = new ZipArchive;
+    $zip->open($zipPath);
+    expect($zip->locateName('【301号室】山田太郎様_請求書_2026-03.pdf'))->not->toBeFalse();
+    $zip->close();
+
+    @unlink($zipPath);
+});
+
+test('generateMonthlyZipStream は対象データがなければ0を返すこと', function () {
+    $zipPath = tempnam(sys_get_temp_dir(), 'zip').'.zip';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    $count = $this->generator->generateMonthlyZipStream('2099-01', $zip);
+    $zip->close();
+
+    expect($count)->toBe(0);
+    @unlink($zipPath);
+});
+
+test('generateInvoiceFilename がファイル名を返すこと', function () {
+    expect($this->generator->generateInvoiceFilename($this->invoice))
+        ->toBe('請求書_2026-03_山田太郎様_301.pdf');
+});

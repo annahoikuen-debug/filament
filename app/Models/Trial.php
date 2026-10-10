@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Trial extends Model
 {
     use HasFactory, SoftDeletes;
-    
+
     protected $fillable = [
         'company_name',
         'contact_name',
@@ -24,22 +24,22 @@ class Trial extends Model
         'facility_id',
         'trial_config',
     ];
-    
+
     protected $casts = [
         'trial_started_at' => 'datetime',
         'trial_ends_at' => 'datetime',
         'trial_config' => 'array',
         'score' => 'integer',
     ];
-    
+
     public function isActive(): bool
     {
         return $this->status === 'active';
     }
-    
+
     public function isExpired(): bool
     {
-        return $this->status === 'expired' || 
+        return $this->status === 'expired' ||
                ($this->trial_ends_at && $this->trial_ends_at->isPast());
     }
 
@@ -56,10 +56,10 @@ class Trial extends Model
 
         return hash_equals($expected, $token);
     }
-    
+
     public function daysUntilExpiry(): int
     {
-        if (!$this->trial_ends_at || $this->trial_ends_at->isPast()) {
+        if (! $this->trial_ends_at || $this->trial_ends_at->isPast()) {
             return 0;
         }
 
@@ -67,7 +67,7 @@ class Trial extends Model
         return (int) $this->trial_ends_at->copy()->startOfDay()
             ->diffInDays(now()->copy()->startOfDay(), true);
     }
-    
+
     /**
      * 施設
      */

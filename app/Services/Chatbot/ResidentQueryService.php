@@ -2,12 +2,12 @@
 
 namespace App\Services\Chatbot;
 
-use App\Enums\InvoiceStatus;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ResidentQueryService
 {
@@ -89,7 +89,7 @@ class ResidentQueryService
         return (int) $resident->dailyCharges()
             ->whereYear('date', (int) substr($yearMonth, 0, 4))
             ->whereMonth('date', (int) substr($yearMonth, 5, 2))
-            ->sum(\Illuminate\Support\Facades\DB::raw('unit_price * quantity'));
+            ->sum(DB::raw('unit_price * quantity'));
     }
 
     /**

@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\PdfTemplateSettings;
 use App\Filament\Resources\PdfTemplateSettingsResource;
-use Tests\TestCase;
+use App\Models\PdfTemplateSettings;
+use App\Services\Pdf\TemplateSettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class PdfTemplateSettingsResourceTest extends TestCase
 {
@@ -18,7 +19,7 @@ class PdfTemplateSettingsResourceTest extends TestCase
 
     public function test_model_relationship()
     {
-        $resource = new PdfTemplateSettingsResource();
+        $resource = new PdfTemplateSettingsResource;
         $this->assertEquals(PdfTemplateSettings::class, $resource->getModel());
     }
 
@@ -38,10 +39,10 @@ class PdfTemplateSettingsResourceTest extends TestCase
     public function test_seed_defaults()
     {
         PdfTemplateSettings::createDefaults();
-        
+
         $invoice = PdfTemplateSettings::where('key', 'invoice')->where('is_default', true)->first();
         $receipt = PdfTemplateSettings::where('key', 'receipt')->where('is_default', true)->first();
-        
+
         $this->assertNotNull($invoice);
         $this->assertNotNull($receipt);
         $this->assertEquals('invoice', $invoice->key);
@@ -59,9 +60,9 @@ class PdfTemplateSettingsResourceTest extends TestCase
             'primary_color' => '#ff0000',
             'show_facility_logo' => true,
         ]);
-        
+
         $config = $template->toConfigArray();
-        
+
         $this->assertEquals(12, $config['font_size']);
         $this->assertEquals('#ff0000', $config['primary_color']);
         $this->assertTrue($config['show_facility_logo']);
@@ -71,7 +72,7 @@ class PdfTemplateSettingsResourceTest extends TestCase
     public function test_get_active_template()
     {
         PdfTemplateSettings::createDefaults();
-        
+
         $active = PdfTemplateSettings::getActive('invoice');
         $this->assertNotNull($active);
         $this->assertEquals('invoice', $active->key);
@@ -81,7 +82,7 @@ class PdfTemplateSettingsResourceTest extends TestCase
     public function test_get_default_template()
     {
         PdfTemplateSettings::createDefaults();
-        
+
         $default = PdfTemplateSettings::getDefault('invoice');
         $this->assertNotNull($default);
         $this->assertEquals('invoice', $default->key);
@@ -91,10 +92,10 @@ class PdfTemplateSettingsResourceTest extends TestCase
     public function test_template_settings_service()
     {
         PdfTemplateSettings::createDefaults();
-        
-        $service = app(\App\Services\Pdf\TemplateSettingsService::class);
+
+        $service = app(TemplateSettingsService::class);
         $settings = $service->getSettings('invoice');
-        
+
         $this->assertIsArray($settings);
         $this->assertArrayHasKey('font_size', $settings);
         $this->assertArrayHasKey('primary_color', $settings);

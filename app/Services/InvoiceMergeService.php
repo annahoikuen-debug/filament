@@ -8,8 +8,6 @@ use App\Services\Pdf\Contracts\FontRegistryInterface;
 use App\Services\Pdf\Contracts\RendererInterface;
 use App\Services\Pdf\InvoicePdfGenerator;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class InvoiceMergeService
 {
@@ -240,6 +238,7 @@ HTML;
         if (preg_match('/<head[^>]*>(.*?)<\/head>/is', $html, $matches)) {
             return $matches[1];
         }
+
         return '<meta charset="UTF-8"><title>統合請求書</title>';
     }
 
@@ -251,6 +250,7 @@ HTML;
         if (preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $matches)) {
             return $matches[1];
         }
+
         return $html;
     }
 }

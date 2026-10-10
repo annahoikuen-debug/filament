@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Trial;
 use App\Models\Facility;
+use App\Models\Trial;
 use Carbon\Carbon;
 
 test('fillableフィールドのみが一括代入で設定されること', function () {
@@ -76,8 +76,8 @@ test('キャストが正しく動作すること', function () {
         'score' => '85',
     ]);
 
-    expect($trial->trial_started_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
-        ->and($trial->trial_ends_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
+    expect($trial->trial_started_at)->toBeInstanceOf(Illuminate\Support\Carbon::class)
+        ->and($trial->trial_ends_at)->toBeInstanceOf(Illuminate\Support\Carbon::class)
         ->and($trial->trial_config)->toBeArray()
         ->and($trial->score)->toBe(85);
 });
@@ -132,7 +132,7 @@ test('isExpiredメソッドが正しく判定されること', function () {
         'resident_capacity' => '50',
         'status' => 'expired',
     ]);
-    
+
     // 終了日が過去
     $pastDate = Trial::create([
         'company_name' => '終了日が過去',
@@ -143,7 +143,7 @@ test('isExpiredメソッドが正しく判定されること', function () {
         'trial_ends_at' => Carbon::yesterday(),
         'status' => 'active', // ステータスはactiveだが終了日が過去
     ]);
-    
+
     // 有効なトライアル
     $validTrial = Trial::create([
         'company_name' => '有効',
@@ -154,7 +154,7 @@ test('isExpiredメソッドが正しく判定されること', function () {
         'trial_ends_at' => Carbon::tomorrow(),
         'status' => 'active',
     ]);
-    
+
     // 終了日が未設定
     $noEndDate = Trial::create([
         'company_name' => '終了日未設定',
@@ -182,7 +182,7 @@ test('daysUntilExpiryメソッドが正しく日数を返すこと', function ()
         'resident_capacity' => '50',
         'trial_ends_at' => Carbon::yesterday(),
     ]);
-    
+
     // 終了日が未設定の場合は0
     $noEndTrial = Trial::create([
         'company_name' => '終了日未設定',
@@ -192,7 +192,7 @@ test('daysUntilExpiryメソッドが正しく日数を返すこと', function ()
         'resident_capacity' => '50',
         'trial_ends_at' => null,
     ]);
-    
+
     // 今日が終了日の場合は0
     $todayEndTrial = Trial::create([
         'company_name' => '今日終了',
@@ -202,7 +202,7 @@ test('daysUntilExpiryメソッドが正しく日数を返すこと', function ()
         'resident_capacity' => '50',
         'trial_ends_at' => Carbon::today(),
     ]);
-    
+
     // 明日が終了日の場合は1
     $tomorrowEndTrial = Trial::create([
         'company_name' => '明日終了',
@@ -212,7 +212,7 @@ test('daysUntilExpiryメソッドが正しく日数を返すこと', function ()
         'resident_capacity' => '50',
         'trial_ends_at' => Carbon::tomorrow(),
     ]);
-    
+
     // 10日後が終了日の場合は10
     $tenDaysEndTrial = Trial::create([
         'company_name' => '10日後終了',
@@ -228,7 +228,7 @@ test('daysUntilExpiryメソッドが正しく日数を返すこと', function ()
         ->and($todayEndTrial->daysUntilExpiry())->toBe(0)
         ->and($tomorrowEndTrial->daysUntilExpiry())->toBe(1)
         ->and($tenDaysEndTrial->daysUntilExpiry())->toBe(10);
-    
+
     // 日付単位での残り日数（時刻の影響を排除）
     $specificTimeTrial = Trial::create([
         'company_name' => '特定時刻',
@@ -238,7 +238,7 @@ test('daysUntilExpiryメソッドが正しく日数を返すこと', function ()
         'resident_capacity' => '50',
         'trial_ends_at' => Carbon::today()->addDay()->setTime(23, 59, 59),
     ]);
-    
+
     // 現在時刻が午前の場合でも、日付単位では1日残っている
     expect($specificTimeTrial->daysUntilExpiry())->toBe(1);
 });

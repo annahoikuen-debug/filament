@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\PdfTemplateSetting;
 use App\Models\TaxSetting;
@@ -66,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
-            $facility = \App\Models\Facility::current();
+            $facility = Facility::current();
             if ($facility) {
                 Config::set('facility', array_merge(Config::get('facility', []), $facility->toConfigArray()));
             }

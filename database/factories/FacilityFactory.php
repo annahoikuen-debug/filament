@@ -12,17 +12,17 @@ class FacilityFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->company() . '施設',
+            'name' => fake()->company().'施設',
             'operator' => fake()->company(),
             'postal_code' => fake()->postcode(),
             'address' => fake()->address(),
             'phone' => fake()->phoneNumber(),
             'fax' => fake()->phoneNumber(),
             'email' => fake()->unique()->safeEmail(),
-            'invoice_registration_number' => 'T' . fake()->numerify('#############'),
+            'invoice_registration_number' => 'T'.fake()->numerify('#############'),
             'bank' => [
-                'name' => fake()->word() . '銀行',
-                'branch_name' => fake()->word() . '支店',
+                'name' => fake()->word().'銀行',
+                'branch_name' => fake()->word().'支店',
                 'account_type' => '普通',
                 'account_number' => fake()->numerify('#######'),
                 'account_holder' => fake()->name(),

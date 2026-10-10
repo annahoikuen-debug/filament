@@ -160,7 +160,7 @@ it('serves document downloads via signed URL', function () {
     if (! is_dir($path)) {
         mkdir($path, 0777, true);
     }
-    $file = $path . DIRECTORY_SEPARATOR . 'catalog.pdf';
+    $file = $path.DIRECTORY_SEPARATOR.'catalog.pdf';
     file_put_contents($file, 'dummy catalog pdf');
 
     $url = URL::temporarySignedRoute(

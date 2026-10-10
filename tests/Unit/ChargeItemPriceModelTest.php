@@ -69,7 +69,7 @@ test('chargeItemリレーションが正しく動作すること', function () {
 
 test('scopeCurrentメソッドが現在有効な価格のみ取得すること', function () {
     $chargeItem = ChargeItem::factory()->create();
-    
+
     // 現在有効な価格
     $current = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -77,7 +77,7 @@ test('scopeCurrentメソッドが現在有効な価格のみ取得すること',
         'effective_from' => Carbon::today()->subDay(),
         'effective_until' => null,
     ]);
-    
+
     // 過去の価格（有効期限切れ）
     $expired = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -85,7 +85,7 @@ test('scopeCurrentメソッドが現在有効な価格のみ取得すること',
         'effective_from' => Carbon::today()->subMonth(),
         'effective_until' => Carbon::today()->subDay(),
     ]);
-    
+
     // 未来の価格（まだ有効ではない）
     $future = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -102,7 +102,7 @@ test('scopeCurrentメソッドが現在有効な価格のみ取得すること',
 test('scopeForDateメソッドが指定日の有効な価格を取得すること', function () {
     $chargeItem = ChargeItem::factory()->create();
     $targetDate = Carbon::create(2026, 10, 15);
-    
+
     // 指定日の有効な価格
     $valid = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -110,7 +110,7 @@ test('scopeForDateメソッドが指定日の有効な価格を取得するこ�
         'effective_from' => Carbon::create(2026, 10, 10),
         'effective_until' => Carbon::create(2026, 10, 20),
     ]);
-    
+
     // 指定日より前で期限切れの価格
     $expired = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -118,7 +118,7 @@ test('scopeForDateメソッドが指定日の有効な価格を取得するこ�
         'effective_from' => Carbon::create(2026, 9, 1),
         'effective_until' => Carbon::create(2026, 9, 30),
     ]);
-    
+
     // 指定日より後の価格（まだ有効ではない）
     $future = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -135,7 +135,7 @@ test('scopeForDateメソッドが指定日の有効な価格を取得するこ�
 test('scopeForDateメソッドで境界条件を正しく扱うこと', function () {
     $chargeItem = ChargeItem::factory()->create();
     $targetDate = Carbon::create(2026, 10, 15);
-    
+
     // 開始日が今日
     $startToday = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -143,7 +143,7 @@ test('scopeForDateメソッドで境界条件を正しく扱うこと', function
         'effective_from' => $targetDate,
         'effective_until' => Carbon::create(2026, 10, 31),
     ]);
-    
+
     // 終了日が今日
     $endToday = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -151,7 +151,7 @@ test('scopeForDateメソッドで境界条件を正しく扱うこと', function
         'effective_from' => Carbon::create(2026, 10, 1),
         'effective_until' => $targetDate,
     ]);
-    
+
     // 昨日終了（今日には有効ではない）
     $yesterdayEnd = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -159,7 +159,7 @@ test('scopeForDateメソッドで境界条件を正しく扱うこと', function
         'effective_from' => Carbon::create(2026, 10, 1),
         'effective_until' => $targetDate->subDay(),
     ]);
-    
+
     // 明日開始（今日には有効ではない）
     $tomorrowStart = ChargeItemPrice::factory()->create([
         'charge_item_id' => $chargeItem->id,
@@ -169,20 +169,20 @@ test('scopeForDateメソッドで境界条件を正しく扱うこと', function
     ]);
 
     $prices = ChargeItemPrice::forDate($targetDate)->get();
-    
+
     // デバッグ: 実際のレコードを確認
     $allPrices = ChargeItemPrice::where('charge_item_id', $chargeItem->id)->get();
-    $details = $allPrices->map(fn($p) => [
+    $details = $allPrices->map(fn ($p) => [
         'id' => $p->id,
         'price' => $p->price,
         'from' => $p->effective_from?->format('Y-m-d'),
         'until' => $p->effective_until?->format('Y-m-d'),
-        'matches' => $p->effective_from <= $targetDate && ($p->effective_until === null || $p->effective_until >= $targetDate)
+        'matches' => $p->effective_from <= $targetDate && ($p->effective_until === null || $p->effective_until >= $targetDate),
     ])->toArray();
-    
+
     // 4件作成されていることを確認
     expect($allPrices->count())->toBe(4);
-    
+
     // 実際の件数を受け入れる（境界条件の挙動を理解するため）
     expect($prices->count())->toBe(3);
 });

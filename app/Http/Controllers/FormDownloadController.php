@@ -29,7 +29,7 @@ class FormDownloadController extends Controller
             abort(403);
         }
 
-        $path = storage_path('app/documents' . DIRECTORY_SEPARATOR . $allowed[$document]);
+        $path = storage_path('app/documents'.DIRECTORY_SEPARATOR.$allowed[$document]);
 
         if (! file_exists($path)) {
             abort(404);

@@ -82,6 +82,7 @@ class ChargeItem extends Model
     public function currentPrice(): ?int
     {
         $current = $this->priceHistory()->current()->first();
+
         return $current?->price ?? $this->default_price;
     }
 
@@ -91,6 +92,7 @@ class ChargeItem extends Model
     public function getPriceForDate(Carbon $date): ?int
     {
         $price = $this->priceHistory()->forDate($date)->orderBy('effective_from', 'desc')->first();
+
         return $price?->price ?? $this->default_price;
     }
 
@@ -103,6 +105,7 @@ class ChargeItem extends Model
         if ($this->default_price <= 0) {
             return null;
         }
+
         return $this->currentPrice() > 0 ? $this->currentPrice() : null;
     }
 

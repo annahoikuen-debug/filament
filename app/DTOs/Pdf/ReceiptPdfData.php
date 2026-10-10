@@ -38,7 +38,7 @@ readonly class ReceiptPdfData
             facility: FacilityPdfData::fromConfig($facility, $resident->facility_id ?? null),
             taxInfo: TaxInfoPdfData::fromInvoice($invoice),
             billingYearMonth: $invoice->billing_year_month,
-            receiptNumber: $invoice->receipt_number ?? 'REC-' . str_replace('-', '', $invoice->billing_year_month) . '-' . str_pad($resident->id, 3, '0', STR_PAD_LEFT),
+            receiptNumber: $invoice->receipt_number ?? 'REC-'.str_replace('-', '', $invoice->billing_year_month).'-'.str_pad($resident->id, 3, '0', STR_PAD_LEFT),
             receivedAt: $receivedAt,
             paymentMethodLabel: $invoice->payment_method?->getLabel() ?? '銀行振込',
             rentSubtotal: (int) $invoice->rent_subtotal,

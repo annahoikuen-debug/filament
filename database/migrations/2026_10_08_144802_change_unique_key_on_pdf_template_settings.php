@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('pdf_template_settings', function (Blueprint $table) {
             // 既存のユニーク制約を削除
             $table->dropUnique('pdf_template_settings_key_unique');
-            
+
             // 複合ユニークキーを追加 (key, locale, theme)
             $table->unique(['key', 'locale', 'theme'], 'pdf_template_settings_key_locale_theme_unique');
         });

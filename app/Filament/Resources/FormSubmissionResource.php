@@ -4,6 +4,11 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\FormSubmissionResource\Pages;
 use App\Models\FormSubmission;
+use Filament\Forms\Form;
+use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -24,18 +29,18 @@ class FormSubmissionResource extends Resource
 
     protected static ?string $navigationGroup = '営業';
 
-    public static function form(\Filament\Forms\Form $form): \Filament\Forms\Form
+    public static function form(Form $form): Form
     {
         return $form->schema([]);
     }
 
-    public static function infolist(\Filament\Infolists\Infolist $infolist): \Filament\Infolists\Infolist
+    public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist
             ->schema([
-                \Filament\Infolists\Components\Section::make('受信内容')
+                Section::make('受信内容')
                     ->schema([
-                        \Filament\Infolists\Components\TextEntry::make('type')
+                        TextEntry::make('type')
                             ->label('フォーム種別')
                             ->badge()
                             ->color(fn (string $state): string => match ($state) {
@@ -46,30 +51,30 @@ class FormSubmissionResource extends Resource
                                 'inquiry' => 'primary',
                                 default => 'gray',
                             }),
-                        \Filament\Infolists\Components\TextEntry::make('company')
+                        TextEntry::make('company')
                             ->label('施設・法人名')
                             ->placeholder('—'),
-                        \Filament\Infolists\Components\TextEntry::make('name')
+                        TextEntry::make('name')
                             ->label('お名前')
                             ->placeholder('—'),
-                        \Filament\Infolists\Components\TextEntry::make('email')
+                        TextEntry::make('email')
                             ->label('メールアドレス')
                             ->copyable()
                             ->placeholder('—'),
-                        \Filament\Infolists\Components\TextEntry::make('phone')
+                        TextEntry::make('phone')
                             ->label('電話番号')
                             ->copyable()
                             ->placeholder('—'),
-                        \Filament\Infolists\Components\TextEntry::make('created_at')
+                        TextEntry::make('created_at')
                             ->label('受付日時')
                             ->dateTime('Y/m/d H:i'),
                     ])->columns([
                         'default' => 1,
                         'sm' => 2,
                     ]),
-                \Filament\Infolists\Components\Section::make('詳細（フォーム入力内容）')
+                Section::make('詳細（フォーム入力内容）')
                     ->schema([
-                        \Filament\Infolists\Components\KeyValueEntry::make('payload')
+                        KeyValueEntry::make('payload')
                             ->label('入力項目')
                             ->keyLabel('項目')
                             ->valueLabel('内容'),

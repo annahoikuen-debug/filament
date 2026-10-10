@@ -14,8 +14,7 @@ class QuoteMail extends Mailable
     public function __construct(
         public readonly Trial $trial,
         public readonly array $quote, // plan, plan_name, monthly_price, note
-    ) {
-    }
+    ) {}
 
     public function build()
     {

@@ -3,11 +3,12 @@
 namespace App\Services\Chatbot;
 
 use App\Models\ChatLog;
+use App\Models\Resident;
 use App\Models\User;
 use App\Services\Chatbot\DTO\ChatRequest;
 use App\Services\Chatbot\DTO\ChatResponse;
 use App\Services\Chatbot\DTO\IntentDTO;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class ChatbotService
 {
@@ -15,8 +16,7 @@ class ChatbotService
         private readonly IntentRecognizer $intentRecognizer,
         private readonly FaqResponder $faqResponder,
         private readonly ResidentQueryService $residentQueryService,
-    ) {
-    }
+    ) {}
 
     public function handle(ChatRequest $request, User $user): ChatResponse
     {
@@ -199,7 +199,7 @@ class ChatbotService
 
         return new ChatResponse(
             reply: sprintf(
-                "%s さんの %s 年 %s 月の自費利用料合計: %s円",
+                '%s さんの %s 年 %s 月の自費利用料合計: %s円',
                 $resident->name,
                 substr($yearMonth, 0, 4),
                 (int) substr($yearMonth, 5, 2),
@@ -235,7 +235,7 @@ class ChatbotService
         );
     }
 
-    private function resolveResident(IntentDTO $intent, User $user): ?\App\Models\Resident
+    private function resolveResident(IntentDTO $intent, User $user): ?Resident
     {
         $keyword = $intent->entities['name'] ?? '';
 
@@ -258,7 +258,7 @@ class ChatbotService
 
         ChatLog::create([
             'user_id' => $user->id,
-            'session_id' => $request->sessionId ?? (string) \Illuminate\Support\Str::uuid(),
+            'session_id' => $request->sessionId ?? (string) Str::uuid(),
             'user_message' => $userMessage,
             'intent' => $intent->intent,
             'bot_reply' => $botReply,

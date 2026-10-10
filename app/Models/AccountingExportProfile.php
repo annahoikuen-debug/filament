@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -83,9 +83,13 @@ class AccountingExportProfile extends Model
      * 会計ソフト種類
      */
     public const SOFTWARE_FREEE = 'freee';
+
     public const SOFTWARE_MF = 'mf';
+
     public const SOFTWARE_YAYOI = 'yayoi';
+
     public const SOFTWARE_KANJOBUGYO = 'kanjobugyo';
+
     public const SOFTWARE_CUSTOM = 'custom';
 
     /**
@@ -111,7 +115,7 @@ class AccountingExportProfile extends Model
     /**
      * 施設の有効なプロファイル一覧を取得
      */
-    public static function getActiveForFacility(int $facilityId): \Illuminate\Database\Eloquent\Collection
+    public static function getActiveForFacility(int $facilityId): Collection
     {
         return self::where('facility_id', $facilityId)
             ->where('is_active', true)
@@ -294,6 +298,7 @@ class AccountingExportProfile extends Model
     public function buildHeader(): array
     {
         $mapping = $this->header_mapping ?? [];
+
         return array_values($mapping);
     }
 
@@ -311,6 +316,7 @@ class AccountingExportProfile extends Model
     public function mapTaxCode(string $standardTaxCode): string
     {
         $mapping = $this->tax_code_mapping ?? [];
+
         return $mapping[$standardTaxCode] ?? $standardTaxCode;
     }
 
@@ -343,6 +349,7 @@ class AccountingExportProfile extends Model
         if ($encoding === 'SJIS' || $encoding === 'CP932') {
             return mb_convert_encoding($csv, 'SJIS-win', 'UTF-8');
         }
+
         return $csv;
     }
 }

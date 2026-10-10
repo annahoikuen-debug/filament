@@ -1,9 +1,11 @@
 <?php
 
 use App\Console\Commands\GenerateMonthlyInvoices;
+use App\Models\ChatLog;
 use App\Services\InvoicePdfService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -47,14 +49,26 @@ Artisan::command('pdf:install-fonts {--force : 既存フォントを上書きす
 // チャットボット会話ログの保持期間クリーンアップ
 Schedule::call(function () {
     $retentionDays = (int) config('chatbot.retention_days', 90);
-    $deleted = \App\Models\ChatLog::where('created_at', '<', now()->subDays($retentionDays))->delete();
+    $deleted = ChatLog::where('created_at', '<', now()->subDays($retentionDays))->delete();
     if ($deleted > 0) {
-        \Illuminate\Support\Facades\Log::info("チャットログクリーンアップ: {$deleted} 件を削除");
+        Log::info("チャットログクリーンアップ: {$deleted} 件を削除");
     }
 })
     ->dailyAt('04:00')
     ->description('チャットボット会話ログの保持期間超過分を削除')
     ->environments(['production', 'staging']);
+
+// データベース・ストレージの毎日バックアップ（DR対応）
+Schedule::command('backup:database', ['--type' => 'full', '--compress' => true, '--retention' => 30])
+    ->dailyAt('03:00')
+    ->description('毎日 03:00 にデータベースとストレージのバックアップを実行')
+    ->environments(['production', 'staging'])
+    ->onSuccess(function () {
+        Log::info('日次バックアップ: 正常完了');
+    })
+    ->onFailure(function () {
+        Log::error('日次バックアップ: 失敗');
+    });
 
 // スケジューラ設定
 Schedule::command(GenerateMonthlyInvoices::class)
@@ -62,8 +76,8 @@ Schedule::command(GenerateMonthlyInvoices::class)
     ->description('毎月1日 02:00 に前月分の請求データを自動生成')
     ->environments(['production', 'staging'])
     ->onSuccess(function () {
-        \Illuminate\Support\Facades\Log::info('月次請求自動生成: 正常完了');
+        Log::info('月次請求自動生成: 正常完了');
     })
     ->onFailure(function () {
-        \Illuminate\Support\Facades\Log::error('月次請求自動生成: 失敗');
+        Log::error('月次請求自動生成: 失敗');
     });

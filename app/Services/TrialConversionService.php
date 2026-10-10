@@ -16,8 +16,7 @@ class TrialConversionService
 
     public function __construct(
         private readonly MailService $mailService,
-    ) {
-    }
+    ) {}
 
     /**
      * トライアルを本契約に移行
@@ -46,7 +45,7 @@ class TrialConversionService
                 'name' => $this->upgradeFacilityName($facility->name, $trial->id),
                 'invoice_registration_number' => $data['invoice_registration_number'],
                 'bank' => $data['bank'],
-                'notes' => '本契約施設（トライアルID: ' . $trial->id . ' から移行）',
+                'notes' => '本契約施設（トライアルID: '.$trial->id.' から移行）',
             ]);
 
             // 2. サブスクリプション作成（電子契約の同意記録付き）
@@ -86,6 +85,7 @@ class TrialConversionService
             if ($quotedPrice === null || $quotedPrice <= 0) {
                 throw new \RuntimeException('エンタープライズプランは見積金額（quoted_price）が必須です');
             }
+
             return $quotedPrice;
         }
 
@@ -95,7 +95,7 @@ class TrialConversionService
     private function upgradeFacilityName(string $currentName, int $trialId): string
     {
         // 「トライアル XXX (12)」→「XXX」
-        $pattern = '/^トライアル\s+(.+)\s+\(' . $trialId . '\)$/u';
+        $pattern = '/^トライアル\s+(.+)\s+\('.$trialId.'\)$/u';
         if (preg_match($pattern, $currentName, $matches)) {
             return $matches[1];
         }

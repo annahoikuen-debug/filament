@@ -1,10 +1,11 @@
 <?php
 
+use App\Enums\InvoiceStatus;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\InvoicePdfService;
+use App\Services\Pdf\InvoicePdfGenerator;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Facade;
 
 beforeEach(function () {
     $this->resident = Resident::create([
@@ -23,7 +24,7 @@ beforeEach(function () {
         'service_subtotal' => 10000,
         'total_amount' => 0, // will be synced by observer or mutator
         'tax_rate' => 10,
-        'status' => \App\Enums\InvoiceStatus::Unbilled,
+        'status' => InvoiceStatus::Unbilled,
     ]);
 
     // Ensure total_amount is synced (assuming observer/mutator)
@@ -60,12 +61,13 @@ function invokePrivateMethod($object, $methodName, array $parameters = [])
 {
     $reflection = new ReflectionMethod($object, $methodName);
     $reflection->setAccessible(true);
+
     return $reflection->invokeArgs($object, $parameters);
 }
 
 afterEach(function () {
-    if (class_exists(\Mockery\Mockery::class)) {
-        \Mockery::close();
+    if (class_exists(Mockery\Mockery::class)) {
+        Mockery::close();
     }
 });
 
@@ -105,11 +107,11 @@ test('QRコード生成メソッドが有効なデータURIを返すこと', fun
 
 test('QRコードが有効な場合でもPDFが一度しか生成されないこと', function () {
     // generatorのpreviewInvoiceをモックしてPDF生成を制御
-    $mockGenerator = Mockery::mock(\App\Services\Pdf\InvoicePdfGenerator::class)->makePartial();
+    $mockGenerator = Mockery::mock(InvoicePdfGenerator::class)->makePartial();
     $mockGenerator->shouldReceive('previewInvoice')
         ->once()
         ->andReturn('<html><body>Test</body></html>');
-    
+
     // リフレクションでサービスのgeneratorプロパティを置き換え
     $reflection = new ReflectionClass($this->pdfService);
     $property = $reflection->getProperty('generator');

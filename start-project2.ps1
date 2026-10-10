@@ -1,6 +1,6 @@
 ﻿# Laravel Filament Project Startup (PowerShell迚・
 
-$PROJECT_DIR = "E:\seikyu\filament\docs-assets\app"
+$PROJECT_DIR = "E:\seikyu"
 $SCRIPTS_DIR = "E:\seikyu\scripts"
 
 Write-Host "========================================"
@@ -19,8 +19,8 @@ Start-Process powershell -ArgumentList "-NoExit", "-File", "$SCRIPTS_DIR\queue.p
 Write-Host "[3/4] 繝ｭ繧ｰ繝薙Η繝ｼ繧｢繝ｼ (Pail) 襍ｷ蜍穂ｸｭ..."
 Start-Process powershell -ArgumentList "-NoExit", "-File", "$SCRIPTS_DIR\pail.ps1"
 
-Write-Host "[4/4] Vite髢狗匱繧ｵ繝ｼ繝舌・襍ｷ蜍穂ｸｭ..."
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "npm run dev"
+# NOTE: no package.json in this project - Vite dev server not required
+Write-Host "[3/3] Done. (Vite not needed - no package.json in this project)"
 
 Write-Host ""
 Write-Host "========================================"

@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use App\Models\Trial;
-use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -16,8 +15,7 @@ class TrialProvisioningCompleteMail extends Mailable
         public readonly Trial $trial,
         public readonly string $tempPassword,
         public readonly ?string $conversionToken = null,
-    ) {
-    }
+    ) {}
 
     public function build()
     {

@@ -11,9 +11,7 @@ class TrialExpiredMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public readonly Trial $trial)
-    {
-    }
+    public function __construct(public readonly Trial $trial) {}
 
     public function build()
     {

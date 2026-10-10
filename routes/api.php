@@ -1,12 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\TrialController;
-use App\Http\Controllers\TrialConversionController;
+use App\Http\Controllers\Api\ExternalInvoiceController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\QuoteController;
-use App\Http\Controllers\Api\ExternalInvoiceController;
+use App\Http\Controllers\TrialController;
+use App\Http\Controllers\TrialConversionController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------

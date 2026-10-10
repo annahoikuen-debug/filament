@@ -2,26 +2,31 @@
 
 namespace App\Filament\Resources\MonthlyInvoiceResource\Pages;
 
+use App\Filament\Resources\MonthlyInvoiceResource;
 use App\Services\InvoicePdfService;
 use Filament\Actions;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
-use Illuminate\Support\Facades\File;
+use Illuminate\Http\RedirectResponse;
 
 class ZipProgress extends Page
 {
-    protected static string $resource = \App\Filament\Resources\MonthlyInvoiceResource::class;
+    protected static string $resource = MonthlyInvoiceResource::class;
+
     protected static string $view = 'filament.resources.monthly-invoice-resource.pages.zip-progress';
+
     protected static ?string $title = 'ZIP生成進捗';
+
     protected static ?string $slug = 'zip-progress/{jobId}';
 
     public string $jobId = '';
+
     public array $progress = [
         'percent' => 0,
         'status' => 'starting',
         'message' => '処理を開始しています...',
         'updated_at' => '',
     ];
+
     public ?string $zipPath = null;
 
     public function mount(string $jobId): void
@@ -55,7 +60,7 @@ class ZipProgress extends Page
         }
     }
 
-    public function downloadZip(): \Illuminate\Http\RedirectResponse
+    public function downloadZip(): RedirectResponse
     {
         return redirect()->route('invoices.zip-progress', ['jobId' => $this->jobId]);
     }

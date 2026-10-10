@@ -5,14 +5,16 @@ namespace App\Filament\Pages;
 use App\Enums\InvoiceStatus;
 use App\Enums\ServiceInvoiceStatus;
 use App\Enums\ServiceType;
+use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Models\ServiceInvoice;
+use Carbon\Carbon;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -98,8 +100,8 @@ class IntegratedBillingDashboard extends Page implements HasForms, HasTable
         return Resident::query()
             ->when($facilityId, fn ($q) => $q->where('facility_id', $facilityId))
             ->where(function ($q) use ($yearMonth) {
-                $startDate = \Carbon\Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
-                $endDate = \Carbon\Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
+                $startDate = Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
+                $endDate = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
 
                 $q->where(function ($qq) use ($startDate) {
                     $qq->whereNull('move_out_date')
@@ -169,7 +171,7 @@ class IntegratedBillingDashboard extends Page implements HasForms, HasTable
                         ->where('service_type', $type)
                         ->sum('total_with_tax');
                 })
-                ->summarize(Sum::make()->money('JPY')->label($label . '計'))
+                ->summarize(Sum::make()->money('JPY')->label($label.'計'))
                 ->toggleable();
         }
 
@@ -197,6 +199,7 @@ class IntegratedBillingDashboard extends Page implements HasForms, HasTable
             ->getStateUsing(function (Resident $record) {
                 $housing = $record->monthlyInvoices->first()?->total_with_tax ?? 0;
                 $care = $record->serviceInvoices->sum('total_with_tax');
+
                 return $housing + $care;
             })
             ->summarize(Sum::make()->money('JPY')->label('総合計'));
@@ -216,6 +219,7 @@ class IntegratedBillingDashboard extends Page implements HasForms, HasTable
             ->badge()
             ->getStateUsing(function (Resident $record) {
                 $statuses = $record->serviceInvoices->pluck('status')->unique()->map->getLabel()->implode(', ');
+
                 return $statuses ?: 'なし';
             });
 
@@ -240,7 +244,7 @@ class IntegratedBillingDashboard extends Page implements HasForms, HasTable
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Tables\Actions\Action::make('exportCsv')
+            Action::make('exportCsv')
                 ->label('CSVエクスポート')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('info')
@@ -295,13 +299,13 @@ class IntegratedBillingDashboard extends Page implements HasForms, HasTable
         $bom = "\xEF\xBB\xBF";
         $csv = $bom;
         foreach ($rows as $row) {
-            $csv .= implode(',', array_map(fn ($v) => '"' . str_replace('"', '""', (string)$v) . '"', $row)) . "\n";
+            $csv .= implode(',', array_map(fn ($v) => '"'.str_replace('"', '""', (string) $v).'"', $row))."\n";
         }
 
-        $filename = "統合請求管理_{$yearMonth}" . ($facilityId ? "_" . \App\Models\Facility::find($facilityId)?->name : '_全施設') . ".csv";
+        $filename = "統合請求管理_{$yearMonth}".($facilityId ? '_'.Facility::find($facilityId)?->name : '_全施設').'.csv';
 
         response()->streamDownload(
-            fn () => print($csv),
+            fn () => print ($csv),
             $filename,
             ['Content-Type' => 'text/csv; charset=UTF-8']
         )->send();

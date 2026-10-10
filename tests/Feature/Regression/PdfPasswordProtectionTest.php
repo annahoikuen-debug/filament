@@ -6,6 +6,8 @@ use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\Pdf\PdfPasswordProtector;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
@@ -40,7 +42,7 @@ class PdfPasswordProtectionTest extends TestCase
         ]);
     }
 
-    public function test_保護機能でPDFが暗号化されること(): void
+    public function test_保護機能で_pd_fが暗号化されること(): void
     {
         $plainPdf = $this->createSamplePdf();
 
@@ -108,7 +110,7 @@ class PdfPasswordProtectionTest extends TestCase
         $this->assertSame('fallback-pass', $password);
     }
 
-    public function test_保護済みPDFは元PDFと異なるバイト列であること(): void
+    public function test_保護済み_pd_fは元_pd_fと異なるバイト列であること(): void
     {
         Config::set('pdf.password.enabled', true);
         Config::set('pdf.password.mode', 'fixed');
@@ -128,13 +130,13 @@ class PdfPasswordProtectionTest extends TestCase
      */
     private function createSamplePdf(): string
     {
-        $options = new \Dompdf\Options([
+        $options = new Options([
             'font_dir' => storage_path('fonts'),
             'font_cache' => storage_path('fonts'),
             'isHtml5ParserEnabled' => true,
             'defaultFont' => 'ipaexg',
         ]);
-        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf = new Dompdf($options);
         $dompdf->loadHtml('<html><body><p>テスト請求書</p></body></html>');
         $dompdf->render();
 

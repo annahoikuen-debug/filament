@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\ChatLog;
 use App\Models\Facility;
+use App\Models\Resident;
 use App\Models\User;
 use App\Services\Chatbot\ChatbotService;
 use App\Services\Chatbot\DTO\ChatRequest;
@@ -17,7 +19,7 @@ test('会話がログに記録されること', function () {
         $this->corporateAdmin
     );
 
-    $log = \App\Models\ChatLog::latest()->first();
+    $log = ChatLog::latest()->first();
 
     expect($log)->not->toBeNull()
         ->and($log->user_message)->toBe('テストメッセージ')
@@ -26,24 +28,24 @@ test('会話がログに記録されること', function () {
 });
 
 test('保持期間超過ログが削除されること', function () {
-    \App\Models\ChatLog::factory()->create([
+    ChatLog::factory()->create([
         'created_at' => now()->subDays(91),
     ]);
-    \App\Models\ChatLog::factory()->create([
+    ChatLog::factory()->create([
         'created_at' => now()->subDays(10),
     ]);
 
     $retentionDays = (int) config('chatbot.retention_days', 90);
-    $deleted = \App\Models\ChatLog::where('created_at', '<', now()->subDays($retentionDays))->delete();
+    $deleted = ChatLog::where('created_at', '<', now()->subDays($retentionDays))->delete();
 
     expect($deleted)->toBe(1)
-        ->and(\App\Models\ChatLog::count())->toBe(1);
+        ->and(ChatLog::count())->toBe(1);
 });
 
 test('mask_names=true で氏名がマスキングされること', function () {
     config(['chatbot.mask_names' => true]);
 
-    $resident = \App\Models\Resident::factory()->create([
+    $resident = Resident::factory()->create([
         'facility_id' => $this->facility->id,
         'name' => '山田太郎',
     ]);
@@ -53,7 +55,7 @@ test('mask_names=true で氏名がマスキングされること', function () {
         $this->corporateAdmin
     );
 
-    $log = \App\Models\ChatLog::latest()->first();
+    $log = ChatLog::latest()->first();
 
     expect($log->user_message)->not->toContain('山田太郎')
         ->and($log->user_message)->toContain('***');
@@ -62,7 +64,7 @@ test('mask_names=true で氏名がマスキングされること', function () {
 test('mask_names=false で氏名が保持されること', function () {
     config(['chatbot.mask_names' => false]);
 
-    \App\Models\Resident::factory()->create([
+    Resident::factory()->create([
         'facility_id' => $this->facility->id,
         'name' => '山田太郎',
     ]);
@@ -72,7 +74,7 @@ test('mask_names=false で氏名が保持されること', function () {
         $this->corporateAdmin
     );
 
-    $log = \App\Models\ChatLog::latest()->first();
+    $log = ChatLog::latest()->first();
 
     expect($log->user_message)->toContain('山田太郎');
 });

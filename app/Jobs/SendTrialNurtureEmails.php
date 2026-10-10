@@ -2,14 +2,14 @@
 
 namespace App\Jobs;
 
+use App\Mail\TrialNurtureMail;
+use App\Models\Trial;
+use App\Services\MailService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Trial;
-use App\Mail\TrialNurtureMail;
-use App\Services\MailService;
 use Log;
 
 class SendTrialNurtureEmails implements ShouldQueue
@@ -35,7 +35,7 @@ class SendTrialNurtureEmails implements ShouldQueue
             $elapsedDays = $trial->trial_started_at->startOfDay()
                 ->diffInDays(now()->startOfDay());
 
-            if (!isset(self::SEQUENCE[$elapsedDays])) {
+            if (! isset(self::SEQUENCE[$elapsedDays])) {
                 continue;
             }
 

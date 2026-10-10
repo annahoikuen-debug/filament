@@ -2,13 +2,13 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Config;
 use Carbon\Carbon;
-use ZipArchive;
 use Exception;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class DatabaseBackup extends Command
 {
@@ -33,7 +33,7 @@ class DatabaseBackup extends Command
         try {
             // バックアップディレクトリの準備
             $backupDir = $this->prepareBackupDirectory();
-            
+
             // バックアップタイプに応じた処理
             switch ($this->option('type')) {
                 case 'full':
@@ -48,6 +48,7 @@ class DatabaseBackup extends Command
                     break;
                 default:
                     $this->error("不明なバックアップタイプ: {$this->option('type')}");
+
                     return self::FAILURE;
             }
 
@@ -71,7 +72,7 @@ class DatabaseBackup extends Command
             $this->logBackupResult();
 
             $this->info('=== バックアップ完了 ===');
-            
+
             if ($this->option('notify')) {
                 $this->sendNotification();
             }
@@ -83,9 +84,9 @@ class DatabaseBackup extends Command
             $this->backupInfo['status'] = 'failed';
             $this->backupInfo['error'] = $e->getMessage();
             $this->logBackupResult();
-            
+
             $this->error("バックアップ失敗: {$e->getMessage()}");
-            
+
             if ($this->option('notify')) {
                 $this->sendNotification($e);
             }
@@ -98,26 +99,26 @@ class DatabaseBackup extends Command
     {
         $timestamp = Carbon::now()->format('Ymd_His');
         $backupDir = storage_path("app/backups/backup_{$timestamp}");
-        
-        if (!is_dir($backupDir)) {
+
+        if (! is_dir($backupDir)) {
             mkdir($backupDir, 0755, true);
         }
-        
+
         $this->info("バックアップディレクトリ: {$backupDir}");
         $this->backupInfo['backup_dir'] = $backupDir;
-        
+
         return $backupDir;
     }
 
     private function backupDatabase(string $backupDir): void
     {
         $this->info('データベースバックアップ中...');
-        
-        $dbConfig = Config::get('database.connections.' . Config::get('database.default'));
+
+        $dbConfig = Config::get('database.connections.'.Config::get('database.default'));
         $driver = $dbConfig['driver'] ?? 'mysql';
-        
-        $dumpFile = $backupDir . '/database_' . Carbon::now()->format('Ymd_His') . '.sql';
-        
+
+        $dumpFile = $backupDir.'/database_'.Carbon::now()->format('Ymd_His').'.sql';
+
         switch ($driver) {
             case 'mysql':
                 $this->backupMySQL($dbConfig, $dumpFile);
@@ -132,10 +133,10 @@ class DatabaseBackup extends Command
             default:
                 throw new Exception("未対応のデータベースドライバー: {$driver}");
         }
-        
+
         $this->backupInfo['database_dump'] = $dumpFile;
         $this->backupInfo['database_size'] = filesize($dumpFile);
-        $this->info("データベースダンプ完了: {$dumpFile} (" . $this->formatBytes($this->backupInfo['database_size']) . ")");
+        $this->info("データベースダンプ完了: {$dumpFile} (".$this->formatBytes($this->backupInfo['database_size']).')');
     }
 
     private function backupMySQL(array $config, string $dumpFile): void
@@ -145,15 +146,15 @@ class DatabaseBackup extends Command
         $database = $config['database'];
         $username = $config['username'];
         $password = $config['password'] ?? '';
-        
+
         $command = "mysqldump --host={$host} --port={$port} --user={$username}";
-        
+
         if ($password) {
             $command .= " --password={$password}";
         }
-        
+
         $command .= " --single-transaction --routines --triggers --events {$database} > {$dumpFile} 2>&1";
-        
+
         $this->executeCommand($command, 'MySQLダンプ');
     }
 
@@ -164,81 +165,133 @@ class DatabaseBackup extends Command
         $database = $config['database'];
         $username = $config['username'];
         $password = $config['password'] ?? '';
-        
+
         $env = [];
         if ($password) {
             $env['PGPASSWORD'] = $password;
         }
-        
+
         $command = "pg_dump --host={$host} --port={$port} --username={$username} --no-password --format=custom --file={$dumpFile} {$database} 2>&1";
-        
+
         $this->executeCommand($command, 'PostgreSQLダンプ', $env);
     }
 
     private function backupSQLite(array $config, string $dumpFile): void
     {
         $database = $config['database'];
-        
+
         // SQLiteの場合はファイルコピーで対応
-        if (file_exists($database)) {
+        if (is_string($database) && $database !== ':memory:' && file_exists($database)) {
             copy($database, $dumpFile);
-        } else {
-            // メモリDBの場合はダンプ
-            $command = "sqlite3 {$database} .dump > {$dumpFile} 2>&1";
-            $this->executeCommand($command, 'SQLiteダンプ');
+
+            return;
         }
+
+        // メモリDBの場合はPDO経由でダンプを生成
+        $this->dumpSqliteViaPdo($dumpFile);
+    }
+
+    private function dumpSqliteViaPdo(string $dumpFile): void
+    {
+        $pdo = DB::connection()->getPdo();
+        $handle = fopen($dumpFile, 'w');
+
+        if ($handle === false) {
+            throw new Exception('ダンプファイルを書き込み用に開けません: '.$dumpFile);
+        }
+
+        fwrite($handle, "BEGIN TRANSACTION;\n");
+
+        // テーブル作成文を出力
+        $tables = $pdo->query(
+            "SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+        )->fetchAll(\PDO::FETCH_ASSOC);
+
+        foreach ($tables as $table) {
+            fwrite($handle, $table['sql'].";\n");
+        }
+
+        // データを出力
+        foreach ($tables as $table) {
+            $tableName = str_replace("'", "''", $table['name']);
+            $rows = $pdo->query("SELECT * FROM \"{$table['name']}\"")->fetchAll(\PDO::FETCH_ASSOC);
+
+            foreach ($rows as $row) {
+                $values = array_map(function ($value) {
+                    if ($value === null) {
+                        return 'NULL';
+                    }
+
+                    return "'".str_replace("'", "''", (string) $value)."'";
+                }, $row);
+
+                fwrite($handle, "INSERT INTO \"{$tableName}\" VALUES (".implode(', ', $values).");\n");
+            }
+        }
+
+        fwrite($handle, "COMMIT;\n");
+        fclose($handle);
     }
 
     private function backupStorage(string $backupDir): void
     {
         $this->info('ストレージバックアップ中...');
-        
+
         $storagePath = storage_path('app');
-        $backupStoragePath = $backupDir . '/storage';
-        
+        $backupStoragePath = $backupDir.'/storage';
+
         // 除外ディレクトリ
         $exclude = ['backups', 'debugbar', 'telescope'];
-        
+
         $this->copyDirectory($storagePath, $backupStoragePath, $exclude);
-        
+
         $this->backupInfo['storage_backup'] = $backupStoragePath;
         $this->backupInfo['storage_size'] = $this->getDirectorySize($backupStoragePath);
-        $this->info("ストレージバックアップ完了: {$backupStoragePath} (" . $this->formatBytes($this->backupInfo['storage_size']) . ")");
+        $this->info("ストレージバックアップ完了: {$backupStoragePath} (".$this->formatBytes($this->backupInfo['storage_size']).')');
     }
 
     private function copyDirectory(string $source, string $destination, array $exclude = []): void
     {
-        if (!is_dir($destination)) {
+        // パスを正規化（Windowsのバックスラッシュ対策・無限再帰防止）
+        $source = rtrim(str_replace('\\', '/', $source), '/');
+        $destination = rtrim(str_replace('\\', '/', $destination), '/');
+
+        if (! is_dir($destination)) {
             mkdir($destination, 0755, true);
         }
-        
+
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
-        
+
         foreach ($files as $file) {
-            $relativePath = $file->getPathname();
+            $relativePath = str_replace('\\', '/', $file->getPathname());
             $relativePath = substr($relativePath, strlen($source) + 1);
-            
+            if ($relativePath === false || $relativePath === '') {
+                continue;
+            }
+
             // 除外チェック
             $skip = false;
             foreach ($exclude as $ex) {
-                if (str_starts_with($relativePath, $ex . '/') || $relativePath === $ex) {
+                if ($relativePath === $ex || str_starts_with($relativePath, $ex.'/')) {
                     $skip = true;
                     break;
                 }
             }
-            if ($skip) continue;
-            
-            $targetPath = $destination . '/' . $relativePath;
-            
+            if ($skip) {
+                continue;
+            }
+
+            $targetPath = $destination.'/'.$relativePath;
+
             if ($file->isDir()) {
-                if (!is_dir($targetPath)) {
+                if (! is_dir($targetPath)) {
                     mkdir($targetPath, 0755, true);
                 }
             } else {
-                copy($file->getPathname(), $targetPath);
+                copy(str_replace('\\', '/', $file->getPathname()), $targetPath);
             }
         }
     }
@@ -246,50 +299,50 @@ class DatabaseBackup extends Command
     private function compressBackup(string $backupDir): string
     {
         $this->info('バックアップ圧縮中...');
-        
-        $zipPath = $backupDir . '.zip';
-        $zip = new ZipArchive();
-        
+
+        $zipPath = $backupDir.'.zip';
+        $zip = new ZipArchive;
+
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new Exception('ZIPファイルの作成に失敗しました');
         }
-        
+
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($backupDir, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::LEAVES_ONLY
         );
-        
+
         foreach ($files as $name => $file) {
-            if (!$file->isDir()) {
+            if (! $file->isDir()) {
                 $filePath = $file->getRealPath();
                 $relativePath = substr($filePath, strlen($backupDir) + 1);
                 $zip->addFile($filePath, $relativePath);
             }
         }
-        
+
         $zip->close();
-        
+
         // 元のディレクトリを削除（圧縮後）
         $this->deleteDirectory($backupDir);
-        
-        $this->info("圧縮完了: {$zipPath} (" . $this->formatBytes(filesize($zipPath)) . ")");
-        
+
+        $this->info("圧縮完了: {$zipPath} (".$this->formatBytes(filesize($zipPath)).')');
+
         return $zipPath;
     }
 
     private function cleanupOldBackups(int $retentionDays): void
     {
         $this->info("古いバックアップを削除中 (保持日数: {$retentionDays}日)...");
-        
+
         $backupBaseDir = storage_path('app/backups');
-        if (!is_dir($backupBaseDir)) {
+        if (! is_dir($backupBaseDir)) {
             return;
         }
-        
+
         $cutoff = Carbon::now()->subDays($retentionDays);
         $deleted = 0;
-        
-        $dirs = glob($backupBaseDir . '/backup_*');
+
+        $dirs = glob($backupBaseDir.'/backup_*');
         foreach ($dirs as $dir) {
             if (is_dir($dir)) {
                 $dirName = basename($dir);
@@ -297,7 +350,7 @@ class DatabaseBackup extends Command
                 if (preg_match('/backup_(\d{8}_\d{6})/', $dirName, $matches)) {
                     $dateStr = $matches[1];
                     $backupDate = Carbon::createFromFormat('Ymd_His', $dateStr);
-                    
+
                     if ($backupDate && $backupDate->lt($cutoff)) {
                         $this->deleteDirectory($dir);
                         $deleted++;
@@ -306,15 +359,15 @@ class DatabaseBackup extends Command
                 }
             }
         }
-        
+
         // ZIPファイルもチェック
-        $zips = glob($backupBaseDir . '/backup_*.zip');
+        $zips = glob($backupBaseDir.'/backup_*.zip');
         foreach ($zips as $zip) {
             $zipName = basename($zip);
             if (preg_match('/backup_(\d{8}_\d{6})/', $zipName, $matches)) {
                 $dateStr = $matches[1];
                 $backupDate = Carbon::createFromFormat('Ymd_His', $dateStr);
-                
+
                 if ($backupDate && $backupDate->lt($cutoff)) {
                     unlink($zip);
                     $deleted++;
@@ -322,7 +375,7 @@ class DatabaseBackup extends Command
                 }
             }
         }
-        
+
         $this->info("古いバックアップ {$deleted} 件を削除しました");
         $this->backupInfo['deleted_old_backups'] = $deleted;
     }
@@ -330,29 +383,29 @@ class DatabaseBackup extends Command
     private function uploadToS3(string $backupDir): void
     {
         $this->info('S3へアップロード中...');
-        
+
         $disk = Storage::disk('s3');
-        $prefix = 'database-backups/' . Carbon::now()->format('Y/m/d/');
-        
+        $prefix = 'database-backups/'.Carbon::now()->format('Y/m/d/');
+
         if (is_dir($backupDir)) {
             // ディレクトリの場合は中身をアップロード
             $files = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($backupDir, \RecursiveDirectoryIterator::SKIP_DOTS),
                 \RecursiveIteratorIterator::LEAVES_ONLY
             );
-            
+
             foreach ($files as $file) {
                 if ($file->isFile()) {
                     $relativePath = substr($file->getPathname(), strlen($backupDir) + 1);
-                    $disk->put($prefix . $relativePath, file_get_contents($file->getPathname()));
+                    $disk->put($prefix.$relativePath, file_get_contents($file->getPathname()));
                 }
             }
         } elseif (is_file($backupDir)) {
             // ZIPファイルの場合
             $fileName = basename($backupDir);
-            $disk->put($prefix . $fileName, file_get_contents($backupDir));
+            $disk->put($prefix.$fileName, file_get_contents($backupDir));
         }
-        
+
         $this->info("S3アップロード完了: s3://{$disk->getConfig('bucket')}/{$prefix}");
         $this->backupInfo['s3_path'] = $prefix;
     }
@@ -366,36 +419,36 @@ class DatabaseBackup extends Command
 
     private function logBackupResult(): void
     {
-        $logFile = storage_path('logs/backup-' . Carbon::now()->format('Y-m-d') . '.log');
-        $logEntry = Carbon::now()->toDateTimeString() . ' ' . json_encode($this->backupInfo, JSON_UNESCAPED_UNICODE) . PHP_EOL;
+        $logFile = storage_path('logs/backup-'.Carbon::now()->format('Y-m-d').'.log');
+        $logEntry = Carbon::now()->toDateTimeString().' '.json_encode($this->backupInfo, JSON_UNESCAPED_UNICODE).PHP_EOL;
         file_put_contents($logFile, $logEntry, FILE_APPEND);
     }
 
     private function executeCommand(string $command, string $description, array $env = []): void
     {
         $this->line("  実行中: {$description}");
-        
+
         $descriptors = [
             0 => ['pipe', 'r'],
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w'],
         ];
-        
+
         $process = proc_open($command, $descriptors, $pipes, null, $env);
-        
-        if (!is_resource($process)) {
+
+        if (! is_resource($process)) {
             throw new Exception("プロセス開始失敗: {$description}");
         }
-        
+
         $stdout = stream_get_contents($pipes[1]);
         $stderr = stream_get_contents($pipes[2]);
-        
+
         fclose($pipes[0]);
         fclose($pipes[1]);
         fclose($pipes[2]);
-        
+
         $returnCode = proc_close($process);
-        
+
         if ($returnCode !== 0) {
             throw new Exception("{$description} 失敗 (コード: {$returnCode}): {$stderr}");
         }
@@ -403,13 +456,13 @@ class DatabaseBackup extends Command
 
     private function deleteDirectory(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
-        
+
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
-            $path = $dir . '/' . $file;
+            $path = $dir.'/'.$file;
             if (is_dir($path)) {
                 $this->deleteDirectory($path);
             } else {
@@ -425,24 +478,24 @@ class DatabaseBackup extends Command
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS)
         );
-        
+
         foreach ($files as $file) {
             if ($file->isFile()) {
                 $size += $file->getSize();
             }
         }
-        
+
         return $size;
     }
 
     private function formatBytes(int $bytes, int $precision = 2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
+
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
             $bytes /= 1024;
         }
-        
-        return round($bytes, $precision) . ' ' . $units[$i];
+
+        return round($bytes, $precision).' '.$units[$i];
     }
 }

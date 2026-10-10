@@ -62,7 +62,7 @@ test('未認証ユーザーはPDFルートにアクセスできないこと', fu
 test('領収書PDFもサービス経由で生成可能であること', function () {
     $this->invoice->markAsPaid(PaymentMethod::BankTransfer, '2026-11-05');
 
-    $service = app(\App\Services\InvoicePdfService::class);
+    $service = app(InvoicePdfService::class);
     $pdf = $service->generateReceiptPdf($this->invoice->fresh());
 
     expect($pdf->output())->not->toBeEmpty();

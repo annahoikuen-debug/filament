@@ -41,10 +41,13 @@ class LeadScoringService
     ];
 
     private const CHALLENGE_SCORE = 5;
+
     private const CHALLENGE_MAX = 25;
+
     private const SEED_SAMPLE_BONUS = 10;
 
     public const HOT_THRESHOLD = 80;
+
     public const WARM_THRESHOLD = 50;
 
     /**
@@ -70,7 +73,7 @@ class LeadScoringService
         $score += self::BUDGET_SCORES[$data['budget'] ?? ''] ?? 0;
 
         // サンプルデータ投入希望（導入意欲の指標）
-        if (!empty($data['seed_sample_data'])) {
+        if (! empty($data['seed_sample_data'])) {
             $score += self::SEED_SAMPLE_BONUS;
         }
 

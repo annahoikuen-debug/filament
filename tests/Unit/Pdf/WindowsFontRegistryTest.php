@@ -13,7 +13,7 @@ class WindowsFontRegistryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->registry = new WindowsFontRegistry();
+        $this->registry = new WindowsFontRegistry;
     }
 
     public function test_get_font_families()
@@ -29,14 +29,14 @@ class WindowsFontRegistryTest extends TestCase
 
     public function test_register_fonts_does_not_throw()
     {
-        $pdf = new Dompdf();
+        $pdf = new Dompdf;
 
         // Should not throw any exception
         $this->registry->register($pdf);
 
         // Fonts should be registered in the font metrics
         $fontMetrics = $pdf->getFontMetrics();
-        
+
         foreach (['YuMincho', 'YuGothic', 'Meiryo', 'msgothic'] as $family) {
             try {
                 $font = $fontMetrics->getFont($family, 'normal');
@@ -51,7 +51,7 @@ class WindowsFontRegistryTest extends TestCase
 
     public function test_register_is_idempotent()
     {
-        $pdf = new Dompdf();
+        $pdf = new Dompdf;
 
         // Register twice - should not throw
         $this->registry->register($pdf);

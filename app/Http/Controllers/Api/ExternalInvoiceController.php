@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Enums\ServiceInvoiceStatus;
 use App\Enums\ServiceType;
 use App\Http\Controllers\Controller;
-use App\Models\Facility;
 use App\Models\Resident;
 use App\Models\ServiceInvoice;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +19,6 @@ class ExternalInvoiceController extends Controller
     /**
      * 外部システムから介護サービス請求データを一括受信
      *
-     * @param  Request  $request
      * @return JsonResponse
      *
      * Request body (JSON):
@@ -82,19 +80,20 @@ class ExternalInvoiceController extends Controller
                         ->where('facility_id', $facilityId)
                         ->first();
 
-                    if (!$resident) {
+                    if (! $resident) {
                         $results['errors'][] = [
                             'index' => $index,
                             'resident_id' => $data['resident_id'],
                             'error' => '入居者が見つからないか、施設が一致しません',
                         ];
+
                         continue;
                     }
 
                     // PDF保存処理
                     $pdfPath = null;
                     $pdfOriginalName = null;
-                    if (!empty($data['pdf_base64'])) {
+                    if (! empty($data['pdf_base64'])) {
                         $pdfContent = base64_decode($data['pdf_base64'], true);
                         if ($pdfContent === false) {
                             throw new \InvalidArgumentException('Invalid base64 PDF data');
@@ -211,7 +210,7 @@ class ExternalInvoiceController extends Controller
             ->where('facility_id', $validated['facility_id'])
             ->first();
 
-        if (!$resident) {
+        if (! $resident) {
             return response()->json([
                 'success' => false,
                 'message' => '入居者が見つからないか、施設が一致しません',
@@ -221,7 +220,7 @@ class ExternalInvoiceController extends Controller
         // PDF保存
         $pdfPath = null;
         $pdfOriginalName = null;
-        if (!empty($validated['pdf_base64'])) {
+        if (! empty($validated['pdf_base64'])) {
             $pdfContent = base64_decode($validated['pdf_base64'], true);
             if ($pdfContent === false) {
                 return response()->json([

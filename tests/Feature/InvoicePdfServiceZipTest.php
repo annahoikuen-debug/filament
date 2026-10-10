@@ -4,6 +4,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\InvoicePdfService;
+use App\Services\Pdf\InvoicePdfGenerator;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -108,7 +109,7 @@ test('例外発生時もZIPファイルがクリーンアップされること',
     ]);
 
     // generatorのgenerateMonthlyBatchをモックして例外を発生させる
-    $mockGenerator = Mockery::mock(\App\Services\Pdf\InvoicePdfGenerator::class);
+    $mockGenerator = Mockery::mock(InvoicePdfGenerator::class);
     $mockGenerator->shouldReceive('generateMonthlyBatch')
         ->andThrow(new RuntimeException('PDF生成エラー'));
 
@@ -123,6 +124,6 @@ test('例外発生時もZIPファイルがクリーンアップされること',
         ->toThrow(RuntimeException::class, 'PDF生成エラー');
 
     // ZIPファイルが作成されていないことを確認（クリーンアップ済み）
-    $zipPath = storage_path("app/temp/請求書一括_2026-10.zip");
+    $zipPath = storage_path('app/temp/請求書一括_2026-10.zip');
     expect(File::exists($zipPath))->toBeFalse();
 });

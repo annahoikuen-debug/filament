@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class CleanupOldInvoicePdfs extends Command
 {
@@ -39,7 +39,7 @@ class CleanupOldInvoicePdfs extends Command
 
         $invoicesDir = storage_path('app/invoices');
 
-        if (!File::exists($invoicesDir)) {
+        if (! File::exists($invoicesDir)) {
             $this->info('請求書ディレクトリが存在しません。');
 
             return Command::SUCCESS;
@@ -52,9 +52,10 @@ class CleanupOldInvoicePdfs extends Command
 
         foreach ($yearMonthDirs as $dir) {
             $dirName = basename($dir); // 形式: YYYY-MM
-            
-            if (!preg_match('/^\d{4}-\d{2}$/', $dirName)) {
+
+            if (! preg_match('/^\d{4}-\d{2}$/', $dirName)) {
                 $this->line("  スキップ (不正な形式): {$dirName}");
+
                 continue;
             }
 
@@ -62,6 +63,7 @@ class CleanupOldInvoicePdfs extends Command
                 $dirDate = Carbon::createFromFormat('Y-m', $dirName)->startOfMonth();
             } catch (\Exception $e) {
                 $this->line("  スキップ (日付パース失敗): {$dirName}");
+
                 continue;
             }
 
@@ -75,11 +77,11 @@ class CleanupOldInvoicePdfs extends Command
                     $dirSize += $file->getSize();
                 }
 
-                $this->line("  対象: {$dirName} ({$dir->getRelativePathname()}) - " . $this->formatBytes($dirSize) . ", {$fileCount} ファイル");
+                $this->line("  対象: {$dirName} ({$dir->getRelativePathname()}) - ".$this->formatBytes($dirSize).", {$fileCount} ファイル");
 
-                if (!$dryRun) {
+                if (! $dryRun) {
                     File::deleteDirectory($dir);
-                    $this->line("    -> 削除完了");
+                    $this->line('    -> 削除完了');
                 }
 
                 $deletedCount++;
@@ -101,8 +103,8 @@ class CleanupOldInvoicePdfs extends Command
             ]
         );
 
-        if (!$dryRun && $deletedCount > 0) {
-            $this->info("クリーンアップ完了: {$deletedCount} ディレクトリを削除しました (" . $this->formatBytes($deletedSize) . ")");
+        if (! $dryRun && $deletedCount > 0) {
+            $this->info("クリーンアップ完了: {$deletedCount} ディレクトリを削除しました (".$this->formatBytes($deletedSize).')');
             Log::info('Invoice PDF cleanup completed', [
                 'deleted_dirs' => $deletedCount,
                 'deleted_bytes' => $deletedSize,
@@ -125,6 +127,7 @@ class CleanupOldInvoicePdfs extends Command
             $bytes /= 1024;
             $i++;
         }
-        return round($bytes, 2) . ' ' . $units[$i];
+
+        return round($bytes, 2).' '.$units[$i];
     }
 }

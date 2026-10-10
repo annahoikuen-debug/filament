@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -156,7 +155,7 @@ class PdfTemplateSetting extends Model
             '--pdf-table-row-odd-bg' => $this->table_row_odd_bg,
             '--pdf-table-border-color' => $this->table_border_color,
             '--pdf-font-family' => $this->font_family,
-            '--pdf-font-size' => $this->font_size . 'pt',
+            '--pdf-font-size' => $this->font_size.'pt',
             '--pdf-line-height' => (float) $this->line_height,
         ];
     }
@@ -167,6 +166,7 @@ class PdfTemplateSetting extends Model
     public function toCssVariableString(): string
     {
         $vars = $this->toCssVariables();
-        return implode('; ', array_map(fn($k, $v) => "$k: $v", array_keys($vars), $vars));
+
+        return implode('; ', array_map(fn ($k, $v) => "$k: $v", array_keys($vars), $vars));
     }
 }

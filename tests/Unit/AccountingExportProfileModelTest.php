@@ -2,6 +2,7 @@
 
 use App\Models\AccountingExportProfile;
 use App\Models\Facility;
+use Carbon\Carbon;
 
 test('fillableフィールドのみが一括代入で設定されること', function () {
     $facility = Facility::factory()->create();
@@ -207,7 +208,7 @@ test('createDefaultsForFacilityメソッドが正しくデフォルトを作成�
 
     $profiles = AccountingExportProfile::where('facility_id', $facility->id)->get();
     expect($profiles->count())->toBe(4); // freee, mf, yayoi, kanjobugyo
-    
+
     $softwareTypes = ['freee', 'mf', 'yayoi', 'kanjobugyo'];
     foreach ($softwareTypes as $type) {
         $profile = AccountingExportProfile::where('facility_id', $facility->id)
@@ -289,9 +290,9 @@ test('formatDateメソッドが日付をフォーマットすること', functio
         'date_format' => 'Y/m/d',
     ]);
 
-    $date = \Carbon\Carbon::create(2026, 10, 15);
+    $date = Carbon::create(2026, 10, 15);
     expect($profile->formatDate($date))->toBe('2026/10/15');
-    
+
     // カスタムフォーマット
     $profile->date_format = 'Y-m-d';
     expect($profile->formatDate($date))->toBe('2026-10-15');
@@ -306,10 +307,10 @@ test('getLineEndingメソッドが改行コードを取得すること', functio
     ]);
 
     expect($profile->getLineEnding())->toBe("\n");
-    
+
     $profile->line_ending = 'CRLF';
     expect($profile->getLineEnding())->toBe("\r\n");
-    
+
     $profile->line_ending = 'unknown';
     expect($profile->getLineEnding())->toBe("\r\n"); // デフォルト
 });

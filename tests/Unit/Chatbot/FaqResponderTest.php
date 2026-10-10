@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Services\Chatbot\FaqResponder;
 
 beforeEach(function () {
-    $this->responder = new FaqResponder();
+    $this->responder = new FaqResponder;
     $this->facility = Facility::factory()->create();
     $this->corporateAdmin = User::factory()->corporateAdmin()->create();
     $this->facilityAdmin = User::factory()->facilityAdmin()->create(['facility_id' => $this->facility->id]);
