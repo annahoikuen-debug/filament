@@ -13,14 +13,22 @@ class ChatLog extends Model
     protected $fillable = [
         'user_id',
         'session_id',
+        'channel',
+        'visitor_id',
         'user_message',
         'intent',
         'bot_reply',
+        'faq_matched',
         'facility_id',
+        'feedback',
+        'feedback_at',
     ];
 
     protected $casts = [
+        'faq_matched' => 'boolean',
+        'feedback_at' => 'datetime',
         'created_at' => 'datetime',
+        'visitor_id' => 'string',
     ];
 
     public function user(): BelongsTo
@@ -36,5 +44,10 @@ class ChatLog extends Model
     public function scopeForFacility($query, int $facilityId)
     {
         return $query->where('facility_id', $facilityId);
+    }
+
+    public function scopeChannel($query, string $channel)
+    {
+        return $query->where('channel', $channel);
     }
 }

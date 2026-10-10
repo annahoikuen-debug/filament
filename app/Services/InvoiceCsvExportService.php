@@ -116,7 +116,7 @@ class InvoiceCsvExportService
         $invoices = $query->get();
 
         // 介護サービス請求データ取得（オプション）
-        $careServiceInvoices = collect();
+        $careServiceInvoices = new \Illuminate\Database\Eloquent\Collection;
         if ($includeCareServices) {
             $careQuery = ServiceInvoice::with('resident.facility')
                 ->where('billing_year_month', $yearMonth)
@@ -170,7 +170,7 @@ class InvoiceCsvExportService
 
         $invoices = $query->get();
 
-        $careServiceInvoices = collect();
+        $careServiceInvoices = new \Illuminate\Database\Eloquent\Collection;
         if ($includeCareServices) {
             $careQuery = ServiceInvoice::with('resident.facility')
                 ->where('billing_year_month', $yearMonth)

@@ -84,6 +84,12 @@ class TrialProvisioningService
         // トライアルIDを含む一意の施設名で分離（同一企業の複数申込でもデータが混在しない）
         $facilityName = "トライアル {$trial->company_name} ({$trial->id})";
 
+        // 登録番号の一意制約（T+13桁）：テストデータ等と被らないようトライアル専用のプレフィックス体系（T9+12桁）を生成
+        $trialInvoiceNumber = 'T9'.str_pad($trial->id, 12, '0', STR_PAD_LEFT);
+        while (Facility::where('invoice_registration_number', $trialInvoiceNumber)->exists()) {
+            $trialInvoiceNumber = 'T9'.str_pad(mt_rand(1, 999999999999), 12, '0', STR_PAD_LEFT);
+        }
+
         return Facility::firstOrCreate(
             ['name' => $facilityName],
             [
@@ -93,7 +99,7 @@ class TrialProvisioningService
                 'phone' => $trial->phone ?? '000-0000-0000',
                 'email' => $trial->email,
                 'fax' => '000-0000-0000',
-                'invoice_registration_number' => 'T'.str_pad($trial->id, 13, '0', STR_PAD_LEFT), // トライアル用仮番号（トライアルIDで一意）
+                'invoice_registration_number' => $trialInvoiceNumber, // トライアル用仮番号（衝突回避済み）
                 'bank' => [], // トライアルでは銀行情報不要
                 'billing' => [
                     'direct_debit_day' => 27,

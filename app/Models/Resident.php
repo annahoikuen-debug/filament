@@ -27,7 +27,22 @@ class Resident extends Model
         'status',
         'move_in_date',
         'move_out_date',
+        'normalized_name',
+        'normalized_kana',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Resident $resident) {
+            $matcher = new \App\Services\Chatbot\FuzzyMatcher;
+            if ($resident->name) {
+                $resident->normalized_name = $matcher->normalizeKana($resident->name);
+            }
+            if ($resident->name_kana) {
+                $resident->normalized_kana = $matcher->normalizeKana($resident->name_kana);
+            }
+        });
+    }
 
     protected $casts = [
         'base_rent' => 'integer',

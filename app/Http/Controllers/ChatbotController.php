@@ -33,4 +33,34 @@ class ChatbotController extends Controller
 
         return response()->json($response->toArray());
     }
+
+    public function feedback(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user === null || $user->is_admin !== true) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'chat_log_id' => ['required', 'integer'],
+            'feedback' => ['required', 'string', 'in:helpful,unhelpful'],
+        ]);
+
+        $log = \App\Models\ChatLog::query()
+            ->where('id', $validated['chat_log_id'])
+            ->when($user->facility_id !== null, fn ($q) => $q->where('facility_id', $user->facility_id))
+            ->first();
+
+        if ($log === null) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+
+        $log->update([
+            'feedback' => $validated['feedback'],
+            'feedback_at' => now(),
+        ]);
+
+        return response()->json(['status' => 'success', 'feedback' => $validated['feedback']]);
+    }
 }

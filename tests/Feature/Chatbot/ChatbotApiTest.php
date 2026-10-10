@@ -72,3 +72,18 @@ test('レート制限が動作すること', function () {
 
     $response->assertStatus(429);
 });
+
+test('サジェスト候補のメッセージ送信でも正常にJSON応答が返ること', function () {
+    $suggestions = config('chatbot.suggestions', []);
+    expect($suggestions)->not->toBeEmpty();
+
+    $firstSuggestion = $suggestions[0];
+
+    $response = $this->actingAs($this->corporateAdmin)->postJson('/api/chatbot/message', [
+        'message' => $firstSuggestion,
+        'session_id' => 'suggestion-test-session',
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJsonStructure(['reply', 'intent', 'data', 'sources']);
+});

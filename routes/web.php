@@ -4,6 +4,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\FormDownloadController;
 use App\Http\Controllers\InvoiceZipDownloadController;
+use App\Http\Controllers\PublicChatbotController;
 use App\Services\InvoicePdfService;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
@@ -44,7 +45,30 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/api/chatbot/message', [ChatbotController::class, 'message'])
         ->middleware('throttle:30,1')
         ->name('chatbot.message');
+
+    Route::post('/api/chatbot/feedback', [ChatbotController::class, 'feedback'])
+        ->middleware('throttle:30,1')
+        ->name('chatbot.feedback');
 });
+
+// 公開チャットボットAPI（認証不要・throttle + ハニーポット + 最短時間チェック）
+Route::post('/api/public/chatbot/message', [PublicChatbotController::class, 'message'])
+    ->name('public.chatbot.message')
+    ->middleware('throttle:' . config('chatbot.public.rate_limit', '20,1'));
+
+// 公開チャットボットウィジェットJS配信（静的サイトから1行scriptで埋め込み可能）
+Route::get('/chatbot/widget.js', function () {
+    $path = public_path('vendor/chatbot/widget.js');
+
+    if (! file_exists($path)) {
+        abort(404);
+    }
+
+    return response(file_get_contents($path), 200, [
+        'Content-Type' => 'application/javascript; charset=utf-8',
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->name('public.chatbot.widget');
 
 // フォーム確認メール内の署名付き資料ダウンロードルート（認証不要・署名必須）
 Route::get('/forms/{submission}/download/{document}', [FormDownloadController::class, 'show'])

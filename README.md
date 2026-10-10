@@ -210,6 +210,47 @@ flowchart LR
 
 ---
 
+## チャットボット（公開サイト向け）
+
+公式サイト（`website/` 内の静的HTMLページ）に埋め込む、認証不要のリード獲得チャットボットです。
+
+### ウィジェットの設置方法
+
+静的サイトの各ページ `</body>` 直前に以下のタグを1行追加します（`scripts/embed-chatbot.ps1` で一括埋め込み可能）:
+
+```html
+<!-- Chatbot widget -->
+<script src="/chatbot/widget.js" data-api-url="/api/public/chatbot/message" data-primary-color="#0066cc" defer></script>
+```
+
+- `data-primary-color` でテーマ色を変更可能
+- ウィジェットJSは `/chatbot/widget.js` ルートで配信（`public/vendor/chatbot/widget.js`、Cache-Control 24時間）
+
+### 対応インテント
+
+- **料金照会（pricing）** — 料金ページへのリンクを案内
+- **機能・営業時間（features/hours）** — 公開FAQから自動応答
+- **デモ申込（demo_request）/ 資料請求（catalog_request）** — 迷你フォーム（氏名・メール・施設名）または通常フォームへ誘導
+- **その他（faq）** — クイックリプライ付きフォールバック
+
+### 公開FAQの登録
+
+「設定」→「チャットボットFAQ」で **「公開サイトに表示」トグルを ON** にしたFAQのみ公開サイトのチャットボットに表示されます（内部用と完全分離）。
+
+### セキュリティ
+
+- ハニーポット（`website` フィールド）＋最短送信時間チェック（2秒）でボット防御
+- レート制限: 20リクエスト/分/IP（`config/chatbot.php` の `public.rate_limit`）
+- 会話ログは PII を含まず、`channel=public` として保存、保持期間は30日（`config/chatbot.php` の `public.retention_days`）
+- CORSは `config/cors.php` で `chatbot.public.allowed_origins` とマージ
+
+### ログ運用
+
+- チャネル別保持期間クリーンアップ: 毎日04:00に内部ログ90日・公開ログ30日超過分を削除
+- FAQ未回答分析（管理画面ウィジェット）は内部チャネルのみ集計
+
+---
+
 ## 管理画面デモ / スナップショット
 
 > **注意**: PNG画像（`docs/screenshots/`）はプレースホルダです。実際のスクリーンショットに差し替えてご利用ください。

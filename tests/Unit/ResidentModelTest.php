@@ -56,5 +56,7 @@ test('fill可能フィールド一覧が正しいこと', function () {
         'status',
         'move_in_date',
         'move_out_date',
+        'normalized_name',
+        'normalized_kana',
     ]);
 });
