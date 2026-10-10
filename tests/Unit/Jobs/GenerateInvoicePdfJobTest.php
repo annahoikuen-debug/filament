@@ -62,9 +62,9 @@ test('キャッシュ済みPDFがある場合は再生成しないこと', funct
 
 test('PDFを生成してキャッシュに保存すること', function () {
     $pdfService = Mockery::mock(InvoicePdfService::class);
-    $dompdf = Mockery::mock(\Dompdf\Dompdf::class);
-    $dompdf->shouldReceive('output')->andReturn('%PDF-1.4 fake');
-    $pdfService->shouldReceive('generateInvoicePdf')->once()->andReturn($dompdf);
+    $pdf = Mockery::mock(Barryvdh\DomPDF\PDF::class);
+    $pdf->shouldReceive('output')->andReturn('%PDF-1.4 fake');
+    $pdfService->shouldReceive('generateInvoicePdf')->once()->andReturn($pdf);
 
     $configService = Mockery::mock(FacilityConfigService::class);
     $configService->shouldReceive('getConfig')->once()->with($this->facility->id)->andReturn(['name' => 'テスト']);

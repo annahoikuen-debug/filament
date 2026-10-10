@@ -77,7 +77,7 @@ class CleanupOldInvoicePdfs extends Command
                     $dirSize += $file->getSize();
                 }
 
-                $this->line("  対象: {$dirName} ({$dir->getRelativePathname()}) - ".$this->formatBytes($dirSize).", {$fileCount} ファイル");
+                $this->line("  対象: {$dirName} ({$dirName}) - ".$this->formatBytes($dirSize).", {$fileCount} ファイル");
 
                 if (! $dryRun) {
                     File::deleteDirectory($dir);
