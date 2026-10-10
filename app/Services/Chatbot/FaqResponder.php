@@ -8,8 +8,12 @@ use Illuminate\Support\Collection;
 
 class FaqResponder
 {
+    public function __construct(
+        private readonly ?BigramTokenizer $tokenizer = null,
+    ) {}
+
     /**
-     * キーワード一致スコアリングでFAQを検索する
+     * キーワード一致および Bi-gram 類似度スコアリングでFAQを検索する
      *
      * @return Collection<int, ChatbotFaq>
      */
@@ -17,19 +21,40 @@ class FaqResponder
     {
         $keywords = $this->extractKeywords($query);
 
-        if ($keywords === []) {
-            return collect();
+        // 1. 既存のキーワード一致によるスコアリング
+        $results = collect();
+        if ($keywords !== []) {
+            $results = ChatbotFaq::query()
+                ->where('is_active', true)
+                ->where(fn ($q) => $this->applyFacilityScope($q, $facilityId))
+                ->get()
+                ->map(fn (ChatbotFaq $faq) => [
+                    'faq' => $faq,
+                    'score' => $this->score($faq, $keywords),
+                ])
+                ->filter(fn (array $item) => $item['score'] > 0)
+                ->sortByDesc(fn (array $item) => $item['score'])
+                ->values()
+                ->map(fn (array $item) => $item['faq']);
         }
+
+        if ($results->isNotEmpty()) {
+            return $results;
+        }
+
+        // 2. キーワード未一致時の Bi-gram Jaccard類似度フォールバック
+        $tokenizer = $this->tokenizer ?? new BigramTokenizer;
+        $threshold = (float) config('chatbot.faq.bigram_threshold', 0.35);
 
         return ChatbotFaq::query()
             ->where('is_active', true)
-            ->where(fn ($query) => $this->applyFacilityScope($query, $facilityId))
+            ->where(fn ($q) => $this->applyFacilityScope($q, $facilityId))
             ->get()
             ->map(fn (ChatbotFaq $faq) => [
                 'faq' => $faq,
-                'score' => $this->score($faq, $keywords),
+                'score' => $tokenizer->similarity($query, $faq->question),
             ])
-            ->filter(fn (array $item) => $item['score'] > 0)
+            ->filter(fn (array $item) => $item['score'] >= $threshold)
             ->sortByDesc(fn (array $item) => $item['score'])
             ->values()
             ->map(fn (array $item) => $item['faq']);

@@ -46,16 +46,29 @@ Artisan::command('pdf:install-fonts {--force : 既存フォントを上書きす
     return 0;
 })->purpose('Noto Sans JP フォントをダウンロードしてPDF生成用にインストールします');
 
-// チャットボット会話ログの保持期間クリーンアップ
+// チャットボット会話ログの保持期間クリーンアップ（チャネル別保持期間）
 Schedule::call(function () {
-    $retentionDays = (int) config('chatbot.retention_days', 90);
-    $deleted = ChatLog::where('created_at', '<', now()->subDays($retentionDays))->delete();
-    if ($deleted > 0) {
-        Log::info("チャットログクリーンアップ: {$deleted} 件を削除");
+    $channels = [
+        'internal' => (int) config('chatbot.retention_days', 90),
+        'public' => (int) config('chatbot.public.retention_days', 30),
+    ];
+    foreach ($channels as $channel => $retentionDays) {
+        $deleted = ChatLog::channel($channel)
+            ->where('created_at', '<', now()->subDays($retentionDays))
+            ->delete();
+        if ($deleted > 0) {
+            Log::info("チャットログクリーンアップ: [{$channel}] {$deleted} 件を削除");
+        }
     }
 })
     ->dailyAt('04:00')
-    ->description('チャットボット会話ログの保持期間超過分を削除')
+    ->description('チャットボット会話ログの保持期間超過分を削除（内部90日・公開30日）')
+    ->environments(['production', 'staging']);
+
+// FAQ未回答質問分析（日次）
+Schedule::command('chatbot:analyze-faq-misses', ['--days' => 30])
+    ->dailyAt('05:00')
+    ->description('未回答チャットボット質問の集計分析')
     ->environments(['production', 'staging']);
 
 // データベース・ストレージの毎日バックアップ（DR対応）

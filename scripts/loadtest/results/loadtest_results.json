@@ -1,0 +1,420 @@
+{
+    "environment": {
+        "base_url": "http:\/\/127.0.0.1:8000",
+        "php_version": "8.3.33",
+        "db_connection": "sqlite",
+        "queue_connection": "sync",
+        "cache_store": "file",
+        "session_driver": "file",
+        "server": "php artisan serve (single-threaded)",
+        "executed_at": "2026-10-10T07:12:59.862221Z"
+    },
+    "data_counts": {
+        "facilities": 10,
+        "residents": 1000,
+        "daily_charges": 48400,
+        "monthly_invoices": 2027,
+        "chatbot_faqs": 100,
+        "chat_logs": 10019
+    },
+    "scenarios": [
+        {
+            "total": 1,
+            "rps": 2.43,
+            "p50_ms": 410.8,
+            "p95_ms": 410.8,
+            "p99_ms": 410.8,
+            "max_ms": 410.8,
+            "statuses": {
+                "200": 1
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0.4,
+            "scenario_id": "S27",
+            "scenario_name": "ヘルスチェック（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 1,
+            "rps": 1102.6,
+            "p50_ms": 0.9,
+            "p95_ms": 0.9,
+            "p99_ms": 0.9,
+            "max_ms": 0.9,
+            "statuses": [
+                1
+            ],
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0,
+            "scenario_id": "S01",
+            "scenario_name": "認証セッション生成（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 1,
+            "rps": 1.72,
+            "p50_ms": 582.6,
+            "p95_ms": 582.6,
+            "p99_ms": 582.6,
+            "max_ms": 582.6,
+            "statuses": {
+                "200": 1
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0.6,
+            "scenario_id": "S02",
+            "scenario_name": "ダッシュボード（認証済）（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 1,
+            "rps": 1.1,
+            "p50_ms": 908.3,
+            "p95_ms": 908.3,
+            "p99_ms": 908.3,
+            "max_ms": 908.3,
+            "statuses": {
+                "200": 1
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0.9,
+            "scenario_id": "S04",
+            "scenario_name": "入居者一覧（認証済）（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 1,
+            "rps": 1.56,
+            "p50_ms": 642.4,
+            "p95_ms": 642.4,
+            "p99_ms": 642.4,
+            "max_ms": 642.4,
+            "statuses": {
+                "200": 1
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0.6,
+            "scenario_id": "S11",
+            "scenario_name": "チャットボットFAQ（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 1,
+            "rps": 1.46,
+            "p50_ms": 682.9,
+            "p95_ms": 682.9,
+            "p99_ms": 682.9,
+            "max_ms": 682.9,
+            "statuses": {
+                "500": 1
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0.7,
+            "scenario_id": "S15",
+            "scenario_name": "トライアル申込（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 1,
+            "rps": 2.36,
+            "p50_ms": 422.9,
+            "p95_ms": 422.9,
+            "p99_ms": 422.9,
+            "max_ms": 422.9,
+            "statuses": {
+                "200": 1
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0.4,
+            "scenario_id": "S17",
+            "scenario_name": "見積算出（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 1,
+            "rps": 1.31,
+            "p50_ms": 764.7,
+            "p95_ms": 764.7,
+            "p99_ms": 764.7,
+            "max_ms": 764.7,
+            "statuses": {
+                "201": 1
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0.8,
+            "scenario_id": "S19",
+            "scenario_name": "サイトフォーム（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 1,
+            "rps": 2.31,
+            "p50_ms": 433.1,
+            "p95_ms": 433.1,
+            "p99_ms": 433.1,
+            "max_ms": 433.1,
+            "statuses": {
+                "200": 1
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0.4,
+            "scenario_id": "S21",
+            "scenario_name": "外部請求単件（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 1,
+            "rps": 2.36,
+            "p50_ms": 424.3,
+            "p95_ms": 424.3,
+            "p99_ms": 424.3,
+            "max_ms": 424.3,
+            "statuses": {
+                "200": 1
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0.4,
+            "scenario_id": "S22",
+            "scenario_name": "外部請求履歴（スモーク）",
+            "sla": []
+        },
+        {
+            "total": 10,
+            "rps": 1397.82,
+            "p50_ms": 0.7,
+            "p95_ms": 1.3,
+            "p99_ms": 1.3,
+            "max_ms": 1.3,
+            "statuses": [
+                10
+            ],
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 0,
+            "scenario_id": "S01",
+            "scenario_name": "認証セッション生成（ベースライン）",
+            "sla": {
+                "p95_ms": 1000
+            }
+        },
+        {
+            "total": 50,
+            "rps": 2.48,
+            "p50_ms": 400.2,
+            "p95_ms": 424.4,
+            "p99_ms": 444.4,
+            "max_ms": 444.4,
+            "statuses": {
+                "200": 50
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 20.2,
+            "scenario_id": "S27",
+            "scenario_name": "ヘルスチェック（ベースライン）",
+            "sla": {
+                "p95_ms": 100
+            }
+        },
+        {
+            "total": 100,
+            "rps": 2.47,
+            "p50_ms": 4020.3,
+            "p95_ms": 4232.5,
+            "p99_ms": 4282.3,
+            "max_ms": 4287.6,
+            "statuses": {
+                "200": 100
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 40.5,
+            "scenario_id": "S27",
+            "scenario_name": "ヘルスチェック（並行100req\/10VU）",
+            "sla": {
+                "p95_ms": 100
+            }
+        },
+        {
+            "total": 30,
+            "rps": 1.7,
+            "p50_ms": 2895.5,
+            "p95_ms": 3053,
+            "p99_ms": 3058.2,
+            "max_ms": 3058.2,
+            "statuses": {
+                "200": 30
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 17.7,
+            "scenario_id": "S02",
+            "scenario_name": "ダッシュボード（並行30req\/5VU）",
+            "sla": {
+                "p95_ms": 1500
+            }
+        },
+        {
+            "total": 40,
+            "rps": 1.19,
+            "p50_ms": 4141.9,
+            "p95_ms": 4434.2,
+            "p99_ms": 4464.4,
+            "max_ms": 4464.4,
+            "statuses": {
+                "200": 40
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 33.5,
+            "scenario_id": "S04",
+            "scenario_name": "Filament一覧（並行40req\/5VU）",
+            "sla": {
+                "p95_ms": 1000
+            }
+        },
+        {
+            "total": 10,
+            "rps": 2.09,
+            "p50_ms": 1412.9,
+            "p95_ms": 1455.1,
+            "p99_ms": 1455.1,
+            "max_ms": 1455.1,
+            "statuses": {
+                "200": 10
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 4.8,
+            "scenario_id": "S06",
+            "scenario_name": "PDFダウンロード（並行10req\/3VU）",
+            "sla": {
+                "p95_ms": 3000
+            }
+        },
+        {
+            "total": 25,
+            "rps": 1.59,
+            "p50_ms": 3067.1,
+            "p95_ms": 3360.6,
+            "p99_ms": 3443.6,
+            "max_ms": 3443.6,
+            "statuses": {
+                "200": 25
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 15.7,
+            "scenario_id": "S11",
+            "scenario_name": "チャットボット（並行25req\/5VU）",
+            "sla": {
+                "p95_ms": 500
+            }
+        },
+        {
+            "total": 35,
+            "rps": 1.71,
+            "p50_ms": 631,
+            "p95_ms": 696.6,
+            "p99_ms": 786.4,
+            "max_ms": 786.4,
+            "statuses": {
+                "200": 25,
+                "429": 10
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 20.5,
+            "scenario_id": "S14",
+            "scenario_name": "チャットボット レート制限（35req逐次・429検証）",
+            "sla": {
+                "expect_429": true
+            }
+        },
+        {
+            "total": 30,
+            "rps": 2.4,
+            "p50_ms": 4078.7,
+            "p95_ms": 4273.8,
+            "p99_ms": 4277.7,
+            "max_ms": 4277.7,
+            "statuses": {
+                "200": 30
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 12.5,
+            "scenario_id": "S17",
+            "scenario_name": "見積算出（並行30req\/10VU）",
+            "sla": {
+                "p95_ms": 500
+            }
+        },
+        {
+            "total": 12,
+            "rps": 1.69,
+            "p50_ms": 2801.4,
+            "p95_ms": 3309.7,
+            "p99_ms": 3309.7,
+            "max_ms": 3309.7,
+            "statuses": {
+                "201": 10,
+                "429": 2
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 7.1,
+            "scenario_id": "S19",
+            "scenario_name": "サイトフォーム（並行12req\/5VU・レート制限検証）",
+            "sla": []
+        },
+        {
+            "total": 20,
+            "rps": 1.74,
+            "p50_ms": 2878.1,
+            "p95_ms": 2988.6,
+            "p99_ms": 3010.5,
+            "max_ms": 3010.5,
+            "statuses": {
+                "200": 20
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 11.5,
+            "scenario_id": "S21",
+            "scenario_name": "外部請求単件（並行20req\/5VU）",
+            "sla": {
+                "p95_ms": 1000
+            }
+        },
+        {
+            "total": 40,
+            "rps": 2.25,
+            "p50_ms": 4406.9,
+            "p95_ms": 4471.3,
+            "p99_ms": 4485.3,
+            "max_ms": 4485.3,
+            "statuses": {
+                "200": 40
+            },
+            "errors": 0,
+            "error_rate_pct": 0,
+            "wall_time_s": 17.8,
+            "scenario_id": "S22",
+            "scenario_name": "外部請求履歴（並行40req\/10VU）",
+            "sla": {
+                "p95_ms": 1000
+            }
+        }
+    ]
+}

@@ -17,8 +17,16 @@ class ChatbotFaqFactory extends Factory
             'answer' => fake()->paragraph(),
             'category' => '一般',
             'is_active' => true,
+            'is_public' => false,
             'sort_order' => 0,
             'facility_id' => null,
         ];
+    }
+
+    public function public(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_public' => true,
+        ]);
     }
 }

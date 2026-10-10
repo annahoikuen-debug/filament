@@ -18,6 +18,7 @@ class ChatbotFaq extends Model
         'answer',
         'category',
         'is_active',
+        'is_public',
         'sort_order',
         'facility_id',
     ];
@@ -25,6 +26,7 @@ class ChatbotFaq extends Model
     protected $casts = [
         'keywords' => 'array',
         'is_active' => 'boolean',
+        'is_public' => 'boolean',
         'sort_order' => 'integer',
     ];
 
@@ -37,6 +39,7 @@ class ChatbotFaq extends Model
                 'answer',
                 'category',
                 'is_active',
+                'is_public',
                 'sort_order',
                 'facility_id',
             ])
@@ -54,6 +57,11 @@ class ChatbotFaq extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopePublic($query)
+    {
+        return $query->where('is_public', true);
     }
 
     public function scopeOrdered($query)

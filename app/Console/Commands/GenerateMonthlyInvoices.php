@@ -106,16 +106,19 @@ class GenerateMonthlyInvoices extends Command
 
         $this->info("対象入居者数: {$residents->count()}");
 
-        $progressBar = $this->output->createProgressBar($residents->count());
-        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
-        $progressBar->start();
+        $progressBar = null;
+        if ($residents->count() > 0) {
+            $progressBar = $this->output->createProgressBar($residents->count());
+            $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+            $progressBar->start();
+        }
 
         foreach ($residents as $resident) {
             try {
                 // 指定年月に在籍しているかチェック
                 if (! $resident->isLivingAt(Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth())) {
                     $skipped++;
-                    $progressBar->advance();
+                    $progressBar?->advance();
 
                     continue;
                 }
@@ -129,7 +132,7 @@ class GenerateMonthlyInvoices extends Command
                     // 確定済みで force オプションがない場合はスキップ
                     if (! $force && $existingInvoice->status !== InvoiceStatus::Unbilled) {
                         $skipped++;
-                        $progressBar->advance();
+                        $progressBar?->advance();
 
                         continue;
                     }
@@ -164,11 +167,13 @@ class GenerateMonthlyInvoices extends Command
                 ]);
             }
 
-            $progressBar->advance();
+            $progressBar?->advance();
         }
 
-        $progressBar->finish();
-        $this->newLine();
+        if ($progressBar) {
+            $progressBar->finish();
+            $this->newLine();
+        }
 
         return compact('created', 'updated', 'skipped', 'errors');
     }

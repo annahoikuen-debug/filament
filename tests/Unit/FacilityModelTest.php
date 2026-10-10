@@ -125,13 +125,24 @@ test('dailyChargesリレーションが正しく動作すること', function ()
     $facility = Facility::factory()->create([
         'operator' => 'テスト運営',
     ]);
-    $facilityWithCharges = Facility::factory()->hasDailyCharges(1)->create([
+
+    // 日付を固定して在籍期間との不整合を防ぐ
+    $facilityWithCharges = Facility::factory()->create([
         'operator' => 'テスト運営',
+    ]);
+    $resident = \App\Models\Resident::factory()->create([
+        'facility_id' => $facilityWithCharges->id,
+        'move_in_date' => '2020-01-01',
+    ]);
+    \App\Models\DailyCharge::factory()->create([
+        'facility_id' => $facilityWithCharges->id,
+        'resident_id' => $resident->id,
+        'date' => '2026-03-10',
     ]);
 
     // 通常の施設には日々の自費利用明細がないこと
     expect($facility->dailyCharges->isEmpty())->toBeTrue();
-    // hasDailyCharges(1)を使用した施設には1つの日々の自費利用明細があること
+    // 明細を作成した施設には1つの日々の自費利用明細があること
     expect($facilityWithCharges->dailyCharges)->toHaveCount(1);
     expect($facilityWithCharges->dailyCharges->first()->id)->toBeGreaterThan(0);
 });

@@ -49,3 +49,10 @@ test('空のメッセージは faq に分類されること', function () {
 
     expect($intent->intent)->toBe('faq');
 });
+
+test('シノニム辞書の語彙（滞納/未払いなど）でも正しく invoice_status 意図が認識されること', function () {
+    $intent = $this->recognizer->recognize('山田太郎の滞納状況');
+
+    expect($intent->intent)->toBe('invoice_status')
+        ->and($intent->entities['name'])->toBe('山田太郎');
+});

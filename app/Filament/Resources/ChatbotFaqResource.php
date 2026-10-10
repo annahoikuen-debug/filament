@@ -61,6 +61,11 @@ class ChatbotFaqResource extends Resource
                             ->label('有効')
                             ->default(true),
 
+                        Forms\Components\Toggle::make('is_public')
+                            ->label('公開サイトに表示')
+                            ->default(false)
+                            ->helperText('公開サイトのチャットボットからの参照を許可します'),
+
                         Forms\Components\TextInput::make('sort_order')
                             ->label('表示順')
                             ->numeric()
@@ -105,6 +110,11 @@ class ChatbotFaqResource extends Resource
                     ->boolean()
                     ->sortable(),
 
+                Tables\Columns\IconColumn::make('is_public')
+                    ->label('公開')
+                    ->boolean()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('sort_order')
                     ->label('表示順')
                     ->sortable()
@@ -123,6 +133,12 @@ class ChatbotFaqResource extends Resource
                     ->placeholder('すべて')
                     ->trueLabel('有効のみ')
                     ->falseLabel('無効のみ'),
+
+                Tables\Filters\TernaryFilter::make('is_public')
+                    ->label('公開/非公開')
+                    ->placeholder('すべて')
+                    ->trueLabel('公開のみ')
+                    ->falseLabel('非公開のみ'),
 
                 Tables\Filters\SelectFilter::make('category')
                     ->label('カテゴリ')

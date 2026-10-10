@@ -64,20 +64,20 @@ $startTime = microtime(true);
 $facilities = [];
 for ($i = 1; $i <= $facilityCount; $i++) {
     $facilities[] = Facility::create([
-        'name' => "負荷テスト施設 {$i}",
-        'operator' => "負荷テスト運営法人 {$i}",
+        'name' => "負荷チE��ト施設 {$i}",
+        'operator' => "負荷チE��ト運営法人 {$i}",
         'postal_code' => sprintf('%03d-%04d', rand(100, 999), rand(1000, 9999)),
-        'address' => "東京都テスト区負荷町 {$i}-{$i}-{$i}",
+        'address' => "東京都チE��ト区負荷町 {$i}-{$i}-{$i}",
         'phone' => '03-' . rand(1000, 9999) . '-' . rand(1000, 9999),
         'fax' => '03-' . rand(1000, 9999) . '-' . rand(1000, 9999),
         'email' => "loadtest{$i}@example.jp",
         'invoice_registration_number' => 'T' . str_pad($i, 13, '0', STR_PAD_LEFT),
         'bank' => [
-            'name' => 'テスト銀行',
-            'branch_name' => "テスト支店 {$i}",
-            'account_type' => '普通',
+            'name' => 'チE��ト銀衁E',
+            'branch_name' => "チE��ト支庁E{$i}",
+            'account_type' => '普送E',
             'account_number' => str_pad($i, 7, '0', STR_PAD_LEFT),
-            'account_holder' => "テスト施設{$i}",
+            'account_holder' => "チE��ト施設{$i}",
         ],
         'billing' => [
             'direct_debit_day' => rand(25, 27),
@@ -93,7 +93,7 @@ echo "  Done in {$elapsed}s\n";
 echo "Creating facility admin users...\n";
 foreach ($facilities as $index => $facility) {
     User::create([
-        'name' => "{$facility->name} 管理者",
+        'name' => "{$facility->name} 管琁E��E",
         'email' => "loadtest_facility{$index}@example.jp",
         'password' => Hash::make('password'),
         'is_admin' => true,
@@ -107,12 +107,12 @@ echo "Creating {$chargeItemsCount} charge items...\n";
 $startTime = microtime(true);
 $chargeItems = [];
 $itemNames = [
-    '紙おむつ (パンツタイプ)', '尿とりパッド', '理美容代 (カット)', '理美容代 (カラー・パーマ)',
-    '受診付き添い費 (30分)', '個別洗濯代行 (1回)', '日用品・嗜好品立替金',
-    'リハビリ用品', '介護用ベッドレンタル', '車椅子レンタル',
-    '見守りセンサーレンタル', '入浴介助用品', '食事介助用品', '口腔ケア用品',
-    '褥瘡ケア用品', '排泄ケア用品', '移動介助用品', 'レクリエーション用品',
-    '緊急呼び出しシステム', '健康管理機器レンタル',
+    '紙おむつ (パンチE��イチE', '尿とりパチE��', '琁E��容代 (カチE��)', '琁E��容代 (カラー・パ�EチE',
+    '受診付き添ぁE�� (30刁E', '個別洗濯代衁E(1囁E', '日用品�E嗜好品立替釁E',
+    'リハビリ用品E, '介護用ベッドレンタル', '車椁E��レンタル',
+    '見守りセンサーレンタル', '入浴介助用品E, '食事介助用品E, '口腔ケア用品E,
+    '褥瘡ケア用品E, '排況E��ア用品E, '移動介助用品E, 'レクリエーション用品E,
+    '緊急呼び出しシスチE��', '健康管琁E��器レンタル',
 ];
 for ($i = 0; $i < $chargeItemsCount; $i++) {
     $chargeItems[] = ChargeItem::create([
@@ -139,8 +139,8 @@ for ($f = 0; $f < $facilityCount; $f++) {
         $residentsToCreate[] = [
             'facility_id' => $facility->id,
             'room_number' => $roomNumber,
-            'name' => "負荷テスト入居者 {$roomNumber}",
-            'name_kana' => "フカテストニュウキョシャ {$roomNumber}",
+            'name' => "負荷チE��ト�E屁E��E{$roomNumber}",
+            'name_kana' => "フカチE��トニュウキョシャ {$roomNumber}",
             'base_rent' => rand(50000, 80000),
             'base_management_fee' => rand(20000, 40000),
             'status' => \App\Enums\ResidentStatus::Active,
@@ -194,7 +194,7 @@ for ($monthOffset = 0; $monthOffset < $monthsOfDailyCharges; $monthOffset++) {
                     'date' => $monthStart->copy()->addDays(rand(1, $daysInMonth - 1))->toDateString(),
                     'unit_price' => $chargeItem->default_price,
                     'quantity' => rand(1, 10),
-                    'note' => '負荷テストデータ',
+                    'note' => '負荷チE��トデータ',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -358,3 +358,4 @@ echo "  Peak: " . number_format(memory_get_peak_usage(true) / 1024 / 1024, 2) . 
 echo "  Current: " . number_format(memory_get_usage(true) / 1024 / 1024, 2) . " MB\n";
 
 echo "\n=== Load Test Complete ===\n";
+

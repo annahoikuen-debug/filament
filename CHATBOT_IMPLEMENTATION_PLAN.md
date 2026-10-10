@@ -1,9 +1,11 @@
-# チャットボット導入実装計画書（職員向け内部ツール）
+﻿# チャットボット導入実装計画書（職員向け内部ツール）
 
 **作成日**: 2026-10-09
 **対象**: 職員向けFAQ自動応答＋データベース連携チャットボット
 **期間**: 2026-10-09 〜 2026-10-23（約2週間）
-**テスト方針**: 全実装にリグレッションテスト作成、既存386テストの継続通過を必須条件とする
+**テスト方針**: 全実装にリグレッションテスト作成、既存テストの継続通過を必須条件とする
+**現状**: 未実装（計画段階）
+**既存テスト**: 443 passed, 5 failed (InvoiceCalculationBasisTest 5件失敗中)
 
 ---
 
@@ -229,9 +231,9 @@ Week 2 (10/16-10/23)
 
 ---
 
-## 実装完了記録（2026-10-09）
+## 実装計画（未実装・計画段階）
 
-**成果物**:
+**計画成果物**:
 - 設定: `config/chatbot.php`（レート制限・ログ保持・マスキング・インテント定義）
 - DTO: `ChatRequest`, `ChatResponse`, `IntentDTO`
 - サービス: `ChatbotService`（オーケストレータ）, `IntentRecognizer`, `FaqResponder`, `ResidentQueryService`
@@ -241,7 +243,7 @@ Week 2 (10/16-10/23)
 - マイグレーション: `chatbot_faqs`, `chat_logs` テーブル
 - スケジューラ: チャットログ保持期間クリーンアップ（毎日04:00）
 
-**テスト（48テスト新規）**:
+**テスト計画（48テスト新規作成予定）**:
 - `tests/Unit/Chatbot/IntentRecognizerTest.php`（7テスト）
 - `tests/Unit/Chatbot/FaqResponderTest.php`（6テスト）
 - `tests/Feature/Chatbot/ChatbotApiTest.php`（6テスト）
@@ -251,4 +253,4 @@ Week 2 (10/16-10/23)
 - `tests/Feature/Chatbot/FilamentChatbotFaqResourceTest.php`（5テスト）
 - `tests/Feature/Regression/ChatbotRegressionTest.php`（5テスト）
 
-**最終結果**: 441 tests passed (1902 assertions), 0 failed
+**現状**: 未実装。実装着手後、全テスト（既存443+新規48=491）が通過することを完了条件とする。
