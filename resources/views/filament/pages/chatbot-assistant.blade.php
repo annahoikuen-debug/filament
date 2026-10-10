@@ -45,11 +45,11 @@
                             x-ref="input"
                             placeholder="例: 山田太郎の今月の請求額は？"
                             class="flex-1 rounded-lg border-gray-300"
-                            :disabled="loading"
+                            x-bind:disabled="loading"
                         />
                         <x-filament::button
                             type="submit"
-                            :disabled="loading || input.trim() === ''"
+                            x-bind:disabled="loading || input.trim() === ''"
                         >
                             送信
                         </x-filament::button>
