@@ -1,5 +1,13 @@
 # 変更履歴
 
+## [1.6.0] - 2026-10-10
+
+### バグ修正
+- **チャットボットアシスタント**: Bladeテンプレートで未定義の`heading()`関数参照エラーを修正（`resources/views/filament/pages/chatbot-assistant.blade.php`）
+- **統合請求管理ダッシュボード**: 不正なアクションクラスインポートによるHeader Actionsエラーを修正（`app/Filament/Pages/IntegratedBillingDashboard.php`）
+- **監査ログ**: 存在しない`facility`リレーション参照によるTypeErrorを修正し、施設フィルターを動的オプションリストに変更（`app/Filament/Resources/ActivityLogResource.php`）
+- **チャットボットアシスタント**: BladeエンジンがPHP定数と解釈するAlpine.jsバインディング構文を`x-bind:`プレフィックスに変更（`resources/views/filament/pages/chatbot-assistant.blade.php`）
+
 ## [1.5.0] - 2026-10-09
 
 ### 新機能
