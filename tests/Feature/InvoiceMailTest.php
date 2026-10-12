@@ -129,12 +129,9 @@ class InvoiceMailTest extends TestCase
     public function test_attachments_includes_care_service_pdfs(): void
     {
         // hasPdf() は実ファイルシステムを参照するため実ディスクに配置する
-        $careDir = storage_path('app/care');
-        if (! is_dir($careDir)) {
-            mkdir($careDir, 0777, true);
-        }
-        file_put_contents($careDir.'/visiting_care_2026-03.pdf', '%PDF-1.4 care1');
-        file_put_contents($careDir.'/day_care_2026-03.pdf', '%PDF-1.4 care2');
+        // local disk is configured to storage/app/private
+        Storage::disk('local')->put('care/visiting_care_2026-03.pdf', '%PDF-1.4 care1');
+        Storage::disk('local')->put('care/day_care_2026-03.pdf', '%PDF-1.4 care2');
         Http::fake([
             'https://example.com/invoice.pdf' => Http::response('%PDF-1.4 fake invoice', 200),
         ]);
@@ -191,8 +188,8 @@ class InvoiceMailTest extends TestCase
         $this->assertSame('訪問介護_請求書_2026-03_101号室_佐藤太郎.pdf', $attachments[1]->as);
         $this->assertSame('通所介護_請求書_2026-03_101号室_佐藤太郎.pdf', $attachments[2]->as);
 
-        @unlink($careDir.'/visiting_care_2026-03.pdf');
-        @unlink($careDir.'/day_care_2026-03.pdf');
+        Storage::disk('local')->delete('care/visiting_care_2026-03.pdf');
+        Storage::disk('local')->delete('care/day_care_2026-03.pdf');
     }
 
     public function test_attachments_skips_care_invoice_with_missing_file(): void
