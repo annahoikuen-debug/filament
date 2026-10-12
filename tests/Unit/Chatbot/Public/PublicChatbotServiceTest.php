@@ -3,8 +3,8 @@
 namespace Tests\Unit\Chatbot\Public;
 
 use App\Models\ChatbotFaq;
-use App\Models\ChatLog;
 use App\Models\ChatEscalation;
+use App\Models\ChatLog;
 use App\Models\Resident;
 use App\Services\Chatbot\Public\DTO\PublicChatRequest;
 use App\Services\Chatbot\Public\PublicChatbotService;

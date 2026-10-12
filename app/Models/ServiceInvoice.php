@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 
 class ServiceInvoice extends Model
 {
@@ -79,7 +80,7 @@ class ServiceInvoice extends Model
             return null;
         }
 
-        return storage_path('app/'.$this->pdf_path);
+        return Storage::disk('local')->path($this->pdf_path);
     }
 
     /**

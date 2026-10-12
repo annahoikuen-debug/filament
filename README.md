@@ -846,6 +846,44 @@ Filament 管理画面内で、入居者情報の照会、請求金額・支払�
 
 ---
 
+## 🌐 公開サイト向けチャットボット（Public Website Chatbot）
+
+商用サイト（`website/` 30ページ）に右下ポップアップ型ウィジェットとして設置され、リード獲得（資料請求・デモ予約・お問い合わせ）と公開FAQ回答を提供する認証不要のチャットボットです。
+
+### 主な機能と特徴
+1. **セキュリティと情報分離**
+   - 内部職員用チャットボットと完全に独立（`App\Services\Chatbot\Public\` 名前空間、`config('chatbot.public')` 設定）。
+   - 認証不要ですが、`is_public = true` のFAQのみを参照し、入居者・請求書等の個人情報・施設内部データ（PII）には一切アクセスしません。
+   - スパム防止のため、ハニーポット項目（`website_hp`）、最短送信時間チェック（2秒）、IPベースのレートリミット（20回/分）を標準装備。
+2. **リード獲得連携（Mini Form）**
+   - チャットボット内のクイックリプライや会話から、資料請求・デモ予約・お問い合わせのミニフォームを表示。
+   - 既存の公開サイトフォームAPI（`/api/public/site-forms`）と連携し、確認メール送信およびリード追跡を自動実行。
+3. **Shadow DOM型ウィジェット**
+   - 静的HTMLサイト側のCSSと競合しない完全なShadow DOM実装（Vanilla JS、依存ライブラリなし）。
+   - サイトのヘッダー/フッターを崩さず右下に常駐、レスポンシブ対応・アクセシビリティ（ARIA）準拠。
+
+### 静的サイトへの設置方法
+
+HTMLの `</body>` 直前に以下の1行を追加します:
+```html
+<!-- Chatbot widget -->
+<script defer src="/chatbot/widget.js" data-api-url="/api/public/chatbot/message" data-primary-color="#1e3a8a"></script>
+```
+
+一括設置・再設置は付属のPowerShellスクリプトで冪等に実行可能です:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/embed-chatbot.ps1
+```
+
+### 設定（`config/chatbot.php` の `public` セクション）
+- `public.intents`: 意図分類定義（pricing, features, demo_request, catalog_request, contact, business_hours）
+- `public.synonyms`: 公開サイト専用の表記ゆれ同義語辞書
+- `public.action_links`: 各ページへの誘導リンク定義
+- `public.quick_replies`: 初期表示・フォールバック時のクイックリプライ定義
+- `public.rate_limit`: リクエスト制限設定
+
+---
+
 ## ライセンス
 
 All Rights Reserved.

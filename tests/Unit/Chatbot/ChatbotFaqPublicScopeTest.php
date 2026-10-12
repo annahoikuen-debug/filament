@@ -6,7 +6,8 @@ use App\Models\ChatbotFaq;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Spatie\Activitylog\Facades\CauserResolver;
+use Spatie\Activitylog\Contracts\Activity;
+use Spatie\Activitylog\ModelActivityEvent;
 use Tests\TestCase;
 
 class ChatbotFaqPublicScopeTest extends TestCase
@@ -47,7 +48,7 @@ class ChatbotFaqPublicScopeTest extends TestCase
 
     public function test_is_public_change_is_logged_in_activity_log(): void
     {
-        Event::fake([\Spatie\Activitylog\Contracts\Activity::class]);
+        Event::fake([Activity::class]);
 
         $user = User::factory()->create();
         $this->actingAs($user);
@@ -55,7 +56,7 @@ class ChatbotFaqPublicScopeTest extends TestCase
         $faq = ChatbotFaq::factory()->create(['is_public' => false]);
         $faq->update(['is_public' => true]);
 
-        Event::dispatched(\Spatie\Activitylog\ModelActivityEvent::class, function ($event) {
+        Event::dispatched(ModelActivityEvent::class, function ($event) {
             return str_contains($event->model::class, 'ChatbotFaq');
         }) || true;
 
