@@ -68,6 +68,7 @@ class ChatbotService
         if ($candidates->count() > 1 && $candidates->first()['score'] < 1.0) {
             $topCandidates = $candidates->take(3);
             $names = $topCandidates->map(fn ($c) => sprintf('%s（%s号室）', $c['resident']->name, $c['resident']->room_number))->join('、');
+
             return new ChatResponse(
                 reply: sprintf("該当する候補が複数見つかりました。\nどちらの入居者様ですか？\n%s", $names),
                 intent: 'resident_lookup',
@@ -147,6 +148,7 @@ class ChatbotService
             $monthNotice = $yearMonth !== null
                 ? sprintf('%s年%d月の', substr($yearMonth, 0, 4), (int) substr($yearMonth, 5, 2))
                 : '';
+
             return new ChatResponse(
                 reply: "{$resident->name} さんの{$monthNotice}請求データはまだありません。",
                 intent: 'invoice_amount',
@@ -226,6 +228,7 @@ class ChatbotService
             $monthNotice = $yearMonth !== null
                 ? sprintf('%s年%d月の', substr($yearMonth, 0, 4), (int) substr($yearMonth, 5, 2))
                 : '';
+
             return new ChatResponse(
                 reply: "{$resident->name} さんの{$monthNotice}請求データはまだありません。",
                 intent: 'invoice_status',
@@ -406,6 +409,7 @@ class ChatbotService
                         ->first();
                 }
             }
+
             return null;
         }
 

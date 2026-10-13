@@ -1,12 +1,11 @@
 <?php
 
-use App\Models\ChatLog;
 use App\Models\ChatbotFaq;
+use App\Models\ChatLog;
 use App\Models\Facility;
 use App\Models\User;
 use App\Services\Chatbot\ChatbotService;
 use App\Services\Chatbot\DTO\ChatRequest;
-use Illuminate\Support\Facades\Schedule;
 
 beforeEach(function () {
     $this->facility = Facility::factory()->create();
@@ -95,7 +94,7 @@ test('--days オプションで対象期間が絞られること', function () {
 });
 
 test('スケジューラに chatbot:analyze-faq-misses が登録されていること', function () {
-    $schedule = app(\Illuminate\Console\Scheduling\Schedule::class);
+    $schedule = app(Illuminate\Console\Scheduling\Schedule::class);
 
     $hasCommand = collect($schedule->events())->contains(function ($event) {
         return str_contains($event->command ?? '', 'chatbot:analyze-faq-misses');
@@ -133,4 +132,3 @@ test('類似の未回答質問が自動クラスタリンググループとし�
         ->expectsOutputToContain('Wi-Fiの接続方法')
         ->assertSuccessful();
 });
-

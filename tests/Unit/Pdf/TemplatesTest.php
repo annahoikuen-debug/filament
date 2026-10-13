@@ -5,6 +5,7 @@ namespace Tests\Unit\Pdf;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
+use App\Services\Pdf\DataProviders\InvoiceDataProvider;
 use App\Services\Pdf\Templates\InvoiceTemplate;
 use App\Services\Pdf\Templates\ReceiptTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,7 +99,7 @@ class TemplatesTest extends TestCase
             'facility_id' => $facility->id,
         ]);
 
-        $data = app(\App\Services\Pdf\DataProviders\InvoiceDataProvider::class)->getInvoiceData($invoice);
+        $data = app(InvoiceDataProvider::class)->getInvoiceData($invoice);
 
         $html = (new InvoiceTemplate)->render($data->toArray());
 
@@ -117,7 +118,7 @@ class TemplatesTest extends TestCase
             'facility_id' => $facility->id,
         ]);
 
-        $data = app(\App\Services\Pdf\DataProviders\InvoiceDataProvider::class)->getReceiptData($invoice);
+        $data = app(InvoiceDataProvider::class)->getReceiptData($invoice);
 
         $html = (new ReceiptTemplate)->render($data->toArray());
 

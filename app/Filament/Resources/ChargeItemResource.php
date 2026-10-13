@@ -19,6 +19,8 @@ class ChargeItemResource extends Resource
 
     protected static ?string $navigationLabel = '自費品目マスタ';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $modelLabel = '品目';
 
     protected static ?string $pluralModelLabel = '品目一覧';

@@ -34,6 +34,18 @@ class GenerateMonthlyInvoices extends Command
         $force = $this->option('force');
         $dryRun = $this->option('dry-run');
 
+        if (! $dryRun) {
+            $this->info('月次請求一括生成前の安全バックアップを実行中...');
+            try {
+                $this->callSilently('backup:database', [
+                    '--type' => 'database',
+                    '--compress' => true,
+                ]);
+            } catch (\Throwable $e) {
+                $this->warn('事前バックアップに失敗しましたが処理を続行します: '.$e->getMessage());
+            }
+        }
+
         $this->info('=== 月次請求生成開始 ===');
         $this->info("対象年月: {$yearMonth}");
         $this->info('対象施設: '.($facilityId ? "ID {$facilityId}" : '全施設'));

@@ -39,7 +39,7 @@ class ChatbotFaqMissStatsWidget extends BaseWidget
         $feedbackHelpfulCount = (clone $query)->where('feedback', 'helpful')->count();
         $feedbackTotal = (clone $query)->whereNotNull('feedback')->count();
         $feedbackRate = $feedbackTotal > 0
-            ? round(($feedbackHelpfulCount / $feedbackTotal) * 100, 1) . '%'
+            ? round(($feedbackHelpfulCount / $feedbackTotal) * 100, 1).'%'
             : '未集計';
 
         return [
@@ -53,7 +53,7 @@ class ChatbotFaqMissStatsWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-question-mark-circle')
                 ->color($missedCount > 0 ? 'warning' : 'success'),
 
-            Stat::make('FAQ解決率', $matchRate . '%')
+            Stat::make('FAQ解決率', $matchRate.'%')
                 ->description('自動回答できた割合')
                 ->descriptionIcon('heroicon-m-check-badge')
                 ->color($matchRate >= 80 ? 'success' : 'warning'),

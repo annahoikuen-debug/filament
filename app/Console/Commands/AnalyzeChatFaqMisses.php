@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\ChatLog;
+use App\Services\Chatbot\BigramTokenizer;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class AnalyzeChatFaqMisses extends Command
@@ -29,6 +31,7 @@ class AnalyzeChatFaqMisses extends Command
 
         if ($totalMisses === 0) {
             $this->info('未回答の質問はありませんでした。');
+
             return Command::SUCCESS;
         }
 
@@ -45,7 +48,7 @@ class AnalyzeChatFaqMisses extends Command
         $rows = $ranking->map(fn ($item, $index) => [
             'rank' => $index + 1,
             'count' => $item->count,
-            'percentage' => round(($item->count / $totalMisses) * 100, 1) . '%',
+            'percentage' => round(($item->count / $totalMisses) * 100, 1).'%',
             'message' => $item->user_message,
         ])->toArray();
 
@@ -60,16 +63,16 @@ class AnalyzeChatFaqMisses extends Command
     /**
      * 未回答質問をBi-gram類似度でグループ化（クラスタリング）して表示する
      */
-    private function clusterAndDisplay(\Illuminate\Support\Collection $items, int $totalMisses): void
+    private function clusterAndDisplay(Collection $items, int $totalMisses): void
     {
         if ($items->count() < 2) {
             return;
         }
 
         $this->newLine();
-        $this->info("=== 類似未回答質問の自動グループ（クラスタリング） ===");
+        $this->info('=== 類似未回答質問の自動グループ（クラスタリング） ===');
 
-        $tokenizer = new \App\Services\Chatbot\BigramTokenizer;
+        $tokenizer = new BigramTokenizer;
         $clusters = [];
         $visited = [];
 
@@ -105,14 +108,15 @@ class AnalyzeChatFaqMisses extends Command
 
         if (empty($clusters)) {
             $this->line('目立った類似バリエーション質問はありませんでした。');
+
             return;
         }
 
         $clusterRows = [];
         foreach ($clusters as $idx => $c) {
             $clusterRows[] = [
-                'group' => 'グループ ' . ($idx + 1),
-                'count' => $c['count'] . '件 (' . round(($c['count'] / $totalMisses) * 100, 1) . '%)',
+                'group' => 'グループ '.($idx + 1),
+                'count' => $c['count'].'件 ('.round(($c['count'] / $totalMisses) * 100, 1).'%)',
                 'representative' => $c['representative'],
                 'variations' => implode(', ', $c['variations']),
             ];

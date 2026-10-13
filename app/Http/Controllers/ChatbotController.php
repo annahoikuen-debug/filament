@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ChatLog;
 use App\Services\Chatbot\ChatbotService;
 use App\Services\Chatbot\DTO\ChatRequest;
 use Illuminate\Http\JsonResponse;
@@ -47,7 +48,7 @@ class ChatbotController extends Controller
             'feedback' => ['required', 'string', 'in:helpful,unhelpful'],
         ]);
 
-        $log = \App\Models\ChatLog::query()
+        $log = ChatLog::query()
             ->where('id', $validated['chat_log_id'])
             ->when($user->facility_id !== null, fn ($q) => $q->where('facility_id', $user->facility_id))
             ->first();

@@ -12,11 +12,11 @@ class ProrationCalculator
      */
     public function calculateLivingDays(Resident $resident, int $year, int $month): int
     {
-        $start = Carbon::create($year, $month, 1);
-        $end = $start->copy()->endOfMonth();
+        $start = Carbon::create($year, $month, 1)->startOfDay();
+        $end = $start->copy()->endOfMonth()->startOfDay();
 
-        $moveIn = $resident->move_in_date ? Carbon::parse($resident->move_in_date) : null;
-        $moveOut = $resident->move_out_date ? Carbon::parse($resident->move_out_date) : null;
+        $moveIn = $resident->move_in_date ? Carbon::parse($resident->move_in_date)->startOfDay() : null;
+        $moveOut = $resident->move_out_date ? Carbon::parse($resident->move_out_date)->startOfDay() : null;
 
         // 期間外の場合は0日
         if ($moveIn && $moveIn > $end) {

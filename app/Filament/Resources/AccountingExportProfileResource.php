@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AccountingExportProfileResource\Pages;
 use App\Models\AccountingExportProfile;
-use Filament\Forms;
+use App\Services\Accounting\AccountingSyncService;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -12,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -333,6 +334,66 @@ class AccountingExportProfileResource extends Resource
                     ->native(false),
             ])
             ->actions([
+                Tables\Actions\Action::make('sync_to_accounting')
+                    ->label('会計ソフトへ同期')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('success')
+                    ->visible(fn (AccountingExportProfile $record) => $record->facility->isAccountingSyncEnabled())
+                    ->requiresConfirmation()
+                    ->modalHeading('会計ソフトへ仕訳を同期')
+                    ->modalDescription('選択したプロファイルで仕訳データを生成し、設定済みの会計ソフト（freee / MFクラウド会計）へ同期します。')
+                    ->modalSubmitActionLabel('同期実行')
+                    ->modalCancelActionLabel('キャンセル')
+                    ->form([
+                        TextInput::make('year_month')
+                            ->label('対象年月')
+                            ->required()
+                            ->default(now()->format('Y-m'))
+                            ->placeholder('YYYY-MM')
+                            ->helperText('仕訳対象の請求年月（例: 2026-10）'),
+
+                        Toggle::make('include_care_services')
+                            ->label('介護サービス請求を含める')
+                            ->default(true)
+                            ->helperText('住居費請求に加えて介護サービス請求も同期します'),
+                    ])
+                    ->action(function (AccountingExportProfile $record, array $data): void {
+                        try {
+                            $service = app(AccountingSyncService::class);
+
+                            $result = $service->syncForMonth(
+                                yearMonth: $data['year_month'],
+                                facilityId: $record->facility_id,
+                                softwareType: $record->software_type,
+                                profileId: $record->id,
+                                includeCareServices: $data['include_care_services']
+                            );
+
+                            if ($result['success']) {
+                                Notification::make()
+                                    ->title('同期完了')
+                                    ->body("{$result['synced_count']} 件の仕訳を {$result['provider']} へ同期しました。")
+                                    ->success()
+                                    ->send();
+                            } else {
+                                $errorMsg = implode("\n", $result['errors']);
+                                Notification::make()
+                                    ->title('同期失敗')
+                                    ->body("失敗: {$result['failed_count']} 件\n{$errorMsg}")
+                                    ->danger()
+                                    ->persistent()
+                                    ->send();
+                            }
+                        } catch (\Throwable $e) {
+                            Notification::make()
+                                ->title('同期エラー')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                        }
+                    }),
+
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

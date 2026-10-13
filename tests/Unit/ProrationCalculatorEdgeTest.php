@@ -33,12 +33,12 @@ class ProrationCalculatorEdgeTest extends TestCase
         $this->assertSame(0, $this->calculator->calculateLivingDays($resident, 2026, 3));
     }
 
-    public function test_livingDaysが0の場合は日割り金額0(): void
+    public function test_living_daysが0の場合は日割り金額0(): void
     {
         $this->assertSame(0, $this->calculator->calculateProratedAmount(50000, 2026, 3, 0));
     }
 
-    public function test_livingDaysが0の場合は固定費0(): void
+    public function test_living_daysが0の場合は固定費0(): void
     {
         $resident = Resident::factory()->create([
             'base_rent' => 50000,

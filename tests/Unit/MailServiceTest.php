@@ -118,18 +118,18 @@ it('InvoiceMail includes care services suffix', function () {
 });
 
 it('send returns false and logs error when queueing throws', function () {
-   Config::set('mail.default', 'smtp');
-   Config::set('mail.mailers.smtp.host', 'smtp.example.com');
-   Mail::fake();
+    Config::set('mail.default', 'smtp');
+    Config::set('mail.mailers.smtp.host', 'smtp.example.com');
+    Mail::fake();
 
-   // Mailファサードを部分モックし、queue() が例外を投げるようにする
-   Mail::shouldReceive('to')->andThrow(new \RuntimeException('queue failure'));
+    // Mailファサードを部分モックし、queue() が例外を投げるようにする
+    Mail::shouldReceive('to')->andThrow(new RuntimeException('queue failure'));
 
-   [, , $invoice] = invoiceMailFacility();
+    [, , $invoice] = invoiceMailFacility();
 
-   $mailable = new InvoiceMail($invoice, 'https://example.com/invoice.pdf');
+    $mailable = new InvoiceMail($invoice, 'https://example.com/invoice.pdf');
 
-   $service = new MailService;
+    $service = new MailService;
 
-   expect($service->send($mailable, 'to@example.com'))->toBeFalse();
+    expect($service->send($mailable, 'to@example.com'))->toBeFalse();
 });

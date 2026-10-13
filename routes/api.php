@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ExternalInvoiceController;
+use App\Http\Controllers\Api\MobileApiController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\QuoteController;
@@ -42,4 +43,17 @@ Route::prefix('external-invoices')->group(function () {
     Route::post('/', [ExternalInvoiceController::class, 'store']);
     Route::post('/single', [ExternalInvoiceController::class, 'storeSingle']);
     Route::get('/', [ExternalInvoiceController::class, 'index']);
+});
+
+// スマホ用API（日々の消耗品・介護保険請求・PDFアップロード）
+Route::prefix('mobile')->group(function () {
+    // 参照系（read権限）
+    Route::get('/residents', [MobileApiController::class, 'residents']);
+    Route::get('/charge-items', [MobileApiController::class, 'chargeItems']);
+    Route::get('/daily-charges', [MobileApiController::class, 'dailyChargesList']);
+    Route::get('/service-invoices', [MobileApiController::class, 'serviceInvoicesList']);
+
+    // 書き込み系（write権限）
+    Route::post('/daily-charges', [MobileApiController::class, 'dailyCharges']);
+    Route::post('/service-invoices', [MobileApiController::class, 'serviceInvoices']);
 });

@@ -13,6 +13,10 @@ class Facility extends Model
 {
     use HasFactory, LogsActivity;
 
+    public const SOFTWARE_FREEE = 'freee';
+
+    public const SOFTWARE_MF = 'mf';
+
     protected $table = 'facilities';
 
     protected $fillable = [
@@ -29,12 +33,36 @@ class Facility extends Model
         'is_active',
         'notes',
         'seal_path',
+        'freee_client_id',
+        'freee_client_secret',
+        'freee_access_token',
+        'freee_refresh_token',
+        'freee_token_expires_at',
+        'freee_company_id',
+        'mf_client_id',
+        'mf_client_secret',
+        'mf_access_token',
+        'mf_refresh_token',
+        'mf_token_expires_at',
+        'mf_office_id',
+        'accounting_api_settings',
     ];
 
     protected $casts = [
         'bank' => 'array',
         'billing' => 'array',
         'is_active' => 'boolean',
+        'freee_client_secret' => 'encrypted',
+        'freee_access_token' => 'encrypted',
+        'freee_refresh_token' => 'encrypted',
+        'freee_token_expires_at' => 'datetime',
+        'freee_company_id' => 'integer',
+        'mf_client_secret' => 'encrypted',
+        'mf_access_token' => 'encrypted',
+        'mf_refresh_token' => 'encrypted',
+        'mf_token_expires_at' => 'datetime',
+        'mf_office_id' => 'integer',
+        'accounting_api_settings' => 'array',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -156,5 +184,37 @@ class Facility extends Model
     public static function validateInvoiceNumber(string $number): bool
     {
         return (bool) preg_match('/^T\d{13}$/', $number);
+    }
+
+    /**
+     * freeeの認証情報が設定されているか
+     */
+    public function hasFreeeCredentials(): bool
+    {
+        return ! empty($this->freee_client_id) && ! empty($this->freee_access_token);
+    }
+
+    /**
+     * MFクラウド会計の認証情報が設定されているか
+     */
+    public function hasMfCredentials(): bool
+    {
+        return ! empty($this->mf_client_id) && ! empty($this->mf_access_token);
+    }
+
+    /**
+     * freeeのトークンが有効期限内か
+     */
+    public function isFreeeTokenValid(): bool
+    {
+        return $this->freee_token_expires_at !== null && $this->freee_token_expires_at->isFuture();
+    }
+
+    /**
+     * MFクラウド会計のトークンが有効期限内か
+     */
+    public function isMfTokenValid(): bool
+    {
+        return $this->mf_token_expires_at !== null && $this->mf_token_expires_at->isFuture();
     }
 }

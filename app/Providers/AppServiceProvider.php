@@ -7,6 +7,7 @@ use App\Models\MonthlyInvoice;
 use App\Models\PdfTemplateSetting;
 use App\Models\TaxSetting;
 use App\Policies\MonthlyInvoicePolicy;
+use App\Services\Accounting\AccountingSyncService;
 use App\Services\FacilityConfigService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // FacilityConfigService をシングルトンとして登録
         $this->app->singleton(FacilityConfigService::class);
+        $this->app->singleton(AccountingSyncService::class);
     }
 
     public function boot(): void
@@ -33,6 +35,9 @@ class AppServiceProvider extends ServiceProvider
 
         // ポリシー登録
         Gate::policy(MonthlyInvoice::class, MonthlyInvoicePolicy::class);
+
+        // Observer登録
+        \App\Models\DailyCharge::observe(\App\Observers\DailyChargeObserver::class);
 
         $this->registerRateLimiters();
     }

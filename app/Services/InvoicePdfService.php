@@ -26,6 +26,7 @@ use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -102,10 +103,25 @@ class InvoicePdfService
     }
 
     /**
+     * 請求書へのアクセス認可を検証（他施設の請求書PDFへの不正アクセスを防止）
+     */
+    protected function authorizeInvoiceAccess(MonthlyInvoice $invoice): void
+    {
+        $user = Auth::user();
+        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+            if ((int) $invoice->facility_id !== (int) $user->facility_id) {
+                abort(403, '他の施設の請求書にはアクセスできません。');
+            }
+        }
+    }
+
+    /**
      * 請求書PDFをHTTPレスポンスとしてダウンロードする
      */
     public function downloadPdf(MonthlyInvoice $invoice): Response
     {
+        $this->authorizeInvoiceAccess($invoice);
+
         $pdfBinary = $this->applyPasswordProtection(
             $this->generator->generateInvoice($invoice, false, null),
             $invoice
@@ -122,6 +138,8 @@ class InvoicePdfService
      */
     public function streamPdf(MonthlyInvoice $invoice): Response
     {
+        $this->authorizeInvoiceAccess($invoice);
+
         $pdfBinary = $this->applyPasswordProtection(
             $this->generator->generateInvoice($invoice, false, null),
             $invoice
@@ -286,10 +304,11 @@ class InvoicePdfService
                 $pdfContent = $this->renderer->render($html);
 
                 $fileName = sprintf(
-                    '住居費/請求書_%s_%s号室_%s様.pdf',
+                    '住居費/請求書_%s_%s号室_%s様_%s.pdf',
                     $invoice->billing_year_month,
                     $invoice->resident->room_number,
-                    $invoice->resident->name
+                    $invoice->resident->name,
+                    now()->format('Ymd')
                 );
                 $zip->addFromString($fileName, $pdfContent);
             }
@@ -474,10 +493,11 @@ class InvoicePdfService
      * @param  string  $yearMonth  'YYYY-MM'
      * @return string ジョブID
      */
-    public function generateMonthlyZipAsync(string $yearMonth, ?int $facilityId = null): string
+    public function generateMonthlyZipAsync(string $yearMonth, ?int $facilityId = null, ?int $userId = null): string
     {
         $jobId = 'zip_'.$yearMonth.'_'.($facilityId ?? 'all').'_'.uniqid();
-        GenerateMonthlyZipJob::dispatch($yearMonth, $facilityId, $jobId);
+        $userId = $userId ?? Auth::id();
+        GenerateMonthlyZipJob::dispatch($yearMonth, $facilityId, $jobId, $userId);
 
         return $jobId;
     }

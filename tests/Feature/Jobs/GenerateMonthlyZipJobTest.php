@@ -6,7 +6,11 @@ use App\Jobs\GenerateMonthlyZipJob;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
+use App\Services\FacilityConfigService;
+use App\Services\InvoicePdfService;
+use App\Services\Pdf\InvoicePdfGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -31,7 +35,7 @@ class GenerateMonthlyZipJobTest extends TestCase
     public function test_zero_invoices_completes_with_empty_result(): void
     {
         $job = new GenerateMonthlyZipJob('2099-01', null, 'test-job-zero');
-        $job->handle(app(\App\Services\InvoicePdfService::class), app(\App\Services\FacilityConfigService::class));
+        $job->handle(app(InvoicePdfService::class), app(FacilityConfigService::class));
 
         $progress = GenerateMonthlyZipJob::getProgress('test-job-zero');
 
@@ -63,7 +67,7 @@ class GenerateMonthlyZipJobTest extends TestCase
         ]);
 
         $job = new GenerateMonthlyZipJob('2026-03', $this->facility->id, 'test-job-zip');
-        $job->handle(app(\App\Services\InvoicePdfService::class), app(\App\Services\FacilityConfigService::class));
+        $job->handle(app(InvoicePdfService::class), app(FacilityConfigService::class));
 
         $zipPath = storage_path('app/temp/請求書一括_2026-03.zip');
         $this->assertFileExists($zipPath);
@@ -98,11 +102,11 @@ class GenerateMonthlyZipJobTest extends TestCase
             'status' => 'billed',
         ]);
 
-        $generator = \Mockery::mock(\App\Services\Pdf\InvoicePdfGenerator::class);
+        $generator = \Mockery::mock(InvoicePdfGenerator::class);
         $generator->shouldReceive('generateMonthlyZipStream')
             ->once()
             ->andThrow(new \RuntimeException('ZIP書き込みエラー'));
-        $this->app->instance(\App\Services\Pdf\InvoicePdfGenerator::class, $generator);
+        $this->app->instance(InvoicePdfGenerator::class, $generator);
 
         $job = new GenerateMonthlyZipJob('2026-03', $this->facility->id, 'test-job-fail');
 
@@ -110,7 +114,7 @@ class GenerateMonthlyZipJobTest extends TestCase
         $this->expectExceptionMessage('ZIP書き込みエラー');
 
         try {
-            $job->handle(app(\App\Services\InvoicePdfService::class), app(\App\Services\FacilityConfigService::class));
+            $job->handle(app(InvoicePdfService::class), app(FacilityConfigService::class));
         } finally {
             $progress = GenerateMonthlyZipJob::getProgress('test-job-fail');
             $this->assertSame('failed', $progress['status']);
@@ -121,8 +125,8 @@ class GenerateMonthlyZipJobTest extends TestCase
 
     public function test_static_clear_progress_removes_cache(): void
     {
-        \Illuminate\Support\Facades\Cache::put('zip_progress_clear-test', ['status' => 'completed'], 60);
-        \Illuminate\Support\Facades\Cache::put('zip_result_clear-test', '/tmp/x.zip', 60);
+        Cache::put('zip_progress_clear-test', ['status' => 'completed'], 60);
+        Cache::put('zip_result_clear-test', '/tmp/x.zip', 60);
 
         GenerateMonthlyZipJob::clearProgress('clear-test');
 

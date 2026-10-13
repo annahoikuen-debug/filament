@@ -108,6 +108,7 @@ class ResidentQueryService
                     'resident' => $resident,
                     'score' => 0.9,
                 ];
+
                 continue;
             }
 

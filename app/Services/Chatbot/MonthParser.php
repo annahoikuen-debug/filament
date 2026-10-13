@@ -9,8 +9,7 @@ class MonthParser
     /**
      * メッセージ文中から対象年月（YYYY-MM）を抽出・解決する
      *
-     * @param string $message
-     * @param string $currentYearMonth "YYYY-MM" 形式
+     * @param  string  $currentYearMonth  "YYYY-MM" 形式
      * @return string|null "YYYY-MM" または null
      */
     public function parse(string $message, string $currentYearMonth): ?string

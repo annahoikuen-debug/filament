@@ -146,7 +146,9 @@ class InvoicePersister
         // バージョンを保存してから更新を試みる（楽観ロック）
         $currentVersion = $invoice->version ?? 0;
 
-        $updated = $invoice->where('version', $currentVersion)
+        $updated = $invoice->newModelQuery()
+            ->whereKey($invoice->getKey())
+            ->where('version', $currentVersion)
             ->update([
                 'rent_subtotal' => $data['rent_subtotal'],
                 'management_fee_subtotal' => $data['management_subtotal'],

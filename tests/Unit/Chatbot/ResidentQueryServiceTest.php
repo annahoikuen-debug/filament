@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\InvoiceStatus;
+use App\Enums\TaxType;
+use App\Models\ChargeItem;
 use App\Models\DailyCharge;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
@@ -119,7 +121,7 @@ test('getPaymentStatus が請求ありの場合に状態を返すこと', functi
 });
 
 test('getMonthlyDailyChargeTotal が月内の自費利用料合計を返すこと', function () {
-    $item = \App\Models\ChargeItem::factory()->create(['tax_type' => \App\Enums\TaxType::NonTaxable, 'default_price' => 1000]);
+    $item = ChargeItem::factory()->create(['tax_type' => TaxType::NonTaxable, 'default_price' => 1000]);
 
     DailyCharge::create([
         'resident_id' => $this->resident->id,

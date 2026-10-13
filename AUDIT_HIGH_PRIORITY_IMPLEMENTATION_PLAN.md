@@ -3,198 +3,236 @@
 ## 目的
 施設利用者視点の包括的監査レポートで指摘された緊急対応項目（P0-1～P0-3、P1-4、P1-5、P2-4）を実装し、セキュリティ、監査対応、透明性、および利用者体験を向上させる。
 
-## 対象ファイル
-- `app/Services/InvoicePdfService.php` - PDF生成・セキュリティ機能
-- `app/Models/` - 監査ログ・施設設定履歴用モデル
-- `database/migrations/` - 監査ログ・施設設定履歴・品目マスタ拡張用マイグレーション
-- `app/Services/` - 監査ログサービス・施設設定サービス
-- `app/Http/Controllers/` - 監査ログ・施設設定用コントローラー（필요시）
-- `app/Enums/` - 新しい列挙型（もし必要なら）
-- `config/` - 設定ファイル（監査ログ設定等）
-- `resources/views/invoices/pdf.blade.php` - 請求書テンプレート
-- `resources/views/invoices/receipt.blade.php` - 領収書テンプレート
-- `database/factories/` - テスト用ファクトリー
+## 現在の実装状況サマリー（2026-10-13 時点）
 
-## 実装フェーズとタスク
+| 項目 | 監査ID | 状況 | 備考 |
+|------|-------|------|------|
+| PDFパスワード保護 | P0-1 | ✅ **実装済み** | `PdfPasswordProtector`, `config/pdf.php`, `InvoicePdfService` で完全実装 |
+| 監査ログ基盤 | P0-2 | ✅ **実装済み** | `spatie/laravel-activitylog` 導入済み、全主要モデルでログ記録中、`ActivityLogResource` で閲覧可能 |
+| 施設設定変更履歴・承認フロー | P0-3 | ❌ **未実装** | 要実装 |
+| 請求書計算根拠表示 | P1-4 | ✅ **実装済み** | `calculation-basis.blade.php`, `InvoicePdfData::buildCalculationBasis()`, テンプレート設定連携済み |
+| 領収書番号連番管理・ギャップ検知 | P1-5 | ❌ **未実装** | 番号生成のみ実装、検知機能なし |
+| 品目マスタ表示名・説明追加 | P2-4 | 🟡 **部分実装** | DB・Model・ItemMasterResourceは完了。ChargeItemResource未対応、PDF生成でdisplay_name未使用 |
+| 入居者メールアドレス | - | ❌ **未実装** | Google Drive連携・メール送信機能の前提条件 |
 
-### フェーズ1: 緊急セキュリティ強化（見積もり: 2-3日）
-#### タスク1-1: PDFパスワード保護機能実装
-- ファイル: `app/Services/InvoicePdfService.php`
-- 変更点:
-  - `generatePdfFromInvoice` メソッドにパスワード保護オプションを追加
-  - 環境変数または設定からPDFパスワードを取得可能にする
-  - DomPDF の `setPassword` メソッドを使用してユーザー権限・所有者権限パスワードを設定
-- テスト:
-  - パスワード設定時のPDF生成テスト
-  - パスワードなし時の通常PDF生成テスト（後方互換性）
-  - パスワード保護PDFが実際に開くことを確認（目視またはツール検証）
+---
 
-#### タスク1-2: 領収書番号の連番管理・ギャップ検知基盤
-- ファイル: `app/Models/MonthlyInvoice.php` （または新しいReceiptNumberモデル）
-- 変更点:
-  - 領収書番号の生成ロジックを一元管理
-  - 連番のギャップを検出するメソッドを追加
-  - 重複番号の防止機能
-- テスト:
-  - 連番生成の正確性テスト
-  - ギャップ検知の正確性テスト
-  - 重複防止の効果テスト
+## 対象ファイル（未実装・未完了項目のみ）
 
-### フェーズ2: 監査・診跡管理基盤（見積もり: 3-4日）
-#### タスク2-1: 監査ログテーブル設計・実装
-- ファイル: 
-  - `database/migrations/xxxx_xx_xx_xxxxxx_create_audit_logs_table.php`
-  - `app/Models/AuditLog.php`
-- 変更点:
-  - audit_logs テーブル作成（カラム: id, user_id, event_type, event_description, ip_address, user_agent, created_at）
-  - AuditLog Eloquentモデル作成
-  - グローバルスコープまたはオブザーバーによる自動記録メカニズム
-- テスト:
-  - テーブル作成マイグレーションの正常実行
-  - モデルのリレーションとアクセサー動作確認
-  - 主要操作（請求生成・ステータス変更・PDF出力・設定変更）の自動記録確認
+### P0-3: 施設設定変更履歴・承認フロー
+- `database/migrations/xxxx_xx_xx_xxxxxx_create_facility_setting_histories_table.php`
+- `app/Models/FacilitySettingHistory.php`
+- `app/Services/FacilitySettingService.php`
+- `app/Filament/Resources/FacilitySettingHistoryResource.php` (新規)
 
-#### タスク2-2: 施設設定変更履歴・承認フロー基盤
+### P1-5: 領収書番号連番管理・ギャップ検知
+- `app/Services/ReceiptNumberService.php` (新規)
+- `app/Models/MonthlyInvoice.php` (`markAsPaid` 修正)
+
+### P2-4 完全実装: 品目マスタ表示名・説明
+- `app/Filament/Resources/ChargeItemResource.php` (フォーム・テーブル追加)
+- `app/DTOs/Pdf/DailyChargePdfData.php` (display_name 使用に変更)
+
+### 入居者メールアドレス追加
+- `database/migrations/xxxx_xx_xx_xxxxxx_add_email_to_residents_table.php`
+- `app/Models/Resident.php` (fillable 追加)
+- `app/Filament/Resources/ResidentResource.php` (フォーム・テーブル追加)
+
+---
+
+## 実装フェーズとタスク（未実装・未完了項目のみ）
+
+### フェーズ1: 施設設定変更履歴・承認フロー基盤（P0-3 / 見積もり: 3-4日）
+#### タスク1-1: 施設設定変更履歴テーブル・モデル実装
 - ファイル:
   - `database/migrations/xxxx_xx_xx_xxxxxx_create_facility_setting_histories_table.php`
   - `app/Models/FacilitySettingHistory.php`
-  - `app/Services/FacilitySettingService.php`（もし必要なら）
 - 変更点:
-  - facility_setting_histories テーブル作成（カラム: id, facility_id, changed_by, setting_key, old_value, new_value, changed_at, approval_status, approved_by, approved_at）
-  - FacilitySettingHistory Eloquentモデル作成
-  - 施設設定変更時の自動履歴記録メカニズム
-  - 承認フローの基盤（最初は記録のみ、後段階で承認ワークフロー実装）
+  - `facility_setting_histories` テーブル作成（カラム: id, facility_id, changed_by, setting_key, old_value, new_value, changed_at, approval_status, approved_by, approved_at, rejection_reason）
+  - 変更種別: `bank`, `billing`, `invoice_registration_number`, `seal_path`, `basic_info`, `accounting_api` 等
+  - `FacilitySettingHistory` Eloquentモデル作成（リレーション: facility, changedBy, approver）
 - テスト:
-  - テーブル作成マイグレーションの正常実行
-  - モデルのリレーションとアクセサー動作確認
-  - 設定変更時の自動履歴記録確認
+  - マイグレーション正常実行
+  - モデルリレーション動作確認
 
-### フェーズ3: 透明性・利用者体験向上（見積もり: 2-3日）
-#### タスク3-1: 請求書に計算根拠・用語解説セクション追加
+#### タスク1-2: 施設設定サービス・承認フロー基盤実装
+- ファイル: `app/Services/FacilitySettingService.php`, `app/Filament/Resources/FacilitySettingHistoryResource.php`
+- 変更点:
+  - 設定変更時の自動履歴記録メソッド `recordChange()`
+  - 承認フロー: `pending` → `approved` / `rejected`
+  - 施設管理者は申請のみ、法人管理者が承認
+  - 承認前は設定反映しない（暫定反映せず履歴のみ）
+  - 既存 `Facility::toConfigArray()` は変更せず、履歴は追加記録のみ
+- テスト:
+  - 設定変更申請→承認→反映フロー確認
+  - 却下時の動作確認
+  - 履歴一覧表示確認（法人管理者は全施設、施設管理者は自施設のみ）
+
+### フェーズ2: 領収書番号連番管理・ギャップ検知（P1-5 / 見積もり: 2-3日）
+#### タスク2-1: 領収書番号サービス実装
+- ファイル: `app/Services/ReceiptNumberService.php`
+- 変更点:
+  - 連番生成ロジック一元管理: `REC-{YYYYMM}-{4桁連番}`
+  - 施設別・年月別の連番カウンター管理（DBテーブル `receipt_number_counters` または Redis）
+  - ギャップ検知メソッド: `detectGaps(string $yearMonth, int $facilityId): array`
+  - 重複防止: ユニーク制約 + アトミックな採番（DBトランザクション + 行ロック）
+  - 手動割当・再発行時の連番スキップ記録
+- テスト:
+  - 連番生成の正確性（施設別・年月別）
+  - ギャップ検知の正確性（欠番・削除済み番号の検出）
+  - 並行実行時の重複防止確認
+
+#### タスク2-2: MonthlyInvoice への統合
+- ファイル: `app/Models/MonthlyInvoice.php` (`markAsPaid` メソッド修正)
+- 変更点:
+  - `ReceiptNumberService` を使用して番号生成
+  - 番号割当時の履歴記録（監査ログ連携・自動で行われる）
+
+### フェーズ3: 品目マスタ表示名・説明の完全実装（P2-4 / 見積もり: 1-2日）
+#### タスク3-1: ChargeItemResource への表示名・説明フィールド追加
+- ファイル: `app/Filament/Resources/ChargeItemResource.php`
+- 変更点:
+  - フォームに `display_name` (TextInput), `description` (Textarea) 追加
+  - テーブルに `display_name` カラム追加（検索・ソート・表示切替対応）
+  - ItemMasterResource と同等の機能を提供
+- テスト:
+  - 入力・保存・表示確認
+  - ItemMasterResource との整合性確認
+
+#### タスク3-2: PDF生成で display_name を使用
+- ファイル: `app/DTOs/Pdf/DailyChargePdfData.php`
+- 変更点:
+  - `itemName` 生成時に `chargeItem->display_name ?? chargeItem->name` を使用
+  - 既存データ（display_name=null）は従来通り name を使用
+- テスト:
+  - 表示名あり/なしでのPDF出力確認
+  - 請求書・領収書両方で確認
+
+### フェーズ4: 入居者メールアドレス追加（将来のメール送信機能前提 / 見積もり: 1-2日）
+#### タスク4-1: マイグレーション・モデル・Filament対応
 - ファイル:
-  - `resources/views/invoices/pdf.blade.php`
-  - `app/Services/InvoicePdfService.php`（データ渡し用）
+  - `database/migrations/xxxx_xx_xx_xxxxxx_add_email_to_residents_table.php`
+  - `app/Models/Resident.php`
+  - `app/Filament/Resources/ResidentResource.php`
 - 変更点:
-  - PDFテンプレートに「計算根拠」セクションを追加
-  - 日割り計算式（在籍日数 × 日額）の表示
-  - 税区分の説明（標準税率10%、軽減税率8%、非課税の理由）
-  - 品目別内訳の凡例表示
+  - `residents` テーブルに `email` (string, nullable), `email_cc` (string, nullable), `locale` (string, 5文字, default 'ja') 追加
+  - メールバリデーション追加（形式チェック、重複許可）
+  - Filamentフォーム・テーブルに追加
 - テスト:
-  - 生成されるPDFに計算根拠セクションが正しく表示されること
-  - 各種シナリオ（入居中・中途入居・退去等）での計算根拠の正確性
+  - マイグレーション正常実行
+  - 入力・保存・表示確認
 
-#### タスク3-2: 品目マスタに入居者向け表示名・説明追加
-- ファイル:
-  - `database/migrations/xxxx_xx_xx_xxxxxx_add_display_fields_to_charge_items_table.php`
-  - `app/Models/ChargeItem.php`
-  - `app/Filament/Resources/ChargeItemResource.php`（Filamentリソース更新）
-- 変更点:
-  - charge_items テーブルに `display_name` と `description` カラムを追加
-  - ChargeItem モデルに新しいカラムのアクセサー・ミューターを追加
-  - Filament リソースに新しいフィールドをフォーム・テーブルに追加
-  - InvoicePdfService で brand new display_name を使用して PDF 生成
-- テスト:
-  - マイグレーションの正常実行
-  - フィルタブル・ソート可能な新しいカラムの動作確認
-  - PDF生成時に入居者向け表示名が正しく使用されること
-
-### フェーズ4: 統合・検証（見積もり: 1-2日）
-#### タスク4-1: 総合テスト・検証
-- ファイル: 各種テストファイル
-- 変更点:
-  - ユニットテスト・機能テストの作成・実行
-  - 統合テストによる機能連携確認
-  - パフォーマンス・セキュリティテスト
-- テスト:
-  - すべての実装機能が正常に動作すること
-  - 後方互換性が保たれていること
-  - パフォーマンス劣化がないこと
-  - セキュリティが向上していること
+---
 
 ## 実装順序と依存関係
-1. フェーズ1（緊急セキュリティ強化）を最初に実装
-   - タスク1-1と1-2は基本的に独立して実装可能
-   - タスク1-1はPDF生成に直接影響するため、テストを十分に実施
 
-2. フェーズ2（監査・診跡管理基盤）を次に実装
-   - タスク2-1と2-2は基本的に独立して実装可能
-   - タスク2-1の監査ログは他の機能の実装後に効果を発揮するため、早めに実装推奨
+1. **フェーズ1（施設設定履歴・承認フロー）** を最優先で実装
+   - 監査レポート P0-3 対応、コンプライアンス要件のため最優先
+   - 他機能への依存なし、独立実装可能
 
-3. フェーズ3（透明性・利用者体験向上）を次に実装
-   - タスク3-1と3-2は独立して実装可能
-   - タスク3-2はFilamentリソースの更新を含むため、管理画面への影響を考慮
+2. **フェーズ2（領収書番号管理）** を次に実装
+   - 税務・監査要件（P1-5）対応
+   - `MonthlyInvoice::markAsPaid()` 修正のみで既存フロー影響最小
 
-4. フェーズ4（統合・検証）を最後に実装
-   - すべての機能が実装された後の総合テスト
-   - 本番環境相当のステージング環境での最終確認
+3. **フェーズ3（品目表示名完全実装）** を並行実装可能
+   - 既存実装の完成（ChargeItemResource, PDF連携）
+   - 影響範囲小、即効性あり
 
-## リグレッション防止テスト戦略
-1. ユニットテスト:
-   - 文字列または配列を返すメソッドに焦点を当てる
-   - パスワード保護機能、連番生成ロジック、計算根拠生成ロジックなど
-   - 各種サービスメソッドの戻り値検証
+4. **フェーズ4（入居者メール）** を後続実装
+   - 将来の「Google Drive連携・一括メール送信」機能の前提
+   - 独立実装可能
 
-2. 統合テスト:
-   - PDF生成フルフローのテスト（パスワードあり/なし、QRコードあり/なし）
-   - 領収書番号生成フローのテスト（正常ケース・エッジケース）
-   - 請求書テンプレート変数渡しのテスト
-   - フィルター・ソート機能のテスト（新しいカラム含む）
+---
 
-3. 機能テスト:
-   - 監査ログの自動記録テスト（主要操作ごと）
-   - 施設設定変更履歴の自動記録テスト
-   - PDFテンプレートの表示確認テスト
-   - 品目マスタの新しいフィールド機能テスト
+## リグレッション防止テスト戦略（更新版）
 
-4. 既存テストの活用:
-   - 既存の機能テストスイートを実行し、リグレッションがないことを確認
-   - PDF関連テスト（既知の16件の失敗は既存問題のため除外）
-   - トライアル関連テスト（実装範囲外のため除外対象外）
+### 既存テストの活用
+- `php artisan test` で全テスト実行、リグレッションなしを確認
+- 特に以下の既存テストスイートを重点確認:
+  - `InvoicePdfServiceTest` / `InvoicePdfServiceZipTest` - PDF生成・ZIP生成
+  - `InvoiceCalculationServiceTest` - 請求計算ロジック
+  - `FilamentMonthlyInvoiceResourceTest` - 管理画面操作
+  - `MonthlyInvoiceModelTest` / `MonthlyInvoiceObserverTest` - モデル動作
+  - `FilamentItemMasterResourceTest` - 品目マスタ操作（あれば）
 
-5. 自動テスト実行:
-   - CI/CD パイプラインにテストを組み込むことを推奨
-   - ローカル開発時には `phpunit` コマンドでテスト実行
-   - 特にセキュリティ関連の変更は追加のペネトレーションテストを検討
+### 新規テスト追加項目
+1. **施設設定履歴テスト**
+   - 設定変更時の自動履歴記録
+   - 承認フロー（申請→承認→反映 / 申請→却下）
+   - 却下時の設定値未反映確認
+   - 権限別閲覧制御（法人vs施設管理者）
 
-## リスクと mitigation
-1. リスク: PDFパスワード保護機能により既存のワークフローが動作しなくなる
-   - mitigation: パスワード保護はオプション機能として実装し、デフォルトでは無効にする
-   - mitigation: 環境変数または設定で機能をオン/オフ可能にする
-   - mitigation: テストで実際にパスワード保護PDFが正常に開くことを確認する
+2. **領収書番号サービステスト**
+   - 施設別・年月別連番生成
+   - ギャップ検知（削除・手動割当による欠番）
+   - 並行実行時の重複防止（DBロック or Redis atomic）
 
-2. リスク: 監査ログテーブルの追加によるパフォーマンス劣化
-   - mitigation: 適切なインデックス設計（user_id, event_type, created_at）
-   - mitigation: 非同期書き込みまたはバッファリングを検討（必要に応じて）
-   - mitigation: ログレベル別のフィルタリング機能を実装
+3. **品目表示名テスト**
+   - 表示名あり/なしでのPDF出力差分確認
+   - ChargeItemResource / ItemMasterResource 両方での入力・表示
 
-3. リスク: 施設設定変更履歴の実装による既存設定フローの変更
-   - mitigation: 後方互換性を最優先し、既存の設定取得方法に変更を加えない
-   - mitigation: 変更履歴は追加記録のみとし、既存の設定取得ロジックは変更しない
-   - mitigation: 最初は記録のみ実装し、承認フローは別フェーズで実装
+4. **入居者メールテスト**
+   - バリデーション（形式・重複許可）
+   - Filamentフォーム保存・表示
 
-4. リスク: テンプレート変更によるPDFレイアウトの崩れ
-   - mitigation: 複数の請求書パターン（短期入居・長期入居・高額請求等）でテスト
-   - mitigation: 金額ゼロの場合や特殊な場合のレイアウト崩れを確認
-   - mitigation: 既存のレイアウトをベースとし、追加セクションは適切な場所に挿入
+---
 
-5. リスク: 品目マスタの新しいフィールドによる既存データの扱い
-   - mitigation: 新しいカラムは NULL 許容とし、既存データへの影響をなしにする
-   - mitigation: 既存の品目データに対してマイグレーション実行時にデフォルト値を設定
-   - mitigation: フィルタブル・ソート可能な状態にするため、適切なインデックスを追加
+## リスクと Mitigation（更新版）
 
-## 完了基準
-1. すべての緊急セキュリティ項目が実装されていること（PDFパスワード保護、領収書番号管理）
-2. 監査ログが主要操作で自動記録されること
-3. 施設設定変更が履歴として記録されること
-4. 請求書PDFに計算根拠セクションが正しく表示されること
-5. 品目マスタに入居者向け表示名・説明フィールドが追加され、PDFに反映されること
-6. 新規テストが80%以上のカバレッジで実装されていること
-7. 既存の機能がすべて動作すること（リグレッションなし）
-8. セキュリティスキャンで重大な脆弱性が検出されないこと
+| リスク | 影響度 | Mitigation |
+|--------|--------|------------|
+| 施設設定承認フロー導入による既存設定変更フローの変更 | 高 | 既存 `Facility` モデルの setter/getter は変更せず、Service層で承認フローを挟む。最初は「記録のみ」で運用開始し、承認必須は後段階で。 |
+| 領収書番号採番ロジック変更による既存番号との整合性 | 高 | 既存データはそのまま、新規発行分から新ロジック適用。移行期間中は両方併存可能な設計に。 |
+| 品目表示名フィールド追加による既存PDFレイアウトへの影響 | 低 | 表示名がない場合は従来通り `name` を使用。テンプレート側で null チェック実装済み。 |
+| 入居者メール追加による既存データ互換性 | 低 | 全カラム NULL 許容、デフォルト値なし。既存データ影響なし。 |
+
+---
+
+## 完了基準（更新版）
+
+1. ✅ PDFパスワード保護機能（実装済み・動作確認済み）
+2. ✅ 監査ログ自動記録（実装済み・主要操作で記録確認済み）
+3. ⬜ 施設設定変更が履歴として記録され、承認フローが動作すること
+4. ✅ 請求書PDFに計算根拠セクションが正しく表示されること（実装済み）
+5. ⬜ 領収書番号の連番管理・ギャップ検知機能が動作すること
+6. 🟡 品目マスタに入居者向け表示名・説明フィールドが追加され、PDFに反映されること（ItemMasterResource完了、ChargeItemResource・PDF連携未完了）
+7. ⬜ 入居者にメールアドレス・CC・言語設定フィールドが追加されること
+8. ✅ 新規テストが追加され、既存テストがすべてパスすること
+9. ✅ セキュリティスキャンで重大な脆弱性が検出されないこと
+
+---
 
 ## 次のステップ
-1. この計画書をレビューし、優先順位や範囲を調整する
-2. フェーズ1から実装を開始する（セキュリティ項目が最優先）
-3. 各タスク完了後にテストを実行し、リグレッションがないことを確認する
-4. 完了後にデモまたはサンプルデータを使用した検証を行い、結果を確認する
-5. 実装完了後に、監査レポートの次の優先度項目（P1-1等）への対応を検討する
+
+1. **即着手**: フェーズ1（施設設定履歴・承認フロー）のマイグレーション・モデル・サービス作成
+2. **並行実施**: フェーズ2（領収書番号サービス）の設計・実装
+3. **短期完了**: フェーズ3（品目表示名完全実装 - ChargeItemResource, DailyChargePdfData）
+4. **後続**: フェーズ4（入居者メール）の実装
+5. **将来拡張**: 入居者メールを前提とした「Google Drive連携・一括メール送信機能」の実装計画策定
+
+---
+
+## 実装済み機能の活用メモ（参考）
+
+### PDFパスワード保護（P0-1 完了）
+- 有効化: `.env` で `PDF_PASSWORD_ENABLED=true`
+- モード: `PDF_PASSWORD_MODE=fixed` または `resident_birthday`
+- 固定パスワード: `PDF_PASSWORD_FIXED=任意の文字列`
+- 入居者生年月日モード: `birth_date` カラム必須（実装済み）
+
+### 監査ログ（P0-2 完了）
+- `ActivityLogResource` で管理画面から確認可能（法人管理者のみ）
+- 全主要モデル（`MonthlyInvoice`, `Resident`, `Facility`, `ChargeItem`, `TaxSetting`, `User` 等）で自動記録
+- イベント種別: `created`, `updated`, `deleted`, `status_changed`
+- 施設管理者は自施設分のみ閲覧可能（ポリシー実装済み）
+- `batch_uuid`, `event` カラム追加済み（2026-10-09）
+
+### 計算根拠表示（P1-4 完了）
+- テンプレート設定 `show_calculation_basis` で表示/非表示切替可能
+- 日割り計算の詳細（月日数 × 在籍日数）、税率別内訳（標準10%・軽減8%・非課税）を自動表示
+- `InvoicePdfData::buildCalculationBasis()` でデータ構築、`calculation-basis.blade.php` で描画
+
+### 品目マスタ拡張（P2-4 部分完了）
+- `display_name` (請求書・領収書表示用), `description` (内部備考) カラム追加済み
+- `ItemMasterResource` で入力・一覧表示対応済み
+- **残作業**: `ChargeItemResource` 対応、`DailyChargePdfData` で `display_name` 使用

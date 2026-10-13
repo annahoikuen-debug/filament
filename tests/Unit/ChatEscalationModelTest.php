@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use App\Models\ChatEscalation;
-use App\Models\ChatLog;
 use App\Models\Facility;
 use App\Models\Resident;
 use App\Models\User;

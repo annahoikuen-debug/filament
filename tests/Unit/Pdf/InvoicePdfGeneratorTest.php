@@ -1,5 +1,6 @@
 <?php
 
+use App\DTOs\Pdf\InvoicePdfData;
 use App\Enums\InvoiceStatus;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
@@ -97,11 +98,11 @@ test('previewInvoice / previewReceipt がHTMLを返すこと', function () {
 });
 
 test('previewInvoiceFromData がDTO配列からHTMLを返すこと', function () {
-   $data = \App\DTOs\Pdf\InvoicePdfData::fromInvoice($this->invoice->load('resident'))->toArray();
+    $data = InvoicePdfData::fromInvoice($this->invoice->load('resident'))->toArray();
 
-   $html = $this->generator->previewInvoiceFromData($data);
+    $html = $this->generator->previewInvoiceFromData($data);
 
-   expect($html)->toBeString()->not->toBe('');
+    expect($html)->toBeString()->not->toBe('');
 });
 
 test('generateMonthlyBatch が請求書配列を返すこと', function () {

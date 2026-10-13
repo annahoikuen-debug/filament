@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ServiceInvoiceStatus;
+use App\Models\ApiToken;
 use App\Models\Facility;
 use App\Models\Resident;
 use App\Models\ServiceInvoice;
@@ -13,6 +14,14 @@ beforeEach(function () {
         'address' => '東京都千代田区',
         'invoice_registration_number' => 'T1234567890123',
     ]);
+
+    // API認証用トークン発行
+    [$plainToken, $this->apiToken] = ApiToken::issue(
+        $this->facility->id,
+        'Test System',
+        ['invoices.read', 'invoices.write'],
+    );
+    $this->apiAuthHeader = ['Authorization' => "Bearer {$plainToken}"];
 
     $this->resident = Resident::create([
         'facility_id' => $this->facility->id,
@@ -54,7 +63,7 @@ test('一括取り込みAPIで複数請求書を作成できること', function
                 'status' => 'confirmed',
             ],
         ],
-    ]);
+    ], $this->apiAuthHeader);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -107,7 +116,7 @@ test('既存レコードは更新されること', function () {
                 'status' => 'confirmed', // ステータス変更
             ],
         ],
-    ]);
+    ], $this->apiAuthHeader);
 
     $response->assertStatus(200)
         ->assertJson(['data' => ['created' => 0, 'updated' => 1]]);
@@ -146,7 +155,7 @@ test('異なる施設の入居者はエラーになること', function () {
                 'tax_rate' => 10.00,
             ],
         ],
-    ]);
+    ], $this->apiAuthHeader);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -176,7 +185,7 @@ test('無効なサービス種別はバリデーションエラーになるこ�
                 'tax_rate' => 10.00,
             ],
         ],
-    ]);
+    ], $this->apiAuthHeader);
 
     $response->assertStatus(422);
 });
@@ -194,7 +203,7 @@ test('無効な請求年月フォーマットはバリデーションエラー�
                 'tax_rate' => 10.00,
             ],
         ],
-    ]);
+    ], $this->apiAuthHeader);
 
     $response->assertStatus(422);
 });
@@ -211,7 +220,7 @@ test('単一取り込みAPIが動作すること', function () {
         'tax_rate' => 10.00,
         'pdf_base64' => $this->dummyPdfBase64,
         'status' => 'confirmed',
-    ]);
+    ], $this->apiAuthHeader);
 
     $response->assertStatus(200)
         ->assertJson([
@@ -253,7 +262,7 @@ test('単一APIでupdateOrCreateが動作すること', function () {
         'tax_amount' => 5000,
         'tax_rate' => 10.00,
         'status' => 'confirmed',
-    ]);
+    ], $this->apiAuthHeader);
 
     $response->assertStatus(200)
         ->assertJson(['message' => '更新しました']);
@@ -290,22 +299,22 @@ test('一覧取得APIが動作すること', function () {
     ]);
 
     // 全件取得
-    $response = $this->getJson('/api/external-invoices');
+    $response = $this->getJson('/api/external-invoices', $this->apiAuthHeader);
     $response->assertStatus(200)
         ->assertJson(['success' => true, 'meta' => ['total' => 2]]);
 
     // フィルタ: 請求年月
-    $response = $this->getJson('/api/external-invoices?billing_year_month=2026-10');
+    $response = $this->getJson('/api/external-invoices?billing_year_month=2026-10', $this->apiAuthHeader);
     $response->assertStatus(200)
         ->assertJson(['meta' => ['total' => 1]]);
 
     // フィルタ: ステータス
-    $response = $this->getJson('/api/external-invoices?status=confirmed');
+    $response = $this->getJson('/api/external-invoices?status=confirmed', $this->apiAuthHeader);
     $response->assertStatus(200)
         ->assertJson(['meta' => ['total' => 1]]);
 
     // フィルタ: サービス種別
-    $response = $this->getJson('/api/external-invoices?service_type=visiting_care');
+    $response = $this->getJson('/api/external-invoices?service_type=visiting_care', $this->apiAuthHeader);
     $response->assertStatus(200)
         ->assertJson(['meta' => ['total' => 1]]);
 });
@@ -324,7 +333,7 @@ test('不正なBase64 PDFはエラーになること', function () {
                 'pdf_base64' => 'invalid_base64!!!',
             ],
         ],
-    ]);
+    ], $this->apiAuthHeader);
 
     $response->assertStatus(200)
         ->assertJson([

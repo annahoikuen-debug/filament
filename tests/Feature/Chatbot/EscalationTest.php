@@ -6,7 +6,6 @@ use App\Models\Facility;
 use App\Models\User;
 use App\Services\Chatbot\ChatbotService;
 use App\Services\Chatbot\DTO\ChatRequest;
-use Carbon\Carbon;
 
 beforeEach(function () {
     $this->facility = Facility::factory()->create();
