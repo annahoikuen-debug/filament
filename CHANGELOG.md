@@ -1,5 +1,87 @@
 # 変更履歴
 
+## [1.7.0] - 2026-10-13
+
+### 新機能
+- **会計ソフトAPI連携 (freee / MFクラウド会計)** (`App\Filament\Resources\FacilityResource`, `App\Services\Accounting\AccountingSyncService`)
+  - 施設情報にOAuth2.0認証情報（Client ID/Secret、Access/Refresh Token、事業所ID）を管理
+  - 連携対象会計ソフト選択（freee / MFクラウド会計）、自動同期ON/OFF、CSVエクスポート時同期オプション
+  - 管理画面から「接続テスト」ボタンで認証情報の有効性を即時確認可能
+  - 請求確定・入金時に `AccountingSyncService` 経由で仕訳を自動同期（本番/ステージング環境のみ）
+- **全銀口座振替依頼出力 (Zengin形式)** (`App\Services\Banking\ZenginFormatService`, `MonthlyInvoiceResource` 一括アクション)
+  - 一括選択した請求データから全銀フォーマット（固定長レコード）の振替依頼ファイルを生成
+  - 施設銀行情報（委託者コード・銀行コード・支店コード・口座種別・番号）をヘッダーに、入居者口座情報をデータレコードに出力
+  - 引落日指定、UTF-8/Shift_JIS対応、`.dat` 拡張子で出力
+- **全銀結果取込（自動消込）** (`App\Services\Banking\ZenginReconcileService`, `MonthlyInvoiceResource` 一括アクション)
+  - 金融機関からの全銀結果ファイル（固定長）を解析し、成功/不能を自動判定
+  - 成功レコードは該当請求を `Paid` ステータスに自動遷移、領収書番号発行、領収書日付モード対応
+  - 不能レコードは詳細理由（残高不足・口座解約・名義不一致等）付きで通知、手動対応へエスカレーション
+  - 取込結果サマリー（成功件数・金額、不能件数・金額）を通知表示
+- **一括請求書メール送信** (`MonthlyInvoiceResource` 一括アクション)
+  - 複数の請求書を選択し、共通メールアドレス・添え書きで一括送信
+  - 入居者個別のメールアドレスが設定されている場合はそちらを優先
+  - 介護サービス請求書PDF（確定済みのみ）も同封可能
+  - 送信成功/失敗件数を通知
+- **銀行口座情報管理** (`App\Models\ResidentBankAccount`, `App\Models\DirectDebitResult`)
+  - 入居者ごとの銀行口座（銀行・支店・種別・番号・名義・カナ名・有効フラグ）を登録・管理
+  - 口座振替結果（成功/不能・エラーコード・理由・金額・処理日）を記録
+- **日次利用料プリセット** (`App\Models\DailyChargePreset`, `App\Models\DailyChargePresetItem`, `App\Filament\Resources\DailyChargePresetResource`)
+  - よく使う自費記録パターン（品目×数量×単価のセット）をプリセットとして保存
+  - 一括入力画面からプリセットを適用し、複数入居者へ一括展開可能
+- **月次締めウィザード** (`App\Filament\Pages\MonthlyClosingWizard`)
+  - 月末締め作業（自費記録確認→請求生成→金額確認→PDF出力→請求済変更→入金消込→会計CSV出力）を7ステップでガイド
+  - 各ステップで進捗・未完了項目を可視化、前ステップへの戻り可能
+- **一括日次利用料入力** (`App\Filament\Pages\BulkDailyChargeEntry`)
+  - 入居者×品目のマトリクス形式で、同一日付の自費記録を一括入力
+  - プリセット適用、品目単価自動反映、入力済みセルのハイライト表示
+- **APIトークン管理** (`App\Models\ApiToken`, `App\Filament\Resources\ApiTokenResource`, `App\Http\Middleware\ApiTokenAuth`)
+  - 外部システム連携用のBearerトークン発行・管理・失効・有効期限設定
+  - 権限スコープ（read/write/admin）によるアクセス制御、最終使用日時記録
+  - `routes/api.php` に API トークン認証ミドルウェア適用
+- **会計同期サービス** (`App\Services\Accounting\AccountingSyncService`)
+  - freee / MFクラウド会計の OAuth2.0 トークン自動リフレッシュ
+  - 仕訳作成・更新・削除 API 対応、同期失敗時のリトライ・ログ記録
+- **請求異常検知** (`App\Services\BillingAnomalyDetector`)
+  - 前月比金額急変（±30%以上）、未入金長期化（60日超）、請求額0円継続などを自動検知
+  - 検知結果をアクティビティログ記録、ダッシュボードウィジェットで表示
+
+### アーキテクチャ改善
+- **MonthlyInvoiceResource アクション大幅整理**
+  - PDFプレビューアクションを削除し、PDFダウンロードアクションに統合（`generatePdfFromInvoice` 経由）
+  - 請求書・領収書・ZIPダウンロードを「帳票」ドロップダウンにグループ化
+  - 一括アクションにスキップ件数表示・フィルタリング機能を追加（確定済み自動除外）
+  - CSV出力に施設管理者権限対応（自施設のみ出力）
+- **Dashboard 改善** (`App\Filament\Pages\Dashboard`)
+  - 請求アクション（一括生成・ZIP出力・CSV出力）をダッシュボードから直接実行可能に
+  - 未入金アラートの詳細表示・絞り込み機能強化
+- **InvoicePdfService 改善** (`App\Services\InvoicePdfService`)
+  - サンプルPDFを最新テンプレートで再生成（`storage/app/sample_invoice.pdf`, `sample_receipt.pdf`）
+  - ZIP生成時のファイル名に施設名・年月を含めるよう統一
+
+### データベース
+- `facilities` に会計API認証情報カラム追加（`accounting_software`, `accounting_api_settings` JSON, `freee_*`, `mf_*`）
+- `notifications` テーブル新規作成（システム通知・アラート用）
+- `api_tokens` テーブル新規作成（APIトークン管理用）
+- `resident_bank_accounts` テーブル新規作成（入居者銀行口座管理用）
+- `direct_debit_results` テーブル新規作成（口座振替結果記録用）
+- `daily_charge_presets` / `daily_charge_preset_items` テーブル新規作成（プリセット管理用）
+- `monthly_closing_states` テーブル新規作成（月次締め進捗管理用）
+
+### テスト拡充
+- `AccountingSyncServiceTest`（freee/MF同期ロジック）
+- `ZenginFormatServiceTest` / `ZenginReconcileServiceTest`（全銀フォーマット生成・解析）
+- `BulkDailyChargeEntryTest` / `BulkDailyChargeEntryPresetTest`（一括入力・プリセット）
+- `MonthlyClosingWizardTest`（月次締めウィザード）
+- `DatabaseHealthCheckTest`（DBヘルスチェックコマンド）
+- `DashboardBillingActionTest`（ダッシュボードからの請求アクション）
+- `InvoiceCsvExportServiceTaxBreakdownTest`（税額内訳CSV出力）
+- `InvoicePdfFileNameTest`（PDFファイル名生成）
+- `ZipCompletionNotificationTest`（ZIP生成完了通知）
+- 各種リグレッションテスト追加
+
+### 備考
+v1.6 からの破壊的変更なし。既存データ・テストは全て互換性維持。
+
 ## [1.6.0] - 2026-10-10
 
 ### バグ修正
