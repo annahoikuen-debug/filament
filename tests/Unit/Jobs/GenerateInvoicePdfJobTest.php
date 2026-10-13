@@ -1,11 +1,13 @@
 <?php
 
+use App\Enums\InvoiceStatus;
 use App\Jobs\GenerateInvoicePdfJob;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\FacilityConfigService;
 use App\Services\InvoicePdfService;
+use Barryvdh\DomPDF\PDF;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -26,7 +28,7 @@ beforeEach(function () {
         'management_fee_subtotal' => 20000,
         'service_subtotal' => 0,
         'total_amount' => 70000,
-        'status' => \App\Enums\InvoiceStatus::Billed,
+        'status' => InvoiceStatus::Billed,
     ]);
 });
 
@@ -62,7 +64,7 @@ test('キャッシュ済みPDFがある場合は再生成しないこと', funct
 
 test('PDFを生成してキャッシュに保存すること', function () {
     $pdfService = Mockery::mock(InvoicePdfService::class);
-    $pdf = Mockery::mock(Barryvdh\DomPDF\PDF::class);
+    $pdf = Mockery::mock(PDF::class);
     $pdf->shouldReceive('output')->andReturn('%PDF-1.4 fake');
     $pdfService->shouldReceive('generateInvoicePdf')->once()->andReturn($pdf);
 
@@ -79,7 +81,7 @@ test('PDFを生成してキャッシュに保存すること', function () {
 
 test('生成失敗時は例外を再スローすること', function () {
     $pdfService = Mockery::mock(InvoicePdfService::class);
-    $pdfService->shouldReceive('generateInvoicePdf')->once()->andThrow(new \RuntimeException('PDF generation failed'));
+    $pdfService->shouldReceive('generateInvoicePdf')->once()->andThrow(new RuntimeException('PDF generation failed'));
 
     $configService = Mockery::mock(FacilityConfigService::class);
     $configService->shouldNotReceive('getConfig');
@@ -87,5 +89,5 @@ test('生成失敗時は例外を再スローすること', function () {
     $job = new GenerateInvoicePdfJob('2026-03', $this->invoice->id);
 
     expect(fn () => $job->handle($pdfService, $configService))
-        ->toThrow(\RuntimeException::class, 'PDF generation failed');
+        ->toThrow(RuntimeException::class, 'PDF generation failed');
 });

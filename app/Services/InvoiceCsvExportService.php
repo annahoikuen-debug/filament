@@ -40,11 +40,16 @@ class InvoiceCsvExportService
             '入居者氏名',
             'フリガナ',
             '基本家賃(非課税)',
-            '基本管理費(課税)',
-            '自費サービス小計(課税)',
-            '課税対象額',
-            '消費税率',
-            '消費税額',
+            '管理費(標準税率10%対象)',
+            '自費(標準税率10%対象)',
+            '自費(軽減税率8%対象)',
+            '自費(非課税)',
+            '標準税率10%対象額合計',
+            '軽減税率8%対象額合計',
+            '非課税額合計',
+            '消費税額(10%)',
+            '消費税額(8%)',
+            '消費税額合計',
             '請求合計金額',
             '請求ステータス',
             '入金日',
@@ -57,6 +62,28 @@ class InvoiceCsvExportService
         fputcsv($output, $headers);
 
         foreach ($invoices as $inv) {
+            $breakdown = $inv->tax_breakdown;
+            if (is_array($breakdown) && isset($breakdown['standard'])) {
+                $standardTaxableTotal = (int) ($breakdown['standard']['taxable_amount'] ?? 0);
+                $standardTax = (int) ($breakdown['standard']['tax_amount'] ?? 0);
+                $reducedTaxable = (int) ($breakdown['reduced']['taxable_amount'] ?? 0);
+                $reducedTax = (int) ($breakdown['reduced']['tax_amount'] ?? 0);
+                $serviceStandard = max(0, $standardTaxableTotal - (int) $inv->management_fee_subtotal);
+                $serviceReduced = $reducedTaxable;
+                $serviceNonTaxable = max(0, (int) $inv->service_subtotal - $serviceStandard - $serviceReduced);
+                $nonTaxableTotal = (int) $inv->rent_subtotal + $serviceNonTaxable;
+            } else {
+                // 旧データ用フォールバック
+                $standardTaxableTotal = (int) $inv->taxable_amount;
+                $standardTax = (int) $inv->tax_amount;
+                $reducedTaxable = 0;
+                $reducedTax = 0;
+                $serviceStandard = max(0, (int) $inv->taxable_amount - (int) $inv->management_fee_subtotal);
+                $serviceReduced = 0;
+                $serviceNonTaxable = max(0, (int) $inv->service_subtotal - $serviceStandard);
+                $nonTaxableTotal = (int) $inv->rent_subtotal + $serviceNonTaxable;
+            }
+
             fputcsv($output, [
                 $inv->billing_year_month,
                 $inv->resident->room_number,
@@ -64,9 +91,14 @@ class InvoiceCsvExportService
                 $inv->resident->name_kana,
                 $inv->rent_subtotal,
                 $inv->management_fee_subtotal,
-                $inv->service_subtotal,
-                $inv->taxable_amount,
-                rtrim(rtrim($inv->tax_rate, '0'), '.').'%',
+                $serviceStandard,
+                $serviceReduced,
+                $serviceNonTaxable,
+                $standardTaxableTotal,
+                $reducedTaxable,
+                $nonTaxableTotal,
+                $standardTax,
+                $reducedTax,
                 $inv->tax_amount,
                 $inv->total_amount,
                 $inv->status?->getLabel() ?? $inv->status,
@@ -116,7 +148,7 @@ class InvoiceCsvExportService
         $invoices = $query->get();
 
         // 介護サービス請求データ取得（オプション）
-        $careServiceInvoices = new \Illuminate\Database\Eloquent\Collection;
+        $careServiceInvoices = new Collection;
         if ($includeCareServices) {
             $careQuery = ServiceInvoice::with('resident.facility')
                 ->where('billing_year_month', $yearMonth)
@@ -170,7 +202,7 @@ class InvoiceCsvExportService
 
         $invoices = $query->get();
 
-        $careServiceInvoices = new \Illuminate\Database\Eloquent\Collection;
+        $careServiceInvoices = new Collection;
         if ($includeCareServices) {
             $careQuery = ServiceInvoice::with('resident.facility')
                 ->where('billing_year_month', $yearMonth)
@@ -225,6 +257,14 @@ class InvoiceCsvExportService
     }
 
     /**
+     * プロファイル解決（公開メソッド）
+     */
+    public function resolveProfilePublic(?int $facilityId, ?string $softwareType, ?int $profileId): AccountingExportProfile
+    {
+        return $this->resolveProfile($facilityId, $softwareType, $profileId);
+    }
+
+    /**
      * プロファイル解決
      */
     private function resolveProfile(?int $facilityId, ?string $softwareType, ?int $profileId): AccountingExportProfile
@@ -269,7 +309,19 @@ class InvoiceCsvExportService
     }
 
     /**
+     * 勘定科目マスタ一括読み込み（公開メソッド）
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function loadChartOfAccountsPublic(array $facilityIds): array
+    {
+        return $this->loadChartOfAccounts($facilityIds);
+    }
+
+    /**
      * 勘定科目マスタ一括読み込み
+     *
+     * @return array<int, array<string, mixed>>
      */
     private function loadChartOfAccounts(array $facilityIds): array
     {
@@ -281,6 +333,22 @@ class InvoiceCsvExportService
             ->toArray();
 
         return $accounts;
+    }
+
+    /**
+     * 仕訳エントリ構築（公開メソッド）
+     *
+     * @param  Collection  $invoices  住居費請求
+     * @param  Collection  $careServiceInvoices  介護サービス請求
+     * @return array<int, array<string, mixed>>
+     */
+    public function buildJournalEntriesPublic(
+        Collection $invoices,
+        Collection $careServiceInvoices,
+        array $chartOfAccounts,
+        AccountingExportProfile $profile
+    ): array {
+        return $this->buildJournalEntries($invoices, $careServiceInvoices, $chartOfAccounts, $profile);
     }
 
     /**

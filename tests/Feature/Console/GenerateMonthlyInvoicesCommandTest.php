@@ -6,8 +6,10 @@ use App\Enums\InvoiceStatus;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
+use App\Services\InvoiceCalculationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -33,7 +35,7 @@ class GenerateMonthlyInvoicesCommandTest extends TestCase
     public function test_error_path_returns_failure(): void
     {
         // データベース処理で致命的例外が発生するケース
-        \Illuminate\Support\Facades\DB::shouldReceive('transaction')
+        DB::shouldReceive('transaction')
             ->once()
             ->andThrow(new \RuntimeException('計算エラー'));
 
@@ -53,7 +55,7 @@ class GenerateMonthlyInvoicesCommandTest extends TestCase
             'move_in_date' => '2026-01-01',
         ]);
 
-        $this->mock(\App\Services\InvoiceCalculationService::class, function ($mock) {
+        $this->mock(InvoiceCalculationService::class, function ($mock) {
             $mock->shouldReceive('calculate')->andThrow(new \RuntimeException('計算エラー'));
         });
 

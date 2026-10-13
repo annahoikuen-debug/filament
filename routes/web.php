@@ -54,7 +54,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 // 公開チャットボットAPI（認証不要・throttle + ハニーポット + 最短時間チェック）
 Route::post('/api/public/chatbot/message', [PublicChatbotController::class, 'message'])
     ->name('public.chatbot.message')
-    ->middleware('throttle:' . config('chatbot.public.rate_limit', '20,1'));
+    ->middleware('throttle:'.config('chatbot.public.rate_limit', '20,1'));
 
 // 公開チャットボットウィジェットJS配信（静的サイトから1行scriptで埋め込み可能）
 Route::get('/chatbot/widget.js', function () {

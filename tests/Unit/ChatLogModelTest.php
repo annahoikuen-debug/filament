@@ -6,6 +6,7 @@ use App\Models\ChatLog;
 use App\Models\Facility;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ChatLogModelTest extends TestCase
@@ -74,6 +75,6 @@ class ChatLogModelTest extends TestCase
             'facility_id' => $facility->id,
         ]);
 
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $log->created_at);
+        $this->assertInstanceOf(Carbon::class, $log->created_at);
     }
 }

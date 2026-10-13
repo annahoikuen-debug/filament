@@ -4,12 +4,17 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\FacilityResource\Pages;
 use App\Models\Facility;
+use App\Services\Accounting\AccountingSyncService;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -124,6 +129,172 @@ class FacilityResource extends Resource
                             ->reorderable(false)
                             ->columnSpanFull(),
                     ]),
+
+                Section::make('会計ソフト連携 (freee / MFクラウド会計)')
+                    ->description('仕訳データを会計ソフトへ自動連携するためのAPI認証情報')
+                    ->schema([
+                        Select::make('accounting_software')
+                            ->label('連携対象会計ソフト')
+                            ->options([
+                                Facility::SOFTWARE_FREEE => 'freee',
+                                Facility::SOFTWARE_MF => 'MFクラウド会計',
+                            ])
+                            ->native(false)
+                            ->placeholder('選択してください')
+                            ->helperText('選択した会計ソフトの認証情報を入力してください')
+                            ->live()
+                            ->afterStateUpdated(fn (callable $set) => $set('accounting_api_settings.sync_enabled', true)),
+
+                        Toggle::make('accounting_api_settings.sync_enabled')
+                            ->label('自動同期を有効にする')
+                            ->default(false)
+                            ->helperText('請求確定・入金時に自動的に仕訳を同期します')
+                            ->visible(fn (callable $get) => $get('accounting_software')),
+
+                        Toggle::make('accounting_api_settings.auto_sync_on_export')
+                            ->label('CSVエクスポート時に同期')
+                            ->default(false)
+                            ->helperText('会計エクスポート実行時に同時にAPI同期も行います')
+                            ->visible(fn (callable $get) => $get('accounting_software')),
+
+                        // freee 設定
+                        Section::make('freee API設定')
+                            ->description('freee連携用の認証情報（OAuth2.0）')
+                            ->visible(fn (callable $get) => $get('accounting_software') === Facility::SOFTWARE_FREEE)
+                            ->schema([
+                                TextInput::make('freee_client_id')
+                                    ->label('Client ID')
+                                    ->required()
+                                    ->password()
+                                    ->autocomplete('off')
+                                    ->helperText('freee 開発者画面で取得'),
+
+                                TextInput::make('freee_client_secret')
+                                    ->label('Client Secret')
+                                    ->required()
+                                    ->password()
+                                    ->autocomplete('off')
+                                    ->helperText('freee 開発者画面で取得'),
+
+                                TextInput::make('freee_access_token')
+                                    ->label('Access Token')
+                                    ->required()
+                                    ->password()
+                                    ->autocomplete('off')
+                                    ->helperText('OAuth認証後に取得したアクセストークン'),
+
+                                TextInput::make('freee_refresh_token')
+                                    ->label('Refresh Token')
+                                    ->required()
+                                    ->password()
+                                    ->autocomplete('off')
+                                    ->helperText('トークンリフレッシュ用'),
+
+                                TextInput::make('freee_company_id')
+                                    ->label('事業所ID')
+                                    ->required()
+                                    ->numeric()
+                                    ->helperText('freee の事業所ID（数値）'),
+                            ])
+                            ->columns(2)
+                            ->collapsible(),
+
+                        // MFクラウド会計 設定
+                        Section::make('MFクラウド会計 API設定')
+                            ->description('MFクラウド会計連携用の認証情報（OAuth2.0）')
+                            ->visible(fn (callable $get) => $get('accounting_software') === Facility::SOFTWARE_MF)
+                            ->schema([
+                                TextInput::make('mf_client_id')
+                                    ->label('Client ID')
+                                    ->required()
+                                    ->password()
+                                    ->autocomplete('off')
+                                    ->helperText('MF 開発者画面で取得'),
+
+                                TextInput::make('mf_client_secret')
+                                    ->label('Client Secret')
+                                    ->required()
+                                    ->password()
+                                    ->autocomplete('off')
+                                    ->helperText('MF 開発者画面で取得'),
+
+                                TextInput::make('mf_access_token')
+                                    ->label('Access Token')
+                                    ->required()
+                                    ->password()
+                                    ->autocomplete('off')
+                                    ->helperText('OAuth認証後に取得したアクセストークン'),
+
+                                TextInput::make('mf_refresh_token')
+                                    ->label('Refresh Token')
+                                    ->required()
+                                    ->password()
+                                    ->autocomplete('off')
+                                    ->helperText('トークンリフレッシュ用'),
+
+                                TextInput::make('mf_office_id')
+                                    ->label('事業所ID')
+                                    ->required()
+                                    ->numeric()
+                                    ->helperText('MF の事業所ID（数値）'),
+                            ])
+                            ->columns(2)
+                            ->collapsible(),
+
+                        // 接続テストボタン
+                        Section::make('接続テスト')
+                            ->visible(fn (callable $get) => $get('accounting_software'))
+                            ->schema([
+                                Action::make('test_connection')
+                                    ->label('接続テスト実行')
+                                    ->icon('heroicon-o-wifi')
+                                    ->color('info')
+                                    ->action(function (array $data, Facility $record, callable $get) {
+                                        $software = $get('accounting_software');
+                                        if (! $software) {
+                                            Notification::make()
+                                                ->title('会計ソフトを選択してください')
+                                                ->danger()
+                                                ->send();
+
+                                            return;
+                                        }
+
+                                        // 一時的にデータを保存してテスト
+                                        $record->fill($data)->save();
+
+                                        try {
+                                            $service = app(AccountingSyncService::class);
+                                            $providers = $service->getAvailableProviders($record->id);
+                                            $provider = collect($providers)->firstWhere('key', $software);
+
+                                            if ($provider && $provider['configured'] && $provider['token_valid']) {
+                                                Notification::make()
+                                                    ->title('接続テスト成功')
+                                                    ->body("{$provider['name']} への接続に成功しました。")
+                                                    ->success()
+                                                    ->send();
+                                            } else {
+                                                Notification::make()
+                                                    ->title('接続テスト失敗')
+                                                    ->body('認証情報が不完全またはトークンが無効です。')
+                                                    ->danger()
+                                                    ->send();
+                                            }
+                                        } catch (\Throwable $e) {
+                                            Notification::make()
+                                                ->title('接続テストエラー')
+                                                ->body($e->getMessage())
+                                                ->danger()
+                                                ->send();
+                                        }
+                                    }),
+                            ])
+                            ->columns(1),
+                    ])
+                    ->collapsible()
+                    ->collapsed()
+                    ->columnSpanFull(),
 
                 Section::make('ステータス・備考')
                     ->schema([

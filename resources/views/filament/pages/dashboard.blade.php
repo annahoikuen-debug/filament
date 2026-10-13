@@ -10,6 +10,18 @@
             </h1>
             <p class="text-gray-500 mt-1">
                 {{ \Carbon\Carbon::createFromFormat('Y-m', $currentYearMonth)->format('Y年m月') }} 請求管理
+                {{-- 当月締め進捗バッジ（Step 24） --}}
+                @php
+                    $closingState = $facility
+                        ? \App\Models\MonthlyClosingState::where('billing_year_month', $currentYearMonth)->where('facility_id', $facility->id)->first()
+                        : null;
+                @endphp
+                @if ($closingState)
+                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {{ $closingState->status === 'closed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                        締め進捗: {{ ['unclosed' => '未締め', 'generated' => '請求生成済', 'approved' => '承認済', 'sent' => '送付済', 'closed' => '締め済'][$closingState->status] }}
+                    </span>
+                @endif
             </p>
         </div>
         <div class="flex items-center gap-2">
@@ -144,6 +156,12 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            <div class="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <a href="{{ route('filament.admin.resources.monthly-invoices.index') }}" class="text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline flex items-center">
+                    月次請求データ一覧で詳細・消込を確認する &rarr;
+                </a>
             </div>
         @endif
     </div>

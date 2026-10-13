@@ -223,14 +223,25 @@ class Dashboard extends BaseDashboard implements HasActions
     {
         return [
             Action::make('generateBilling')
-                ->label('今月の請求を生成')
+                ->label(function () {
+                    $unbilled = $this->billingStats['unbilled'] ?? 0;
+                    $total = $this->billingStats['total'] ?? 0;
+                    if ($total === 0) {
+                        return '請求データを一括生成する';
+                    }
+                    if ($unbilled > 0) {
+                        return "未請求 {$unbilled}件 → 再計算する";
+                    }
+
+                    return '請求データを再生成する';
+                })
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary')
                 ->size('lg')
                 ->iconPosition(IconPosition::Before)
                 ->requiresConfirmation()
-                ->modalHeading('今月の請求データを生成します')
-                ->modalDescription('翌月1日以降の請求データを一括生成します。日々の自費記録が揃っていることを確認してから実行してください。')
+                ->modalHeading('請求データの一括生成・再計算')
+                ->modalDescription('日々の自費記録や入居者固定費を合算し、請求データを一括作成・再計算します。')
                 ->modalSubmitActionLabel('生成する')
                 ->action(function () {
                     $this->generateBilling();
@@ -247,10 +258,7 @@ class Dashboard extends BaseDashboard implements HasActions
 
     protected function canGenerateBilling(): bool
     {
-        // 翌月以降のみ生成可能（当月は生成済みの可能性があるため）
-        $currentMonth = now()->format('Y-m');
-
-        return $this->currentYearMonth >= $currentMonth;
+        return true;
     }
 
     protected function generateBilling(): void

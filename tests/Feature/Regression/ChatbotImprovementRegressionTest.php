@@ -2,8 +2,8 @@
 
 use App\Enums\InvoiceStatus;
 use App\Enums\ResidentStatus;
-use App\Models\ChatLog;
 use App\Models\ChatbotFaq;
+use App\Models\ChatLog;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;

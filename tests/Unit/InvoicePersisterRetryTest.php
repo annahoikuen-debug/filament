@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\InvoiceStatus;
+use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\Invoice\InvoicePersister;
@@ -7,7 +9,7 @@ use Illuminate\Database\QueryException;
 
 function persisterRetryFacilityResident(): array
 {
-    $facility = \App\Models\Facility::factory()->create();
+    $facility = Facility::factory()->create();
     $resident = Resident::factory()->create(['facility_id' => $facility->id]);
 
     return [$facility, $resident];
@@ -60,7 +62,7 @@ it('counts conflicts when optimistic locking version changes mid-update', functi
         'management_fee_subtotal' => 10000,
         'service_subtotal' => 20000,
         'total_amount' => 80000,
-        'status' => \App\Enums\InvoiceStatus::Unbilled,
+        'status' => InvoiceStatus::Unbilled,
         'version' => 5,
     ]);
 
@@ -86,7 +88,7 @@ it('re-fetches invoice when not provided (doUpdateExisting re-fetch path)', func
         'management_fee_subtotal' => 1,
         'service_subtotal' => 1,
         'total_amount' => 3,
-        'status' => \App\Enums\InvoiceStatus::Unbilled,
+        'status' => InvoiceStatus::Unbilled,
         'version' => 0,
     ]);
 
@@ -112,7 +114,7 @@ it('updates successfully with provided invoice instance', function () {
         'management_fee_subtotal' => 1,
         'service_subtotal' => 1,
         'total_amount' => 3,
-        'status' => \App\Enums\InvoiceStatus::Unbilled,
+        'status' => InvoiceStatus::Unbilled,
         'version' => 10,
     ]);
 
@@ -137,7 +139,7 @@ it('counts conflict and skip when update affects zero rows', function () {
         'management_fee_subtotal' => 1,
         'service_subtotal' => 1,
         'total_amount' => 3,
-        'status' => \App\Enums\InvoiceStatus::Unbilled,
+        'status' => InvoiceStatus::Unbilled,
         'version' => 10,
     ]);
 
@@ -178,7 +180,7 @@ it('updates existing invoice via doPersist', function () {
         'management_fee_subtotal' => 1,
         'service_subtotal' => 1,
         'total_amount' => 3,
-        'status' => \App\Enums\InvoiceStatus::Unbilled,
+        'status' => InvoiceStatus::Unbilled,
         'version' => 0,
     ]);
 
@@ -210,7 +212,7 @@ it('throws on non-retryable error inside persist loop', function () {
 
     $persister = Mockery::mock(InvoicePersister::class)->makePartial();
 
-    $otherError = new QueryException('sqlite', 'select ...', [], new \Exception('some other error'));
+    $otherError = new QueryException('sqlite', 'select ...', [], new Exception('some other error'));
 
     // persist 縺ｯ public 縺ｪ縺ｮ縺ｧ逶ｴ謗･繝｢繝・け縺励※蜀・Κ縺ｮdoPersist縺梧兜縺偵ｋ萓句､悶ｒ繧ｨ繝溘Η繝ｬ繝ｼ繝医〒縺阪↑縺・・
     // 莉｣繧上ｊ縺ｫ縲｝rivate doPersist 縺御ｾ句､悶ｒ謚輔￡繧狗憾豕√ｒ菴懊ｋ: 荳肴ｭ｣縺ｪ繝・・繧ｿ縺ｧDB繧ｨ繝ｩ繝ｼ繧堤匱逕溘＆縺帙ｋ
@@ -241,4 +243,4 @@ it('deadlock detection covers message-based matching via retry loop', function (
     $const = $ref->getConstant('MAX_RETRIES');
 
     expect($const)->toBe(3);
- });
+});

@@ -8,6 +8,8 @@ use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Models\ServiceInvoice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\Mailables\Attachment;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -58,7 +60,7 @@ class InvoiceMailTest extends TestCase
         $this->assertSame('https://example.com/invoice.pdf', $content->with['pdfUrl']);
         $this->assertSame('よろしくお願いします', $content->with['message']);
         $this->assertTrue($content->with['includeCareServices']);
-        $this->assertTrue($content->with['careServices'] instanceof \Illuminate\Support\Collection);
+        $this->assertTrue($content->with['careServices'] instanceof Collection);
     }
 
     public function test_envelope_contains_subject_and_suffix_without_care_services(): void
@@ -91,7 +93,7 @@ class InvoiceMailTest extends TestCase
         $attachments = $mail->attachments();
 
         $this->assertCount(1, $attachments);
-        $this->assertInstanceOf(\Illuminate\Mail\Mailables\Attachment::class, $attachments[0]);
+        $this->assertInstanceOf(Attachment::class, $attachments[0]);
 
         $this->assertSame('請求書_2026-03_101号室_佐藤太郎.pdf', $attachments[0]->as);
         $this->assertSame('application/pdf', $attachments[0]->mime);

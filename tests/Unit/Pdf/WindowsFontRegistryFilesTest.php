@@ -35,6 +35,7 @@ class WindowsFontRegistryFilesTest extends TestCase
         $path = $this->fontsDir.'/'.$filename;
         // 有効なTTFでなくても良い: レジストリは失敗を握りつぶして警告ログに記録する
         file_put_contents($path, 'DUMMY FONT DATA for testing');
+
         return $path;
     }
 

@@ -153,3 +153,23 @@ it('updates invoice created by another path', function () {
     expect($stats['updated'])->toBe(1);
     expect(MonthlyInvoice::where('resident_id', $resident->id)->first()->total_amount)->toBe(12345);
 });
+
+it('does not overwrite other resident invoices when updating', function () {
+    $facility = Facility::factory()->create();
+    $resident1 = Resident::factory()->create(['facility_id' => $facility->id]);
+    $resident2 = Resident::factory()->create(['facility_id' => $facility->id]);
+
+    $persister = new InvoicePersister;
+    $persister->persist(persisterData($resident1, ['service_subtotal' => 20000, 'total_amount' => 80000]));
+    $persister->persist(persisterData($resident2, ['service_subtotal' => 10000, 'total_amount' => 70000]));
+
+    // resident1 のみ金額を更新 (service_subtotal を 30000 に増額)
+    $stats = $persister->persist(persisterData($resident1, ['service_subtotal' => 30000, 'total_amount' => 90000]));
+
+    expect($stats['updated'])->toBe(1);
+
+    // resident1 は 90000 に更新され、resident2 は 70000 のまま保持されること
+    expect(MonthlyInvoice::where('resident_id', $resident1->id)->first()->total_amount)->toBe(90000)
+        ->and(MonthlyInvoice::where('resident_id', $resident2->id)->first()->total_amount)->toBe(70000);
+});
+

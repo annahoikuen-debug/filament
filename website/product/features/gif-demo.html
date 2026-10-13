@@ -1,0 +1,248 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>機能デモ集 | 高齢者施設請求管理システム あんしん</title>
+    <style>
+        body {
+            font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+            margin: 0;
+            background: #f8fafc;
+            color: #1e293b
+        }
+
+        header {
+            background: #3b82f6;
+            color: #fff;
+            padding: 2rem 1rem;
+            text-align: center
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 1rem
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.6rem
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+            overflow: hidden
+        }
+
+        .card img {
+            width: 100%;
+            display: block
+        }
+
+        .card .body {
+            padding: .9rem 1.1rem
+        }
+
+        .cat {
+            display: inline-block;
+            font-size: .7rem;
+            padding: .15rem .5rem;
+            border-radius: 999px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            margin-bottom: .3rem
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            margin: .2rem 0 .3rem
+        }
+
+        .card p {
+            font-size: .8rem;
+            color: #64748b;
+            margin: 0
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+            font-size: .8rem
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>機能デモ GIF 集（24機能）</h1>
+        <p>定員25名の「ひまわりケア施設」2026年10月分のサンプルデータによる動作デモ</p>
+    </header>
+    <main>
+        <div class="grid">
+            <!-- A. 入力系 -->
+            <div class="card"><img src="../assets/gifs/gif-01-resident-registration.gif" alt="入居者マスタ登録">
+                <div class="body"><span class="cat">入力系</span>
+                    <h2>01. 入居者マスタ登録</h2>
+                    <p>氏名・部屋番号・契約日をステップ入力し、入居者IDを自動発行。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-02-daily-charge-mobile.gif" alt="消耗品費用スマホ入力">
+                <div class="body"><span class="cat">入力系</span>
+                    <h2>02. 消耗品費用のスマホ入力</h2>
+                    <p>紙おむつ等をスマホから数量30で登録。小計¥13,500を自動計算。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-03-care-insurance-charge.gif" alt="介護保険費用入力">
+                <div class="body"><span class="cat">入力系</span>
+                    <h2>03. 介護保険費用の入力</h2>
+                    <p>給付率90%を自動適用し、利用者負担10%を計算。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-04-recurring-charge.gif" alt="定期課金設定">
+                <div class="body"><span class="cat">入力系</span>
+                    <h2>04. 定期課金の設定</h2>
+                    <p>居室賃料¥85,000を毎月自動で請求書に集計。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-05-price-history.gif" alt="料金履歴管理">
+                <div class="body"><span class="cat">入力系</span>
+                    <h2>05. 料金履歴管理</h2>
+                    <p>値上げ時も旧価格の履歴を保持。過去請求書は旧価格のまま。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-06-csv-import.gif" alt="CSV一括取込">
+                <div class="body"><span class="cat">入力系</span>
+                    <h2>06. CSV一括取り込み</h2>
+                    <p>プレビュー→検証→42件の自費記録を一括取り込み。</p>
+                </div>
+            </div>
+            <!-- B. 請求計算系 -->
+            <div class="card"><img src="../assets/gifs/gif-07-bulk-invoice-generation.gif" alt="月次請求一括生成">
+                <div class="body"><span class="cat">請求計算</span>
+                    <h2>07. 月次請求書の一括生成</h2>
+                    <p>25名分を約0.6秒で一括生成。税込合計¥3,056,750。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-08-tax-calculation.gif" alt="税率自動判別">
+                <div class="body"><span class="cat">請求計算</span>
+                    <h2>08. 税率の自動判別</h2>
+                    <p>家賃=非課税、管理費=10%、食費=8%を自動判別。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-09-proration.gif" alt="日割り計算">
+                <div class="body"><span class="cat">請求計算</span>
+                    <h2>09. 月途中入居の日割り計算</h2>
+                    <p>10/20入居なら12/31日分で¥32,903を按分。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-10-facility-filter.gif" alt="施設別フィルタ">
+                <div class="body"><span class="cat">請求計算</span>
+                    <h2>10. 施設別フィルタ</h2>
+                    <p>施設タブで切り替え、25件/合計¥3,056,750を即表示。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-11-invoice-recalculate.gif" alt="請求書再計算">
+                <div class="body"><span class="cat">請求計算</span>
+                    <h2>11. 請求書の再計算</h2>
+                    <p>自費行追加後に再計算し、合計を即時更新。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-12-unpaid-alert.gif" alt="未収金アラート">
+                <div class="body"><span class="cat">請求計算</span>
+                    <h2>12. 未収金アラート</h2>
+                    <p>延滞3件/¥460,850を点滅警告し督促メール送信。</p>
+                </div>
+            </div>
+            <!-- C. PDF出力系 -->
+            <div class="card"><img src="../assets/gifs/gif-13-invoice-pdf.gif" alt="個別請求書PDF">
+                <div class="body"><span class="cat">PDF出力</span>
+                    <h2>13. 個別請求書PDF</h2>
+                    <p>日本語フォント完全対応の請求書を1クリック出力（平均8.5KB）。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-14-receipt-pdf.gif" alt="領収書PDF">
+                <div class="body"><span class="cat">PDF出力</span>
+                    <h2>14. 領収書PDF</h2>
+                    <p>印影付き領収書を同時に発行。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-15-bulk-zip.gif" alt="一括ZIP出力">
+                <div class="body"><span class="cat">PDF出力</span>
+                    <h2>15. 一括ZIPダウンロード</h2>
+                    <p>請求書+領収書50枚をZIP（15.3KB）にまとめて出力。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-16-category-zip.gif" alt="カテゴリ別ZIP">
+                <div class="body"><span class="cat">PDF出力</span>
+                    <h2>16. カテゴリ別ZIP出力</h2>
+                    <p>居室関連/サービス/消耗品ごとに分割+CSVサマリー同梱。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-17-password-pdf.gif" alt="パスワード保護PDF">
+                <div class="body"><span class="cat">PDF出力</span>
+                    <h2>17. パスワード保護PDF</h2>
+                    <p>生年月日ベースのパスワードで個人情報を保護。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-18-bank-qr.gif" alt="振込QRコード">
+                <div class="body"><span class="cat">PDF出力</span>
+                    <h2>18. 振込QRコード</h2>
+                    <p>口座情報+金額を含むQRを請求書に自動生成。</p>
+                </div>
+            </div>
+            <!-- D. 管理・その他 -->
+            <div class="card"><img src="../assets/gifs/gif-19-dashboard.gif" alt="ダッシュボード">
+                <div class="body"><span class="cat">管理系</span>
+                    <h2>19. ダッシュボード</h2>
+                    <p>請求件数・合計・未収を一枚で把握。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-20-accounting-csv.gif" alt="会計連携CSV">
+                <div class="body"><span class="cat">管理系</span>
+                    <h2>20. 会計ソフト連携CSV</h2>
+                    <p>freee/マネーフォワード/弥生形式の仕訳CSVを出力。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-21-invoice-merge.gif" alt="請求統合">
+                <div class="body"><span class="cat">管理系</span>
+                    <h2>21. 同居家族の請求統合</h2>
+                    <p>2名分の請求書を世帯合計¥250,000に統合。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-22-chatbot.gif" alt="チャットボット照会">
+                <div class="body"><span class="cat">管理系</span>
+                    <h2>22. チャットボット照会</h2>
+                    <p>「山田さんの10月の請求額は？」と自然文で照会。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-23-multi-facility.gif" alt="複数施設管理">
+                <div class="body"><span class="cat">管理系</span>
+                    <h2>23. 複数施設の管理</h2>
+                    <p>3施設65名/合計¥7,947,300を横断管理。</p>
+                </div>
+            </div>
+            <div class="card"><img src="../assets/gifs/gif-24-template-settings.gif" alt="テンプレート設定">
+                <div class="body"><span class="cat">管理系</span>
+                    <h2>24. PDFテンプレート設定</h2>
+                    <p>ロゴ・色・印影を変更して請求書デザインを即反映。</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer>© 高齢者施設請求管理システム あんしん — 機能デモGIF集</footer>
+<!-- Chatbot widget -->
+<script defer src="/chatbot/widget.js" data-api-url="/api/public/chatbot/message" data-primary-color="#1e3a8a"></script></body>
+
+</html>

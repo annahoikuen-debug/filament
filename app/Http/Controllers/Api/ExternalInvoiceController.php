@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\ServiceInvoiceStatus;
 use App\Enums\ServiceType;
 use App\Http\Controllers\Controller;
+use App\Models\ApiToken;
 use App\Models\Resident;
 use App\Models\ServiceInvoice;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,63 @@ use Illuminate\Validation\Rule;
 
 class ExternalInvoiceController extends Controller
 {
+    /**
+     * Bearer トークンによるリクエスト認証
+     *
+     * トークンが無効・権限不足・期限切れの場合は null を返す。
+     */
+    private function authenticateRequest(Request $request, string $ability): ?ApiToken
+    {
+        $plainToken = $request->bearerToken();
+
+        if (! $plainToken) {
+            return null;
+        }
+
+        $token = ApiToken::findValidToken($plainToken, $ability);
+
+        if ($token) {
+            // 最終使用時刻を更新（失敗時は無視）
+            try {
+                $token->forceFill(['last_used_at' => now()])->save();
+            } catch (\Throwable $e) {
+                // ログに残さず継続
+            }
+        }
+
+        return $token;
+    }
+
+    /**
+     * トークンが指定施設に対して認可されているか確認
+     */
+    private function authorizeFacility(ApiToken $token, int $facilityId): bool
+    {
+        return (int) $token->facility_id === $facilityId;
+    }
+
+    /**
+     * 認証レスポンス（401）
+     */
+    private function unauthorizedResponse(): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized: Invalid or missing API token',
+        ], 401);
+    }
+
+    /**
+     * 認可レスポンス（403）
+     */
+    private function forbiddenResponse(): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Forbidden: Token not authorized for this facility',
+        ], 403);
+    }
+
     /**
      * 外部システムから介護サービス請求データを一括受信
      *
@@ -43,6 +101,11 @@ class ExternalInvoiceController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $token = $this->authenticateRequest($request, 'invoices.write');
+        if (! $token) {
+            return $this->unauthorizedResponse();
+        }
+
         $validated = $request->validate([
             'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'billing_year_month' => ['required', 'string', 'regex:/^\d{4}-\d{2}$/'],
@@ -61,6 +124,10 @@ class ExternalInvoiceController extends Controller
         ]);
 
         $facilityId = $validated['facility_id'];
+        if (! $this->authorizeFacility($token, (int) $facilityId)) {
+            return $this->forbiddenResponse();
+        }
+
         $yearMonth = $validated['billing_year_month'];
         $externalSystemName = $validated['external_system_name'] ?? 'External System';
         $invoicesData = $validated['invoices'];
@@ -188,6 +255,11 @@ class ExternalInvoiceController extends Controller
      */
     public function storeSingle(Request $request): JsonResponse
     {
+        $token = $this->authenticateRequest($request, 'invoices.write');
+        if (! $token) {
+            return $this->unauthorizedResponse();
+        }
+
         $validated = $request->validate([
             'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'resident_id' => ['required', 'integer', 'exists:residents,id'],
@@ -204,6 +276,10 @@ class ExternalInvoiceController extends Controller
             'status' => ['nullable', 'string', Rule::in(array_column(ServiceInvoiceStatus::cases(), 'value'))],
             'notes' => ['nullable', 'string'],
         ]);
+
+        if (! $this->authorizeFacility($token, (int) $validated['facility_id'])) {
+            return $this->forbiddenResponse();
+        }
 
         // 入居者施設確認
         $resident = Resident::where('id', $validated['resident_id'])
@@ -280,7 +356,14 @@ class ExternalInvoiceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $token = $this->authenticateRequest($request, 'invoices.read');
+        if (! $token) {
+            return $this->unauthorizedResponse();
+        }
+
         $query = ServiceInvoice::with(['resident', 'facility'])
+            // トークンに紐づく施設のデータのみ返却（施設スコープ強制）
+            ->where('facility_id', $token->facility_id)
             ->when($request->facility_id, fn ($q) => $q->where('facility_id', $request->facility_id))
             ->when($request->resident_id, fn ($q) => $q->where('resident_id', $request->resident_id))
             ->when($request->billing_year_month, fn ($q) => $q->where('billing_year_month', $request->billing_year_month))

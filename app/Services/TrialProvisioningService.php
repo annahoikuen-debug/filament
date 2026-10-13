@@ -165,8 +165,17 @@ class TrialProvisioningService
                 'name' => $trial->contact_name,
                 'password' => bcrypt($password),
                 'is_admin' => true, // トライアルでは管理者権限付与
+                'role' => 'facility_admin',
+                'facility_id' => $facility->id,
             ]
         );
+
+        if (! $adminUser->facility_id) {
+            $adminUser->update([
+                'facility_id' => $facility->id,
+                'role' => $adminUser->role ?? 'facility_admin',
+            ]);
+        }
 
         if ($adminUser->wasRecentlyCreated) {
             // メール送信が未実装のため、一時パスワードをtrial_configに退避

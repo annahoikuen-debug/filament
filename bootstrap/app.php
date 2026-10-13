@@ -15,9 +15,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
+        $middleware->api(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
     })
     ->withSchedule(function (Schedule $schedule) {
+        // 毎日午前1時にSQLiteデータベースの整合性チェックを実行
+        $schedule->command('db:health-check')
+                 ->dailyAt('01:00')
+                 ->withoutOverlapping();
+
         // 毎日午前9時にトライアル期限チェックジョブを実行
         $schedule->job(new CheckAndNotifyTrialExpiries())
                  ->dailyAt('09:00')

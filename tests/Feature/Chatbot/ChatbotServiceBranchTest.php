@@ -2,10 +2,10 @@
 
 use App\Enums\InvoiceStatus;
 use App\Enums\ResidentStatus;
-use App\Models\ChatLog;
-use App\Models\ChatbotFaq;
-use App\Models\DailyCharge;
 use App\Models\ChargeItem;
+use App\Models\ChatbotFaq;
+use App\Models\ChatLog;
+use App\Models\DailyCharge;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;

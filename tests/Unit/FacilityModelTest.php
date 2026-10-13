@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\DailyCharge;
 use App\Models\Facility;
+use App\Models\Resident;
 
 test('fillableフィールドのみが一括代入で設定されること', function () {
     $facility = Facility::create([
@@ -130,11 +132,11 @@ test('dailyChargesリレーションが正しく動作すること', function ()
     $facilityWithCharges = Facility::factory()->create([
         'operator' => 'テスト運営',
     ]);
-    $resident = \App\Models\Resident::factory()->create([
+    $resident = Resident::factory()->create([
         'facility_id' => $facilityWithCharges->id,
         'move_in_date' => '2020-01-01',
     ]);
-    \App\Models\DailyCharge::factory()->create([
+    DailyCharge::factory()->create([
         'facility_id' => $facilityWithCharges->id,
         'resident_id' => $resident->id,
         'date' => '2026-03-10',

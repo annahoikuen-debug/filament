@@ -58,3 +58,28 @@ test('行アクションから入金消込を実行できること', function ()
     expect($invoice->status)->toBe(InvoiceStatus::Paid)
         ->and($invoice->payment_method)->toBe(PaymentMethod::DirectDebit);
 });
+
+test('ActionGroup内に帳票アクションが存在し領収書は入金済のみ表示されること', function () {
+    $unbilledInvoice = MonthlyInvoice::create([
+        'billing_year_month' => '2026-10',
+        'resident_id' => $this->resident->id,
+        'rent_subtotal' => 60000,
+        'management_fee_subtotal' => 30000,
+        'service_subtotal' => 0,
+        'status' => InvoiceStatus::Unbilled,
+    ]);
+
+    Livewire::test(ListMonthlyInvoices::class)
+        ->assertTableActionExists('downloadPdf')
+        ->assertTableActionExists('previewInvoice')
+        ->assertTableActionExists('markPayment')
+        ->assertTableActionHidden('downloadReceipt', $unbilledInvoice)
+        ->assertTableActionHidden('previewReceipt', $unbilledInvoice);
+
+    $unbilledInvoice->update(['status' => InvoiceStatus::Paid]);
+
+    Livewire::test(ListMonthlyInvoices::class)
+        ->assertTableActionVisible('downloadReceipt', $unbilledInvoice)
+        ->assertTableActionVisible('previewReceipt', $unbilledInvoice)
+        ->assertTableActionHidden('markPayment', $unbilledInvoice);
+});

@@ -64,14 +64,14 @@ class InvoiceMail extends Mailable implements ShouldQueue
         $attachments = [];
 
         // 1. 住居費請求書PDF（URLから取得して添付）
-        if ($this->pdfUrl) {
+        if (! empty($this->pdfUrl)) {
             try {
-                // 署名付きURLからPDFを取得
+                // 署名付きURLまたは直接URLからPDFを取得
                 $response = Http::timeout(30)->get($this->pdfUrl);
                 if ($response->successful()) {
                     $attachments[] = Attachment::fromData(
                         fn () => $response->body(),
-                        "請求書_{$this->invoice->billing_year_month}_{$this->invoice->resident->room_number}号室_{$this->invoice->resident->name}.pdf"
+                        "請求書_{$this->invoice->billing_year_month}_{$this->invoice->resident?->room_number}号室_{$this->invoice->resident?->name}.pdf"
                     )->withMime('application/pdf');
                 }
             } catch (\Throwable $e) {

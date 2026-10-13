@@ -42,33 +42,33 @@ test('通知対象外の日にはメールが送信されないこと', function
 });
 
 test('期限切れのアクティブトライアルはexpiredに更新され期限切れメールが送信されること', function () {
-   $trial = Trial::factory()->create([
-       'status' => 'active',
-       'email' => 'trial@example.com',
-       'trial_ends_at' => now()->subDay(),
-   ]);
+    $trial = Trial::factory()->create([
+        'status' => 'active',
+        'email' => 'trial@example.com',
+        'trial_ends_at' => now()->subDay(),
+    ]);
 
-   $mailService = Mockery::mock(MailService::class);
-   // daysLeft=0 は通知対象日のため警告メール＋期限切れメールの2回送信
-   $mailService->shouldReceive('send')->twice();
+    $mailService = Mockery::mock(MailService::class);
+    // daysLeft=0 は通知対象日のため警告メール＋期限切れメールの2回送信
+    $mailService->shouldReceive('send')->twice();
 
-   (new SendTrialExpiryNotification($trial))->handle($mailService);
+    (new SendTrialExpiryNotification($trial))->handle($mailService);
 
-   expect($trial->fresh()->status)->toBe('expired');
+    expect($trial->fresh()->status)->toBe('expired');
 });
 
 test('期限切れだが既にexpiredのトライアルは期限切れメールを再送信しないこと', function () {
-   $trial = Trial::factory()->create([
-       'status' => 'expired',
-       'email' => 'trial@example.com',
-       'trial_ends_at' => now()->subDay(),
-   ]);
+    $trial = Trial::factory()->create([
+        'status' => 'expired',
+        'email' => 'trial@example.com',
+        'trial_ends_at' => now()->subDay(),
+    ]);
 
-   $mailService = Mockery::mock(MailService::class);
-   // daysLeft=0 の警告は送信されるが、期限切れメールは送信されない
-   $mailService->shouldReceive('send')->once();
+    $mailService = Mockery::mock(MailService::class);
+    // daysLeft=0 の警告は送信されるが、期限切れメールは送信されない
+    $mailService->shouldReceive('send')->once();
 
-   (new SendTrialExpiryNotification($trial))->handle($mailService);
+    (new SendTrialExpiryNotification($trial))->handle($mailService);
 
-   expect($trial->fresh()->status)->toBe('expired');
+    expect($trial->fresh()->status)->toBe('expired');
 });

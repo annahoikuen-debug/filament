@@ -3,9 +3,12 @@
 namespace App\Jobs;
 
 use App\Models\MonthlyInvoice;
+use App\Models\User;
 use App\Services\FacilityConfigService;
 use App\Services\InvoicePdfService;
 use App\Services\Pdf\InvoicePdfGenerator;
+use Filament\Notifications\Actions\Action;
+use Filament\Notifications\Notification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,6 +34,7 @@ class GenerateMonthlyZipJob implements ShouldQueue
         public string $yearMonth,
         public ?int $facilityId = null,
         public string $jobId = '',
+        public ?int $userId = null,
     ) {}
 
     public function handle(InvoicePdfService $pdfService, FacilityConfigService $configService): void
@@ -66,11 +70,52 @@ class GenerateMonthlyZipJob implements ShouldQueue
             $this->setResult($progressKey, $zipPath);
 
             Log::info("Monthly ZIP generated for {$this->yearMonth}: {$zipPath}");
+
+            // Filament DB通知の送信
+            $user = $this->userId ? User::find($this->userId) : null;
+            if ($user) {
+                Notification::make()
+                    ->title("{$this->yearMonth}分の請求書ZIPが完成しました")
+                    ->body("全{$totalInvoices}件の請求書を含むZIPファイルの準備が整いました。")
+                    ->icon('heroicon-o-archive-box-arrow-down')
+                    ->success()
+                    ->actions([
+                        Action::make('download')
+                            ->label('ダウンロード')
+                            ->url(route('invoices.zip-progress', ['jobId' => $this->jobId]))
+                            ->openUrlInNewTab(),
+                    ])
+                    ->sendToDatabase($user);
+            }
         } catch (\Throwable $e) {
             Log::error("Monthly ZIP generation failed for {$this->yearMonth}: {$e->getMessage()}");
             $this->updateProgress($progressKey, 0, 'failed', 'エラー: '.$e->getMessage());
             $this->setResult($progressKey, null);
+
+            $user = $this->userId ? User::find($this->userId) : null;
+            if ($user) {
+                Notification::make()
+                    ->title("{$this->yearMonth}分のZIP生成に失敗しました")
+                    ->body($e->getMessage())
+                    ->icon('heroicon-o-exclamation-triangle')
+                    ->danger()
+                    ->sendToDatabase($user);
+            }
+
             throw $e;
+        }
+    }
+
+    public function failed(\Throwable $exception): void
+    {
+        $user = $this->userId ? User::find($this->userId) : null;
+        if ($user) {
+            Notification::make()
+                ->title("{$this->yearMonth}分のZIP生成ジョブが中断・失敗しました")
+                ->body($exception->getMessage())
+                ->icon('heroicon-o-exclamation-triangle')
+                ->danger()
+                ->sendToDatabase($user);
         }
     }
 
@@ -156,10 +201,11 @@ class GenerateMonthlyZipJob implements ShouldQueue
                         }
 
                         $fileName = sprintf(
-                            '【%s号室】%s様_請求書_%s.pdf',
+                            '【%s号室】%s様_請求書_%s_%s.pdf',
                             $invoice->resident->room_number,
                             $invoice->resident->name,
-                            $invoice->billing_year_month
+                            $invoice->billing_year_month,
+                            now()->format('Ymd')
                         );
 
                         $zip->addFromString($fileName, $pdfContent);

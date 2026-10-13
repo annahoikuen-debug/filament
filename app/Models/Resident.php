@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ResidentStatus;
+use App\Services\Chatbot\FuzzyMatcher;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -34,7 +35,7 @@ class Resident extends Model
     protected static function booted(): void
     {
         static::saving(function (Resident $resident) {
-            $matcher = new \App\Services\Chatbot\FuzzyMatcher;
+            $matcher = new FuzzyMatcher;
             if ($resident->name) {
                 $resident->normalized_name = $matcher->normalizeKana($resident->name);
             }
