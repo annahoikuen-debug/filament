@@ -31,7 +31,7 @@
                 @endforeach
             </select>
             <x-filament::button
-                wire:click="generateBilling"
+                wire:click="mountAction('generateBilling')"
                 color="primary"
                 icon="heroicon-o-plus-circle"
                 size="lg"

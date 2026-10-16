@@ -25,16 +25,37 @@ class Resident extends Model
         'birth_date',
         'base_rent',
         'base_management_fee',
+        'base_rent_non_taxable',
+        'base_rent_taxable',
+        'base_management_fee_non_taxable',
+        'base_management_fee_taxable',
         'status',
         'move_in_date',
         'move_out_date',
         'normalized_name',
         'normalized_kana',
+        'nickname',
+        'normalized_nickname',
     ];
 
     protected static function booted(): void
     {
         static::saving(function (Resident $resident) {
+            // If base amounts changed, update breakdown defaults (or vice-versa)
+            if ($resident->isDirty('base_rent') && ! $resident->isDirty(['base_rent_non_taxable', 'base_rent_taxable'])) {
+                $resident->base_rent_non_taxable = $resident->base_rent;
+                $resident->base_rent_taxable = 0;
+            } elseif ($resident->isDirty(['base_rent_non_taxable', 'base_rent_taxable'])) {
+                $resident->base_rent = ($resident->base_rent_non_taxable ?? 0) + ($resident->base_rent_taxable ?? 0);
+            }
+
+            if ($resident->isDirty('base_management_fee') && ! $resident->isDirty(['base_management_fee_non_taxable', 'base_management_fee_taxable'])) {
+                $resident->base_management_fee_non_taxable = 0;
+                $resident->base_management_fee_taxable = $resident->base_management_fee;
+            } elseif ($resident->isDirty(['base_management_fee_non_taxable', 'base_management_fee_taxable'])) {
+                $resident->base_management_fee = ($resident->base_management_fee_non_taxable ?? 0) + ($resident->base_management_fee_taxable ?? 0);
+            }
+
             $matcher = new FuzzyMatcher;
             if ($resident->name) {
                 $resident->normalized_name = $matcher->normalizeKana($resident->name);
@@ -42,12 +63,21 @@ class Resident extends Model
             if ($resident->name_kana) {
                 $resident->normalized_kana = $matcher->normalizeKana($resident->name_kana);
             }
+            if ($resident->nickname) {
+                $resident->normalized_nickname = $matcher->normalizeKana($resident->nickname);
+            } else {
+                $resident->normalized_nickname = null;
+            }
         });
     }
 
     protected $casts = [
         'base_rent' => 'integer',
         'base_management_fee' => 'integer',
+        'base_rent_non_taxable' => 'integer',
+        'base_rent_taxable' => 'integer',
+        'base_management_fee_non_taxable' => 'integer',
+        'base_management_fee_taxable' => 'integer',
         'status' => ResidentStatus::class,
         'birth_date' => 'date',
         'move_in_date' => 'date',
@@ -64,6 +94,10 @@ class Resident extends Model
                 'name_kana',
                 'base_rent',
                 'base_management_fee',
+                'base_rent_non_taxable',
+                'base_rent_taxable',
+                'base_management_fee_non_taxable',
+                'base_management_fee_taxable',
                 'status',
                 'move_in_date',
                 'move_out_date',
@@ -97,6 +131,14 @@ class Resident extends Model
     {
         return $this->hasMany(MonthlyInvoice::class);
     }
+
+   /**
+    * 介護保険請求（サービス請求）一覧
+    */
+   public function serviceInvoices(): HasMany
+   {
+       return $this->hasMany(ServiceInvoice::class);
+   }
 
     /**
      * 入居中のみのスコープ

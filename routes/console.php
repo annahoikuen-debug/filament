@@ -65,22 +65,45 @@ Schedule::call(function () {
     ->description('チャットボット会話ログの保持期間超過分を削除（内部90日・公開30日）')
     ->environments(['production', 'staging']);
 
-// FAQ未回答質問分析（日次）
-Schedule::command('chatbot:analyze-faq-misses', ['--days' => 30])
-    ->dailyAt('05:00')
-    ->description('未回答チャットボット質問の集計分析')
+// FAQキーワードDF統計の再構築（日次・深夜帯）
+Schedule::command('chatbot:rebuild-keyword-stats')
+    ->dailyAt('02:30')
+    ->description('FAQキーワード文書頻度統計の再構築（IDFスコアリング用）')
     ->environments(['production', 'staging']);
 
-// データベース・ストレージの毎日バックアップ（DR対応）
-Schedule::command('backup:database', ['--type' => 'full', '--compress' => true, '--retention' => 30])
+// FAQ未回答質問分析（日次）+ クラスタリングによるFAQ候補自動生成
+Schedule::command('chatbot:analyze-faq-misses', ['--days' => 30, '--suggest' => true])
     ->dailyAt('03:00')
-    ->description('毎日 03:00 にデータベースとストレージのバックアップを実行')
+    ->description('未回答チャットボット質問の集計分析とFAQ候補のクラスタリング生成')
+    ->environments(['production', 'staging'])
+    ->onSuccess(function () {
+        Log::info('FAQ未回答分析＋候補生成: 正常完了');
+    })
+    ->onFailure(function () {
+        Log::error('FAQ未回答分析＋候補生成: 失敗');
+    });
+
+// データベース暗号化バックアップ（日次深夜 03:00）と自動検証（03:30）
+Schedule::command('backup:database')
+    ->dailyAt('03:00')
+    ->description('毎日 03:00 にデータベース暗号化バックアップを実行')
     ->environments(['production', 'staging'])
     ->onSuccess(function () {
         Log::info('日次バックアップ: 正常完了');
     })
     ->onFailure(function () {
         Log::error('日次バックアップ: 失敗');
+    });
+
+Schedule::command('backup:verify-restore')
+    ->dailyAt('03:30')
+    ->description('毎日 03:30 に直近バックアップの復旧・整合性を自動検証')
+    ->environments(['production', 'staging'])
+    ->onSuccess(function () {
+        Log::info('バックアップ復旧自動検証: 正常完了');
+    })
+    ->onFailure(function () {
+        Log::error('バックアップ復旧自動検証: 異常検知');
     });
 
 // スケジューラ設定

@@ -9,6 +9,9 @@ use App\Mail\InvoiceMail;
 use App\Models\AccountingExportProfile;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
+use App\Models\DailyCharge;
+use App\Filament\Resources\DailyChargeResource;
+use App\Filament\Resources\ResidentResource;
 use App\Services\InvoiceCsvExportService;
 use App\Services\InvoicePdfService;
 use App\Services\MailService;
@@ -37,6 +40,8 @@ class MonthlyInvoiceResource extends Resource
     protected static ?int $navigationSort = 4;
 
     protected static ?string $navigationGroup = '請求管理';
+
+    protected static string $view = 'filament.pages.resources.monthly-invoice-index';
 
     public static function form(Form $form): Form
     {
@@ -184,9 +189,16 @@ class MonthlyInvoiceResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('resident.name')
-                    ->label('入居者氏名')
+                    ->label('入居者')
+                    ->url(fn ($record) => ResidentResource::getUrl('edit', ['record' => $record->resident]))
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('daily_charges_link')
+                    ->label('関連日次課金')
+                    ->formatStateUsing(fn ($state, $record) => self::getDailyChargesLabel($record))
+                    ->url(fn ($record) => self::getDailyChargesUrl($record))
+                    ->toggleable()
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('rent_subtotal')
                     ->label('家賃')
@@ -872,8 +884,39 @@ class MonthlyInvoiceResource extends Resource
         ];
     }
 
+    private static function getDailyChargesUrl(MonthlyInvoice $record): ?string
+    {
+        $yearMonth = $record->billing_year_month;
+        if (!$yearMonth) {
+            return null;
+        }
+        $startDate = $yearMonth . '-01';
+        $endDate = date('Y-m-t', strtotime($startDate));
+
+        return DailyChargeResource::getUrl('index', [
+            'tableFilters[resident_id][value]' => $record->resident_id,
+            'tableFilters[date][from]' => $startDate,
+            'tableFilters[date][to]' => $endDate,
+        ]);
+    }
+
+    private static function getDailyChargesLabel(MonthlyInvoice $record): string
+    {
+        $yearMonth = $record->billing_year_month;
+        if (!$yearMonth) {
+            return '請求書なし';
+        }
+        $startDate = $yearMonth . '-01';
+        $endDate = date('Y-m-t', strtotime($startDate));
+        $count = DailyCharge::where('resident_id', $record->resident_id)
+            ->whereDate('date', '>=', $startDate)
+            ->whereDate('date', '<=', $endDate)
+            ->count();
+        return $count . '件';
+    }
+
     /**
-     * 施設によるデータ分離
+     * 譁ｽ險ｭ縺ｫ繧医ｋ繝・・繧ｿ蛻・屬
      */
     public static function getEloquentQuery(): Builder
     {

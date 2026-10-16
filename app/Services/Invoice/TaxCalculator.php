@@ -41,8 +41,10 @@ class TaxCalculator
         $standardRate = $standardRate ?? $this->standardRate;
         $reducedRate = $reducedRate ?? $this->reducedRate;
 
-        $standardTax = (int) round($standardTaxable * ($standardRate / 100));
-        $reducedTax = (int) round($reducedTaxable * ($reducedRate / 100));
+        // 消費税の端数処理は切り捨て（floor）とする
+        // これは日本の消費税法に準拠した計算方法
+        $standardTax = (int) floor($standardTaxable * ($standardRate / 100));
+        $reducedTax = (int) floor($reducedTaxable * ($reducedRate / 100));
         $totalTax = $standardTax + $reducedTax;
 
         $taxBreakdown = [

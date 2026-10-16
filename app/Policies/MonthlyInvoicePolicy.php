@@ -29,4 +29,40 @@ class MonthlyInvoicePolicy
 
         return ! in_array($invoice->status, $archivedStatuses, true);
     }
+
+    /**
+     * 請求確定の認可（現場介護職 care_staff は確定不可）
+     */
+    public function finalize(User $user, ?MonthlyInvoice $invoice = null): bool
+    {
+        if ($user->role === 'care_staff') {
+            return false;
+        }
+
+        if ($user->isCorporateAdmin()) {
+            return true;
+        }
+
+        if ($invoice && $invoice->facility_id) {
+            return (int) $user->facility_id === (int) $invoice->facility_id;
+        }
+
+        return true;
+    }
+
+    /**
+     * 全銀フォーマット出力の認可（経理・管理者のみ）
+     */
+    public function exportZengin(User $user): bool
+    {
+        return $user->role !== 'care_staff';
+    }
+
+    /**
+     * 入金消込の認可（経理・管理者のみ）
+     */
+    public function markAsPaid(User $user): bool
+    {
+        return $user->role !== 'care_staff';
+    }
 }

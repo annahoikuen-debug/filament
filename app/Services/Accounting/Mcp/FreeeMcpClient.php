@@ -3,6 +3,7 @@
 namespace App\Services\Accounting\Mcp;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 
 class FreeeMcpClient extends BaseAccountingMcpClient
 {

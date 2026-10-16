@@ -63,6 +63,12 @@ class BulkDailyChargeEntry extends Page
 
     public int $presetEstimatedTotal = 0;
 
+    // --- 保存前確認モーダル用 ---
+    public bool $showConfirmModal = false;
+    public int $confirmSelectedCount = 0;
+    public int $confirmTotalAmount = 0;
+    public int $confirmSkippedLocked = 0;
+
     public function mount(): void
     {
         abort_unless(Auth::user()?->canAccessPanel(filament()->getCurrentPanel()), 403);
@@ -204,7 +210,7 @@ class BulkDailyChargeEntry extends Page
         $query = Resident::where('status', ResidentStatus::Active)
             ->orderBy('room_number');
 
-        if ($user?->isFacilityAdmin() && $user->facility_id) {
+        if (! $user?->isCorporateAdmin() && $user?->facility_id) {
             $query->where('facility_id', $user->facility_id);
         }
 
@@ -292,6 +298,15 @@ class BulkDailyChargeEntry extends Page
 
     public function saveBulk(): void
     {
+        // 保存前の確認データを準備してモーダルを表示
+        $this->prepareConfirmData();
+        $this->showConfirmModal = true;
+    }
+
+    public function executeSave(): void
+    {
+        $this->showConfirmModal = false;
+
         if ($this->mode === 'preset') {
             $this->savePresetBulk();
 
@@ -299,6 +314,117 @@ class BulkDailyChargeEntry extends Page
         }
 
         $this->saveSingleBulk();
+    }
+
+    protected function prepareConfirmData(): void
+    {
+        // デフォルト値
+        $this->confirmSelectedCount = 0;
+        $this->confirmTotalAmount = 0;
+        $this->confirmSkippedLocked = 0;
+
+        if ($this->mode === 'preset') {
+            $this->preparePresetConfirmData();
+        } else {
+            $this->prepareSingleConfirmData();
+        }
+    }
+
+    protected function prepareSingleConfirmData(): void
+    {
+        $this->validate([
+            'chargeItemId' => 'required|exists:charge_items,id',
+            'date' => 'required|date',
+        ], [
+            'chargeItemId.required' => '品目を選択してください。',
+            'date.required' => '日付を指定してください。',
+        ]);
+
+        $chargeItem = ChargeItem::findOrFail($this->chargeItemId);
+
+        // 対象入居者IDを収集
+        $selectedResidentIds = [];
+        foreach ($this->entries as $entry) {
+            if (! empty($entry['selected']) && (int) ($entry['quantity'] ?? 0) > 0) {
+                $selectedResidentIds[] = $entry['resident_id'];
+            }
+        }
+
+        $this->confirmSelectedCount = count($selectedResidentIds);
+
+        if ($this->confirmSelectedCount === 0) {
+            $this->confirmTotalAmount = 0;
+            $this->confirmSkippedLocked = 0;
+            return;
+        }
+
+        // 1. N+1解消: 入居者を一括ロード
+        $residents = Resident::whereIn('id', $selectedResidentIds)->get()->keyBy('id');
+
+        // 2. 確定月ガード: 該当月に既に請求済・入金済の請求書がある入居者を検出
+        $yearMonth = Carbon::parse($this->date)->format('Y-m');
+        $lockedResidentIds = MonthlyInvoice::whereIn('resident_id', $selectedResidentIds)
+            ->where('billing_year_month', $yearMonth)
+            ->whereIn('status', [InvoiceStatus::Billed, InvoiceStatus::Paid])
+            ->pluck('resident_id')
+            ->toArray();
+
+        $this->confirmSkippedLocked = count(array_intersect($selectedResidentIds, $lockedResidentIds));
+
+        // 合計金額を計算（スキップされないもののみ）
+        $this->confirmTotalAmount = 0;
+        foreach ($this->entries as $entry) {
+            if (! empty($entry['selected']) && (int) ($entry['quantity'] ?? 0) > 0) {
+                $residentId = $entry['resident_id'];
+                // 確定済みでスキップされるかチェック
+                if (! in_array($residentId, $lockedResidentIds, true)) {
+                    $qty = (int) ($entry['quantity']);
+                    $this->confirmTotalAmount += $qty * $this->unitPrice;
+                }
+            }
+        }
+    }
+
+    protected function preparePresetConfirmData(): void
+    {
+        $this->validate([
+            'presetId' => 'required|exists:daily_charge_presets,id',
+            'presetStartDate' => 'required|date',
+            'presetEndDate' => 'required|date|after_or_equal:presetStartDate',
+        ], [
+            'presetId.required' => 'プリセットを選択してください。',
+            'presetStartDate.required' => '開始日を指定してください。',
+            'presetEndDate.required' => '終了日を指定してください。',
+            'presetEndDate.after_or_equal' => '終了日は開始日以降を指定してください。',
+        ]);
+
+        $selectedResidentIds = $this->getSelectedResidentIds();
+        $this->confirmSelectedCount = count($selectedResidentIds);
+
+        if ($this->confirmSelectedCount === 0) {
+            $this->confirmTotalAmount = 0;
+            $this->confirmSkippedLocked = 0;
+            return;
+        }
+
+        $preset = $this->getPreset();
+        $dates = $this->getPresetDates();
+
+        // 確定月ガード: 対象期間に請求済・入金済の請求書がある入居者を除外
+        $yearMonths = array_unique(array_map(fn ($d) => Carbon::parse($d)->format('Y-m'), $dates));
+        $lockedResidentIds = MonthlyInvoice::whereIn('resident_id', $selectedResidentIds)
+            ->whereIn('billing_year_month', $yearMonths)
+            ->whereIn('status', [InvoiceStatus::Billed, InvoiceStatus::Paid])
+            ->pluck('resident_id')
+            ->unique()
+            ->toArray();
+
+        $this->confirmSkippedLocked = count(array_intersect($selectedResidentIds, $lockedResidentIds));
+
+        // 合計金額を計算
+        $service = app(DailyChargePresetService::class);
+        $records = $service->buildRecords($preset, $selectedResidentIds, $dates);
+        $this->confirmTotalAmount = array_sum(array_column($records, 'unit_price')) * array_sum(array_column($records, 'quantity'));
     }
 
     protected function saveSingleBulk(): void

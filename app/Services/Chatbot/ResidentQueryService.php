@@ -2,8 +2,10 @@
 
 namespace App\Services\Chatbot;
 
+use App\Models\DailyCharge;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
+use App\Models\ServiceInvoice;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -37,11 +39,12 @@ class ResidentQueryService
             return collect();
         }
 
-        // 1. 完全一致・部屋番号完全一致（高速パス）
+        // 1. 完全一致・部屋番号完全一致（高速パス、通称も対象）
         $exactQuery = Resident::query()
             ->where(fn (Builder $q) => $q
                 ->where('name', $keyword)
                 ->orWhere('name_kana', $keyword)
+                ->orWhere('nickname', $keyword)
                 ->orWhere('room_number', $keyword));
         $this->applyFacilityScope($exactQuery, $user);
         $exact = $exactQuery->get();
@@ -50,11 +53,12 @@ class ResidentQueryService
             return $exact->map(fn (Resident $r) => ['resident' => $r, 'score' => 1.0]);
         }
 
-        // 部分一致の直接確認
+        // 部分一致の直接確認（通称も対象）
         $partialQuery = Resident::query()
             ->where(fn (Builder $q) => $q
                 ->where('name', 'like', "%{$keyword}%")
-                ->orWhere('name_kana', 'like', "%{$keyword}%"));
+                ->orWhere('name_kana', 'like', "%{$keyword}%")
+                ->orWhere('nickname', 'like', "%{$keyword}%"));
         $this->applyFacilityScope($partialQuery, $user);
         $partial = $partialQuery->get();
 
@@ -74,8 +78,10 @@ class ResidentQueryService
                 ->where(fn (Builder $q) => $q
                     ->where('normalized_kana', $normalizedKeyword)
                     ->orWhere('normalized_name', $normalizedKeyword)
+                    ->orWhere('normalized_nickname', $normalizedKeyword)
                     ->orWhere('normalized_kana', 'like', "{$normalizedKeyword}%")
-                    ->orWhere('normalized_name', 'like', "{$normalizedKeyword}%"));
+                    ->orWhere('normalized_name', 'like', "{$normalizedKeyword}%")
+                    ->orWhere('normalized_nickname', 'like', "{$normalizedKeyword}%"));
             $this->applyFacilityScope($normQuery, $user);
             $normResults = $normQuery->limit(5)->get();
 
@@ -281,5 +287,111 @@ class ResidentQueryService
         if ($user->isFacilityAdmin() && $user->facility_id) {
             $query->where('facility_id', $user->facility_id);
         }
+    }
+
+    /**
+     * 施設内の未払い入居者一覧を取得
+     *
+     * @return Collection<int, array{resident: Resident, invoice: MonthlyInvoice, amount: int, billing_year_month: string}>
+     */
+    public function getUnpaidResidents(User $user): Collection
+   {
+       $query = MonthlyInvoice::query()
+           ->where('status', \App\Enums\InvoiceStatus::Billed)
+           ->with(['resident'])
+           ->orderBy('billing_year_month')
+           ->orderBy('resident_id');
+
+       $this->applyFacilityScope($query, $user);
+
+       return $query->get()
+           ->map(fn (MonthlyInvoice $invoice) => [
+               'resident' => $invoice->resident,
+               'invoice' => $invoice,
+               'amount' => $invoice->total_amount,
+               'billing_year_month' => $invoice->billing_year_month,
+           ]);
+   }
+
+    /**
+     * 施設の月次請求集計を取得
+     *
+     * @return array{total_billed: int, total_unpaid: int, unpaid_count: int, paid_count: int, total_count: int, year_month: string}
+     */
+    public function getBillingSummary(User $user, ?string $yearMonth = null): array
+    {
+        $ym = $yearMonth ?? now()->format('Y-m');
+
+        $query = MonthlyInvoice::query()
+            ->where('billing_year_month', $ym)
+            ->with(['resident']);
+
+        $this->applyFacilityScope($query, $user);
+
+        $invoices = $query->get();
+
+        $totalBilled = $invoices->sum('total_amount');
+        $unpaidInvoices = $invoices->where('status', \App\Enums\InvoiceStatus::Billed);
+        $paidInvoices = $invoices->where('status', \App\Enums\InvoiceStatus::Paid);
+
+        return [
+            'total_billed' => $totalBilled,
+            'total_unpaid' => $unpaidInvoices->sum('total_amount'),
+            'unpaid_count' => $unpaidInvoices->count(),
+            'paid_count' => $paidInvoices->count(),
+            'total_count' => $invoices->count(),
+            'year_month' => $ym,
+        ];
+    }
+
+    /**
+     * 指定入居者・指定月の自費利用料明細を取得
+     *
+     * @return Collection<int, array{item_name: string, date: string, unit_price: int, quantity: int, subtotal: int}>
+     */
+    public function getDailyChargeDetails(Resident $resident, string $yearMonth): Collection
+    {
+        return $resident->dailyCharges()
+            ->with('chargeItem')
+            ->whereYear('date', (int) substr($yearMonth, 0, 4))
+            ->whereMonth('date', (int) substr($yearMonth, 5, 2))
+            ->orderBy('date')
+            ->get()
+            ->map(fn (DailyCharge $charge) => [
+                'item_name' => $charge->chargeItem?->name ?? '不明',
+                'date' => $charge->date?->format('Y/m/d') ?? '',
+                'unit_price' => $charge->unit_price,
+                'quantity' => $charge->quantity,
+                'subtotal' => $charge->subtotal,
+            ]);
+    }
+
+    /**
+     * 指定入居者・指定月の介護保険請求（サービス請求）一覧を取得
+     *
+     * @return Collection<int, array{id: int, service_type: string, service_type_label: string, amount: int, tax_amount: int, total_with_tax: int, status: string, status_label: string, pdf_path: string|null, billing_year_month: string}>
+     */
+    public function getServiceInvoices(Resident $resident, ?string $yearMonth = null): Collection
+    {
+        $query = $resident->serviceInvoices();
+
+        if ($yearMonth !== null) {
+            $query->where('billing_year_month', $yearMonth);
+        }
+
+        return $query->orderByDesc('billing_year_month')
+            ->get()
+            ->map(fn (ServiceInvoice $invoice) => [
+                'id' => $invoice->id,
+                'service_type' => $invoice->service_type->value,
+                'service_type_label' => $invoice->service_type->getLabel(),
+                'amount' => $invoice->amount,
+                'tax_amount' => $invoice->tax_amount,
+                'total_with_tax' => $invoice->total_with_tax,
+                'status' => $invoice->status->value,
+                'status_label' => $invoice->status->getLabel(),
+                'pdf_path' => $invoice->pdf_path,
+                'billing_year_month' => $invoice->billing_year_month,
+            ]);
     }
 }

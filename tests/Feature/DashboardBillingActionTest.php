@@ -47,3 +47,12 @@ test('ダッシュボードの請求生成ボタンラベルが未請求件数�
     $action = $component->instance()->getAction('generateBilling');
     expect((string) $action->getLabel())->toContain('未請求');
 });
+
+test('ダッシュボードの請求生成アクションが正常に呼び出し可能であること', function () {
+    $component = Livewire::test(Dashboard::class);
+
+    $component->call('mountAction', 'generateBilling')
+        ->assertHasNoErrors()
+        ->assertActionMounted('generateBilling');
+});
+

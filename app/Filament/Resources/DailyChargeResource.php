@@ -6,7 +6,9 @@ use App\Filament\Resources\DailyChargeResource\Pages;
 use App\Models\ChargeItem;
 use App\Models\DailyCharge;
 use App\Models\Resident;
+use App\Services\QuickInputService;
 use Filament\Forms;
+use Filament\Forms\Components\View;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -32,6 +34,11 @@ class DailyChargeResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $presetNotes = [];
+        if (Auth::check()) {
+            $presetNotes = app(QuickInputService::class)->getFrequentNotesForUser(Auth::user(), 5);
+        }
+
         return $form
             ->schema([
                 Forms\Components\Section::make('基本情報')
@@ -78,6 +85,9 @@ class DailyChargeResource extends Resource
                             ->default(now())
                             ->required(),
 
+                        View::make('filament.forms.components.relative-date-buttons')
+                            ->viewData(['dateField' => 'date']),
+
                         Forms\Components\TextInput::make('unit_price')
                             ->label('単価')
                             ->numeric()
@@ -93,6 +103,14 @@ class DailyChargeResource extends Resource
                             ->default(1)
                             ->minValue(1)
                             ->required(),
+
+                        Forms\Components\TextInput::make('note')
+                            ->label('備考')
+                            ->maxLength(255)
+                            ->placeholder('例: 午前中利用、夜間交換分 等'),
+
+                        View::make('filament.forms.components.preset-note-chips')
+                            ->viewData(['noteField' => 'note', 'presetNotes' => $presetNotes]),
 
                         Forms\Components\TextInput::make('subtotal')
                             ->label('小計')
@@ -125,7 +143,8 @@ class DailyChargeResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('resident.name')
-                    ->label('入居者氏名')
+                    ->label('入居者')
+                    ->url(fn ($record) => ResidentResource::getUrl('edit', ['record' => $record->resident]))
                     ->searchable()
                     ->sortable(),
 

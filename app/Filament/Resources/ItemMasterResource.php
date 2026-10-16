@@ -103,8 +103,11 @@ class ItemMasterResource extends Resource
                 Tables\Columns\TextColumn::make('daily_charges_count')
                     ->label('使用回数')
                     ->counts('dailyCharges')
+                    ->url(fn ($record) => DailyChargeResource::getUrl('index', [
+                        'tableFilters[charge_item_id][value]' => $record->id,
+                    ]))
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('作成日')

@@ -66,6 +66,14 @@ class DirectDebitRequestService
         $facilityBank = $facility->bank ?? [];
         $delegateCode = $facilityBank['delegate_code'] ?? config('services.zengin.delegate_code', '');
 
+        // 口座種別を全銀コード（1: 普通 / 2: 当座）に正規化
+        $accountType = (string) ($facilityBank['account_type'] ?? '1');
+        $accountType = match (true) {
+            in_array($accountType, ['普通', '1', '1'], true) => '1',
+            in_array($accountType, ['当座', '2'], true) => '2',
+            default => '1',
+        };
+
         $header = [
             'delegate_code' => $delegateCode,
             'delegate_name_kana' => $facilityBank['delegate_name_kana'] ?? mb_convert_kana($facility->name ?? '', 'khs', 'UTF-8'),
@@ -76,7 +84,7 @@ class DirectDebitRequestService
             'bank_name_kana' => $facilityBank['bank_name_kana'] ?? '',
             'branch_code' => $facilityBank['branch_code'] ?? '',
             'branch_name_kana' => $facilityBank['branch_name_kana'] ?? '',
-            'account_type' => $facilityBank['account_type'] ?? '1',
+            'account_type' => $accountType,
             'account_number' => $facilityBank['account_number'] ?? '',
         ];
 

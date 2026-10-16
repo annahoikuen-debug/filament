@@ -1,7 +1,18 @@
 # 会計連携・CSV出力業務フロー
 
+> **バージョン**: v1.7.2 時点の実装に準拠（2026-10-14）
+> **主な担当者**: サ高住事務員（`facility_admin` / `accountant`）
+> 三者分業の全体像は [00_三者分業ワークフロー.md](00_三者分業ワークフロー.md) を参照。
+
 ## 概要
 確定済み請求データ（請求済・入金済）を会計ソフト（freee・マネーフォワード・弥生・勘定奉行）取込用の仕訳CSVとして出力し、経理業務と連携する業務フロー。
+
+**連携方式（2通り・v1.7 時点）:**
+
+| 方式 | 対象ソフト | 手順 |
+|------|-----------|------|
+| **CSV取込** | freee / MF / 弥生 / 勘定奉行 | 出力したCSVを会計ソフトの取込メニューで読み込み |
+| **API直接連携** | freee / MFクラウド会計 | 施設にOAuth2.0認証情報を設定 → 請求確定・入金時に仕訳を**自動同期**（v1.7） |
 
 ---
 
@@ -224,6 +235,31 @@ public function exportAccountingCsv(
 
 ---
 
+## freee / MFクラウド会計 API連携（v1.7 新機能）
+
+CSV取込を省略し、仕訳を会計ソフトへ直接同期できます。
+
+### 初期設定（1回だけ・施設ごと）
+1. 「施設」編集画面で連携先（freee / MFクラウド会計）を選択
+2. OAuth2.0認証情報（Client ID / Secret、Access Token / Refresh Token、事業所ID）を入力
+3. 「接続テスト」ボタンで認証情報の有効性を即時確認
+4. 「自動同期 ON/OFF」「CSVエクスポート時同期」を設定
+
+### 自動同期の動き
+| タイミング | 同期される仕訳 |
+|-----------|----------------|
+| **請求確定（Billed へ変更）** | 売掛金計上の仕訳 |
+| **入金消込（Paid へ遷移）** | 売掛金消込・入金の仕訳 |
+
+- 同期は `AccountingSyncService` が実行（**本番/ステージング環境のみ**）
+- トークンの有効期限は自動リフレッシュ、失敗時はリトライ＋ログ記録
+
+### 使い分け
+- **API連携ONの施設**: CSV出力は「保険」として残す（月次締めウィザード Step 4 の出力物として保管）
+- **API非対応のソフト**（弥生・勘定奉行など）: 従来どおり CSV取込
+
+---
+
 ## CSV出力形式詳細
 
 ### 月別リストCSV（管理用・横持ち）
@@ -317,6 +353,23 @@ public function exportAccountingCsv(
 
 ---
 
+## 電子帳簿保存法（電帳法）対応（v1.6〜）
+
+発行済みの請求書PDFは、電帳法の真実性・可視性要件に向けた電子帳簿レコードとして登録されます。
+
+| 項目 | 内容 |
+|------|------|
+| **登録タイミング** | 請求書PDFの確定・出力時（`ElectronicRecordService::recordInvoicePdf()`） |
+| **記録内容** | 取引日、金額、取引先（入居者名）、ファイル名、**SHA-256 ハッシュ**、ファイルサイズ、訂正理由・バージョン |
+| **検索** | 期間・金額範囲・取引先による複合検索（電帳法3大要件の検索性要件に対応） |
+| **モデル** | `ElectronicRecord`（`document_type: invoice` で請求書PDFを登録） |
+
+**月次締め時の確認ポイント:**
+- [ ] 対象月の請求書PDFが電子帳簿レコードに登録済みか
+- [ ] 訂正（再発行）があった場合、訂正理由・バージョンが記録されているか
+
+---
+
 ## 関連するモデル・サービス・リソース
 
 | クラス | 役割 |
@@ -325,9 +378,12 @@ public function exportAccountingCsv(
 | `AccountingExportProfile` | 会計ソフト別出力プロファイル設定 |
 | `ChartOfAccount` | 勘定科目マスタ（施設別・品目別） |
 | `MonthlyInvoice` | 出力対象データ（Billed/Paidのみ） |
+| `AccountingSyncService` | freee / MF API同期（仕訳作成・トークンリフレッシュ、v1.7） |
+| `FreeeMcpClient` / `MfMcpClient` | 会計ソフトAPIクライアント（v1.7） |
+| `ElectronicRecordService` / `ElectronicRecord` | 電帳法対応・電子帳簿レコード（v1.6〜） |
 | `AccountingExportProfileResource` | プロファイル管理画面 |
 | `ChartOfAccountResource` | 勘定科目管理画面 |
-| `MonthlyInvoiceResource` | CSV出力アクション（プレビュー・ダウンロード） |
+| `MonthlyInvoiceResource` | CSV出力アクション（プレビュー・ダウンロード・「介護サービス請求を含める」オプション） |
 
 ---
 
@@ -376,20 +432,23 @@ public function exportAccountingCsv(
 
 ## 今後の拡張予定（改善提案より）
 
-| 改善項目 | 期待効果 | 実装目安 |
-|----------|----------|----------|
-| 電子帳簿保存法対応 (テーマ4) | タイムスタンプ・検索要件・JIIMA認証 | 中期（3-6ヶ月） |
-| 入金消込自動照合 (テーマ2) | 口座振替データ自動突合・仕訳自動化 | 短期（1-2ヶ月） |
-| APIファースト化・外部連携 (テーマ8) | 会計ソフトAPI直接連携・CSVレス | 中期（2-3ヶ月） |
+| 改善項目 | 期待効果 | 状況 |
+|----------|----------|------|
+| 電子帳簿保存法対応 (テーマ4) | タイムスタンプ・検索要件・JIIMA認証 | 🔄 部分実装済み（SHA-256ハッシュ・複合検索。タイムスタンプ/JIIMA認証は今後） |
+| 入金消込自動照合 (テーマ2) | 口座振替データ自動突合・仕訳自動化 | ✅ v1.7 実装済み（全銀結果取込） |
+| APIファースト化・外部連携 (テーマ8) | 会計ソフトAPI直接連携・CSVレス | ✅ v1.7 実装済み（freee / MF クラウド会計） |
 | 仕訳テンプレート・ノーコードエディタ | 設定変更の内製化・属人化解消 | 中期 |
 | 複数施設一括出力・法人統括CSV | 本部経理の一元処理・効率化 | 中期 |
 
 ---
 
 ## 参照ドキュメント
-- [README.md デモシナリオ Step 7](README.md#step-7会計ソフトにcsvを出力する)
-- [IMPROVEMENT_PROPOSALS.md テーマ4・8](IMPROVEMENT_PROPOSALS.md)
+- [00_三者分業ワークフロー.md](00_三者分業ワークフロー.md)（担当分担の全体像）
+- [操作マニュアル 第16章 会計ソフトAPI連携](../操作マニュアル.md#第16章-会計ソフトapi連携v17-新機能)
 - `app/Services/InvoiceCsvExportService.php`
+- `app/Services/Accounting/AccountingSyncService.php`
+- `app/Services/Accounting/Mcp/FreeeMcpClient.php` / `MfMcpClient.php`
+- `app/Services/Denchoho/ElectronicRecordService.php`
 - `app/Models/AccountingExportProfile.php`
 - `app/Models/ChartOfAccount.php`
 - `app/Filament/Resources/AccountingExportProfileResource.php`
