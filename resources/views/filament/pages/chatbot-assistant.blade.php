@@ -28,6 +28,57 @@
                                     style="white-space: pre-wrap;"
                                 ></div>
 
+                                <!-- リッチ表示: テーブル -->
+                                <template x-if="message.role === 'bot' && message.displayType === 'table' && message.rows && message.rows.length > 0">
+                                    <div class="mt-2 overflow-x-auto rounded-lg border border-gray-200 bg-white" style="max-width: 100%;">
+                                        <table class="min-w-full text-xs divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <template x-for="col in message.columns" :key="col">
+                                                        <th class="px-3 py-2 text-left font-semibold text-gray-600 whitespace-nowrap" x-text="col"></th>
+                                                    </template>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-100">
+                                                <template x-for="(row, ri) in message.rows" :key="ri">
+                                                    <tr class="hover:bg-gray-50">
+                                                        <template x-for="(cell, ci) in row" :key="ci">
+                                                            <td class="px-3 py-1.5 text-gray-700 whitespace-nowrap" x-text="cell"></td>
+                                                        </template>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </template>
+
+                                <!-- リッチ表示: 候補カード（クリックで選択送信） -->
+                                <template x-if="message.role === 'bot' && message.displayType === 'candidates' && message.rows && message.rows.length > 0">
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        <template x-for="(row, ri) in message.rows" :key="ri">
+                                            <button
+                                                type="button"
+                                                class="text-xs bg-white text-blue-700 hover:bg-blue-50 border border-blue-300 rounded-lg px-3 py-1.5 shadow-sm transition-colors"
+                                                :aria-label="(row[0] || '') + 'を選択'"
+                                                :disabled="loading"
+                                                @click="sendQuickReply((row[0] || '') + ' の情報を教えてください')"
+                                            >
+                                                <span class="font-medium" x-text="row[0]"></span>
+                                                <span class="text-gray-500" x-text="row[1] ? '（' + row[1] + '号室）' : ''"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- リッチ表示: リスト -->
+                                <template x-if="message.role === 'bot' && message.displayType === 'list' && message.rows && message.rows.length > 0">
+                                    <ul class="mt-2 space-y-1 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 list-disc list-inside">
+                                        <template x-for="(row, ri) in message.rows" :key="ri">
+                                            <li x-text="row[0]"></li>
+                                        </template>
+                                    </ul>
+                                </template>
+
                                 <!-- 管理画面ディープリンク -->
                                 <template x-if="message.role === 'bot' && message.actionLinks && message.actionLinks.length > 0">
                                     <div class="mt-2 flex flex-wrap gap-2">
@@ -254,6 +305,9 @@
                             quickReplyCategories: data.quick_reply_categories || null,
                             chatLogId: data.chat_log_id || null,
                             actionLinks: data.action_links || [],
+                            displayType: data.display_type || 'text',
+                            columns: data.columns || [],
+                            rows: data.rows || [],
                             feedback: null,
                         });
                     } catch (error) {

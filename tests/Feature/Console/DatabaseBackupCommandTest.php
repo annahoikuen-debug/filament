@@ -10,6 +10,12 @@ class DatabaseBackupCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        File::deleteDirectory(storage_path('app/backups'));
+    }
+
     protected function tearDown(): void
     {
         // バックアップディレクトリを削除

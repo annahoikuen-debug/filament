@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use App\Models\User;
 
 class DailyCharge extends Model
 {
@@ -20,6 +21,7 @@ class DailyCharge extends Model
         'date' => 'date',
         'unit_price' => 'integer',
         'quantity' => 'integer',
+        'created_by' => 'integer',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -32,6 +34,7 @@ class DailyCharge extends Model
                 'date',
                 'unit_price',
                 'quantity',
+                'created_by',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
@@ -42,6 +45,11 @@ class DailyCharge extends Model
     protected static function booted(): void
     {
         static::creating(function (DailyCharge $charge) {
+            // created_by を自動設定（認証済みユーザーがいる場合）
+            if (empty($charge->created_by) && auth()->check()) {
+                $charge->created_by = auth()->id();
+            }
+
             // facility_id が未設定の場合、入居者から自動補完（施設管理者の一覧表示・データ分離のため）
             if (empty($charge->facility_id) && $charge->resident_id) {
                 $resident = $charge->resident ?? Resident::find($charge->resident_id);
@@ -76,6 +84,14 @@ class DailyCharge extends Model
                 }
             }
         });
+    }
+
+    /**
+     * 作成者
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**

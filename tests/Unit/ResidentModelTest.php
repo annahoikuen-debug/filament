@@ -53,10 +53,16 @@ test('fill可能フィールド一覧が正しいこと', function () {
         'birth_date',
         'base_rent',
         'base_management_fee',
+        'base_rent_non_taxable',
+        'base_rent_taxable',
+        'base_management_fee_non_taxable',
+        'base_management_fee_taxable',
         'status',
         'move_in_date',
         'move_out_date',
         'normalized_name',
         'normalized_kana',
+        'nickname',
+        'normalized_nickname',
     ]);
 });

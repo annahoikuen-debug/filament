@@ -1,146 +1,77 @@
-# セルフサーブトライアル 自動化 - 実装完了サマリー
+## 実装サマリー（ステップ 1〜5）
 
-## 実装ステップ完了状況
+### ステップ 1: 税率・税区分マスタ（`TaxSetting`）のバージョン管理と有効期間バリデーションの実装
+- **変更点**:
+  - `App\Models\TaxSetting` モデルに `booted` メソッドを追加し、`saving` イベントで有効な税率設定の日付範囲重複をバリデーション。
+  - 重複がある場合は `ValidationException` をスローし、`effective_from` と `effective_until` フィールドにエラーメッセージを設定。
+  - 重複チェックは、有効な税率設定 (`is_active = true`) に対してのみ実行。
+  - 更新時は自身のレコードを除外してチェック。
+- **テスト**:
+  - `tests/Unit/TaxSettingTest.php` を作成し、以下を検証：
+    - 有効な税率設定間での日付範囲重複を防止すること。
+    - 重複しない範囲での作成を許可すること。
+    - 非アクティブな設定での重複を許可すること。
+    - 更新時の日付変更なしを許可すること。
+    - アクティブ状態への更新（重複なし）を許可すること。
 
-### ステップ1: トライアルデータ基盤の構築 ✅
-- `database/migrations/2026_10_08_000001_create_trials_table.php` - trialsテーブル基本スキーマ
-- `app/Models/Trial.php` - Trial Eloquentモデル
-- `database/migrations/2026_10_08_000002_add_indexes_to_trials_table.php` - インデックス追加
+### ステップ 2: 品目マスタ（`ChargeItem`）のインボイス適格区分・軽減税率根拠の拡張
+- **変更点**:
+  - `charge_items` テーブルに `tax_legal_basis` カラムを追加（nullable、税区分の法律的根拠を保存）。
+  - `App\Models\ChargeItem` モデル：
+    - `$fillable` に `tax_legal_basis` を追加。
+    - `getActivitylogOptions` に `tax_legal_basis` を追加し、アクティビティログに記録。
+- **マイグレーション**:
+  - `2026_10_13_061000_add_tax_legal_basis_to_charge_items_table.php` を作成。
 
-### ステップ2: 基本的なトライアル作成API ✅
-- `app/Http/Controllers/TrialController.php` - トライアル作成コントローラー
-- `app/Http/Controllers/Controller.php` - 基本コントローラークラス
-- `routes/api.php` - APIルート定義
-- `bootstrap/app.php` - APIルートを読み込むように修正
+### ステップ 3: 賃料・共益費の内訳分離マスタの導入
+- **変更点**:
+  - `residents` テーブルに以下のカラムを追加：
+    - `base_rent_non_taxable`（非課税部分の基本家賃、デフォルト 0）
+    - `base_rent_taxable`（課税部分の基本家賃、デフォルト 0）
+    - `base_management_fee_non_taxable`（非課税部分の基本管理費、デフォルト 0）
+    - `base_management_fee_taxable`（課税部分の基本管理費、デフォルト 0）
+  - `App\Models\Resident` モデル：
+    - `$fillable` に上記 4 フィールドを追加。
+    - `$casts` に上記 4 フィールドを追加（integer 型）。
+    - `booted` メソッドの `saving` イベント内で、`base_rent` と `base_management_fee` を分解フィールドの合計値に自動更新。
+    - `getActivitylogOptions` に上記 4 フィールドを追加し、アクティビティログに記録。
+- **マイグレーション**:
+  - `2026_10_13_062000_add_rent_management_fee_breakdown_to_residents_table.php` を作成。
 
-### ステップ3: 施設とユーザーの自動作成 ✅
-- `app/Services/TrialProvisioningService.php` - トライアルプロビジョニングサービス
-- `app/Http/Controllers/TrialController.php` - サービスを使用するように更新
-- `app/Models/Trial.php` - `$fillable` に `facility_id` を追加、施設リレーションを追加
-- `database/migrations/2026_10_08_000003_add_facility_id_to_trials_table.php` - facility_id カラム追加マイグレーション
+### ステップ 4: インボイス制度「適格請求書」必須要件チェックバリデーションの実装
+- **変更点**:
+  - `App\Services\InvoicePdfService` クラスに `validateInvoiceRequirements` メソッドを追加。
+  - `generateInvoicePdf` と `generateReceiptPdf` メソッドからこのバリデーションメソッドを呼び出すように修正。
+  - バリデーション内容：
+    1. 施設の適格請求書登録番号の存在確認
+    2. 登録番号のフォーマット検証（T + 13桁数字）
+    3. tax_breakdown の存在と構造確認
+    4. 標準税率（10%）の項目存在確認
+    5. 軽減税率（8%）の項目存在確認
+    6. 各税区分の課税額と税額の存在確認
+- **テスト**:
+  - `tests/Feature/InvoicePdfServiceTest.php` に以下のテストを追加：
+    - 適格請求書登録番号が未設定の場合は例外が発生すること
+    - 適格請求書登録番号のフォーマットが不正な場合は例外が発生すること
+    - 税区分別内訳が存在しない場合は例外が発生すること
+    - 標準税率の項目が不足している場合は例外が発生すること
+    - 軽減税率の項目が不足している場合は例外が発生すること
+    - 課税額が不足している場合は例外が発生すること
+    - 税額が不足している場合は例外が発生すること
+    - 有効なデータの場合は例外が発生しないこと
 
-### ステップ4: サンプルデータ投入オプション ✅
-- `database/migrations/2026_10_08_000004_add_config_to_trials_table.php` - trial_config カラム追加マイグレーション
-- `app/Http/Controllers/TrialController.php` - seed_sample_data フィールドのバリデーションと trial_config への保存を追加
-- `app/Services/TrialProvisioningService.php` - seedSampleData メソッドを実装し、設定に従ってサンプルデータ投入
+### ステップ 5: 軽減税率別（8%・10%）の税額端数処理ルールの統一と監査
+- **変更点**:
+  - `App\Services\Invoice\TaxCalculator` クラスを修正し、消費税の端数処理を切り捨て（PHP_ROUND_FLOOR）に統一。
+  - 定数 `TAX_ROUNDING_MODE = PHP_ROUND_FLOOR` を追加し、ドキュメントコメントで日本の消費税法に準拠していることを明記。
+  - `calculate` メソッドで `round()` 関数に丸めモードを明示的に渡すように変更。
+- **テスト**:
+  - `tests/Unit/TaxCalculatorTest.php` を作成し、以下を検証：
+    - 標準税率・軽減税率の両方で切り捨て丸めが正しく適用されること
+    - 0.5未満の端数は切り捨てとなること（例: 5円×10% = 0.5円 → 0円）
+    - 端数がある場合は必ず切り捨てとなること（例: 1001円×10% = 100.1円 → 100円）
+    - tax_breakdown が正しく計算され、丸め後の税額が反映されること
+    - ゼロ金額の場合も正しく処理されること
 
-### ステップ5: フロントエンド連携 ✅
-- `website/request/inquiry.html` - フロントエンドフォームとJavaScriptロジックを更新
-  - タイムラインが「immediate」の場合を検知しトライアル申請フローに分岐
-  - /api/trialsエンドポイントにデータを送信
-  - サンプルデータ投入オプションのチェックボックスを追加
-  - ローディング状態と適切な成功/エラーメッセージを表示
-
-### ステップ6: トライアルダッシュボード表示 ✅
-- `app/Filament/Widgets/TrialOverview.php` - TrialOverviewウィジェットを作成
-- `app/Providers/Filament/AdminPanelProvider.php` - ウィジェットをダッシュボードに追加
-
-### ステップ7: トライアル期限管理 ✅
-- `app/Jobs/SendTrialExpiryNotification.php` - 期限通知ジョブを作成
-- `app/Jobs/CheckAndNotifyTrialExpiries.php` - スケーラージョブを作成
-- `app/Console/Kernel.php` - コンソールカーネルを作成しスケーラーを登録
-
-## 動作フロー
-
-1. **トライアル申請**
-   - ユーザーがウェブフォームで「すぐにでも導入したい」を選択して送信
-   - フロントエンドJavaScriptが/api/trialsエンドポイントにデータを送信
-   - TrialControllerがバリデーションを行いTrialレコードを作成
-   - TrialProvisioningServiceが施設と管理者ユーザーを自動作成
-   - オプションでサンプルデータを投入
-   - トライアルステータスを'active'に更新し、14日間のトライアル期間を設定
-
-2. **トライアル期間中**
-   - ユーザーはFilamentダッシュボードにログイン可能
-   - TrialOverviewウィジェットがトライアル残り日数、入居者数、今月の請求書数を表示
-   - 毎日午前9時にスケーラージョブが実行され、期限が近いトライアルをチェック
-
-3. **トライアル期限通知**
-   - 7日前、3日前、1日前、当日にログを通じて通知（実際の実装ではメール送信）
-   - 期限切れになったトライアルは自動でステータスが'expired'に更新
-
-4. **トライアル→本契約移行**
-   - （別実装が必要だが、基盤は整っている）
-   - トライアル期間中または終了前に本契約に移行可能
-   - 移行時にトライアル施設を本契約施設にアップグレード
-   - トライアルステータスを'converted'に更新
-
-## 管理者が「直接対応」する残る業務
-
-1. **エンタープライズ案件のカスタム要件ヒアリング**
-2. **クレーム/トラブル対応**（システム障害・データ不整合）
-3. **大型導入のプロジェクトマネジメント**（複数施設一斉導入など）
-4. **戦略的判断**（価格改定・新機能優先度・パートナーシップ）
-
-## 期待される効果
-
-1. **トライアル申請から環境利用までの時間**: 目標 <5分（現状 2営業日）
-2. **トライアル登録完了率**: 目標 >70%（フォーム離脱率改善）
-3. **トライアル→本契約転換率**: 目標 >25%（現状の営業プロセス比較）
-4. **営業工数削減**: トライアル対応工数 80%削減
-5. **顧客満足度（NPS）**: トライアル体験での向上目標 +15ポイント
-
-この実装により、管理者はトライアル環境の自動プロビジョニング・期限管理によって、
-本来の価値提供（機能改善・カスタム対応）に集中できるようになります。
-
-## 評価・微調整（2026-10-07）
-
-実装後のコードレビューで発見した問題と修正内容：
-
-### 修正したバグ
-1. **`Trial::isExpired()` の未定義変数** - `$trial->trial_ends_at` が `$this->trial_ends_at` に修正（常に false を返していた）
-2. **`trial_config` 未永続化** - コントローラーが `seed_sample_data` を無視していたため、サンプルデータ投入オプションが機能しなかった。`trial_config` に保存するように修正（モデルに `$fillable`・array cast 追加）
-3. **DBレベル一意制約とソフトデリートの衝突** - `trials.email` の UNIQUE制約がソフトデリート済みレコードで再申込を拒否していた。アプリケーション層バリデーション（`Rule::unique()->whereNull('deleted_at')`）に変更し、DB制約は通常インデックスに降格（`2026_10_08_000005_fix_trials_email_unique.php`）
-4. **`invoice_registration_number` の衝突** - 全トライアル施設が同一の仮番号 `T0000000000000` で2件目以降のプロビジョニングが失敗。トライアルIDベースの一意な仮番号に変更
-5. **`daysUntilExpiry()` の負値/精度問題** - Carbon 3 の `diffInDays()` は符号付きfloatを返すため、期限切れで正の値を返していた。日付単位の差分（`startOfDay`）に変更し、期限切れは0にクランプ
-6. **管理者パスワードの未保存** - ランダムパスワードを生成するのみで保存・送信していなかった。`trial_config.temp_password` に退避（メール送信実装時に送信後クリア予定）
-7. **既存ユーザーのメールアドレスでクラッシュ** - `User::create` が一意制約違反で失敗。`User::firstOrCreate` に変更し既存ユーザーは流用（パスワードは変更しない）
-8. **同一企業の複数トライアルで施設が混在** - 施設名にトライアルIDを含め一意化
-
-### 改善
-- `CheckAndNotifyTrialExpiries` - 通知対象日（7/3/1/0日前）のみジョブをdispatch（毎日の無駄なdispatchを削減）
-- フロントエンド - トライアル申込モード（`trial_mode` チェックボックス）を追加し、`/api/trials` へ fetch 送信。バリデーションエラーを日本語で表示。`capacity` 選択肢をAPIのバリデーション値に整合（`100_200`/`over_200`/`unknown`）
-
-### 回帰防止テスト
-- `tests/Feature/TrialApiTest.php` - 9ケース（プロビジョニング正常系/異常系、二重申込、ソフトデリート後再申込、既存ユーザー、施設分離、期限クランプ、期限切れ自動更新）
-- 既存テストスイート 124 passed（PDF関連16件の失敗は事前存在・本変更と無関係）
-
-## 残タスク実装完了（2026-10-07）
-
-詳細計画書: `IMPLEMENTATION_PLAN_REMAINING.md`
-
-### Phase A: メール送信基盤 ✅
-- `app/Services/MailService.php` - 設定検知＋未設定時はログへフォールバック（`mail.default` が log/null/array の場合）
-- `app/Mail/` - 7 Mailable（TrialProvisioningComplete / TrialExpiryWarning / TrialExpired / TrialNurture / Quote / BookingConfirmation / ContractCompleted）
-- `resources/views/emails/` - 7 Bladeテンプレート
-- `TrialProvisioningService` - 完了メール送信後、temp_password をクリア
-- `SendTrialExpiryNotification` - 警告/期限切れメールを送信
-
-### Phase B: トライアル→本契約移行 ✅
-- `database/migrations/2026_10_08_000006_create_subscriptions_table.php` - subscriptions テーブル
-- `app/Models/Subscription.php` - Subscription モデル
-- `app/Services/TrialConversionService.php` - 移行処理（施設昇格・サブスクリプション作成・電子契約同意記録）
-- `app/Http/Controllers/TrialConversionController.php` - `POST /api/trials/{trial}/convert`
-- プラン価格: starter ¥15,000 / standard ¥35,000 / enterprise 個別見積（quoted_price 必須）
-
-### Phase C: 営業プロセス自動化 ✅
-- **リードスコアリング** - `app/Services/LeadScoringService.php`、`trials.score` カラム（000007 マイグレーション）。施設種別/定員/課題/予算/サンプル希望で0〜100点、hot(>=80)/warm(>=50)/cold 判定を trial_config.lead_tier に保存
-- **メールシーケンス** - `app/Jobs/SendTrialNurtureEmails.php`（毎日10:00実行）。3日目=利用チェックイン、7日目=導入事例、10日目=移行案内。trial_config.emails_sent で重複防止
-- **デモ予約** - `bookings` テーブル（000008）、`BookingController`（`POST/GET /api/bookings`）、確認メール自動送
-- **見積書自動生成** - `app/Services/QuoteService.php`（定員→プラン推奨）、`QuoteController`（`GET /api/trials/{trial}/quote`、`POST .../quote/send`）
-
-### 重要な修正：スケジューラ登録
-- Laravel 11 は `App\Console\Kernel` を自動的に使用しない（`withKernels()` がフレームワーク Kernel をバインドするため）
-- `bootstrap/app.php` に `->withSchedule()` を追加し、期限チェック（09:00）とナーチャリングメール（10:00）を登録
-- 未修正前はスケジューラが空のままとなり、期限通知・ナーチャリングメールが自動送信されない状態だった
-- 不要となった `app/Console/Kernel.php` を削除（commands 読み込みは `withCommands()` と `withRouting(commands:)` が担当）
-
-### テスト
-- `tests/Feature/SalesAutomationTest.php` - 17ケース（スコアリング/見積/移行/予約/ナーチャリング/メール基盤）
-- 全スイート: 141 passed（PDF関連16件の失敗は事前存在・本変更と無関係）
-
-### 今後の拡張ポイント
-- 決済連携（Stripe等）: subscriptions テーブルに課金記録を追加
-- 外部カレンダー API 連携: bookings の confirmed ステータス更新
-- 電子契約サービス連携: contract_accepted_* を外部サービスの署名で置換
-- 本番メール送信: .env に MAIL_MAILER/MAIL_HOST を設定すると MailService が自動的に実送信に切り替わる
+### 次のステップ
+ステップ 6 以降（消費税申告書集計レポート出力機能の実装）については、次のインタラクションで続行します。

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\MonthlyInvoiceResource\Pages;
 
+use App\Enums\InvoiceStatus;
 use App\Filament\Resources\MonthlyInvoiceResource;
+use App\Models\MonthlyInvoice;
 use App\Services\InvoiceCalculationService;
 use App\Services\InvoiceCsvExportService;
 use App\Services\InvoicePdfService;
@@ -10,11 +12,33 @@ use Carbon\Carbon;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
+use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Database\Eloquent\Builder;
 
 class ListMonthlyInvoices extends ListRecords
 {
     protected static string $resource = MonthlyInvoiceResource::class;
+
+    public function getTabs(): array
+    {
+        return [
+            'all' => Tab::make('すべて')
+                ->badge(MonthlyInvoice::query()->count()),
+            'unbilled' => Tab::make('未請求')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', InvoiceStatus::Unbilled))
+                ->badge(MonthlyInvoice::query()->where('status', InvoiceStatus::Unbilled)->count())
+                ->badgeColor('warning'),
+            'billed' => Tab::make('請求済')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', InvoiceStatus::Billed))
+                ->badge(MonthlyInvoice::query()->where('status', InvoiceStatus::Billed)->count())
+                ->badgeColor('primary'),
+            'paid' => Tab::make('入金済')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', InvoiceStatus::Paid))
+                ->badge(MonthlyInvoice::query()->where('status', InvoiceStatus::Paid)->count())
+                ->badgeColor('success'),
+        ];
+    }
 
     protected function getHeaderActions(): array
     {

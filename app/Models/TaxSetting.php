@@ -5,6 +5,8 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -31,6 +33,18 @@ class TaxSetting extends Model
         'effective_until' => 'date',
         'is_active' => 'boolean',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($taxSetting) {
+            // Only validate if the tax setting is being activated
+            if ($taxSetting->is_active) {
+                $taxSetting->validateNoOverlap();
+            }
+        });
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -110,5 +124,48 @@ class TaxSetting extends Model
     public static function currentReducedRate(): int
     {
         return self::current()?->reduced_rate ?? 8;
+    }
+
+    /**
+     * Validate that the tax setting's date range does not overlap with any other active tax setting.
+     *
+     * @throws ValidationException
+     */
+    protected function validateNoOverlap(): void
+    {
+        $query = self::where('is_active', true);
+
+        // If model exists (update), exclude the current record
+        if ($this->exists) {
+            $query->where('id', '!=', $this->id);
+        }
+
+        // Check for overlapping date ranges
+        $effectiveFrom = $this->effective_from instanceof Carbon ? $this->effective_from->format('Y-m-d') : $this->effective_from;
+        $effectiveUntil = $this->effective_until instanceof Carbon ? $this->effective_until->format('Y-m-d') : $this->effective_until;
+
+        // A and B overlap if:
+        // (A.from <= B.until or B.until is null) and (A.until >= B.from or A.until is null)
+        $overlap = $query->where(function ($q) use ($effectiveFrom, $effectiveUntil) {
+            // Existing setting starts before/at new setting's end (or new setting has no end)
+            if ($effectiveUntil !== null) {
+                $q->where('effective_from', '<=', $effectiveUntil);
+            }
+
+            // Existing setting ends after/at new setting's start (or existing setting has no end)
+            $q->where(function ($sub) use ($effectiveFrom) {
+                if ($effectiveFrom !== null) {
+                    $sub->whereNull('effective_until')
+                        ->orWhere('effective_until', '>=', $effectiveFrom);
+                }
+            });
+        })->exists();
+
+        if ($overlap) {
+            throw ValidationException::withMessages([
+                'effective_from' => 'The selected date range overlaps with an existing active tax setting.',
+                'effective_until' => 'The selected date range overlaps with an existing active tax setting.',
+            ]);
+        }
     }
 }

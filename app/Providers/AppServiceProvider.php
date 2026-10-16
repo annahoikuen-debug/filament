@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Observer登録
         \App\Models\DailyCharge::observe(\App\Observers\DailyChargeObserver::class);
+        \App\Models\ChatbotSynonym::observe(\App\Observers\ChatbotSynonymObserver::class);
 
         $this->registerRateLimiters();
     }

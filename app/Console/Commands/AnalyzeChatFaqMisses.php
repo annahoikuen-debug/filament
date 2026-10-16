@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyzeChatFaqMisses extends Command
 {
-    protected $signature = 'chatbot:analyze-faq-misses {--days=30 : 集計対象の日数}';
+    protected $signature = 'chatbot:analyze-faq-misses
+        {--days=30 : 集計対象の日数}
+        {--suggest : クラスタリング結果をFAQ候補（chatbot_faq_suggestions）に保存する}';
 
     protected $description = 'FAQに一致しなかったチャットボット質問の集計・頻度ランキングを出力します';
 
@@ -18,6 +20,13 @@ class AnalyzeChatFaqMisses extends Command
     {
         $days = (int) $this->option('days');
         $since = now()->subDays($days);
+
+        // FAQ候補の自動生成（夜間バッチ用オプション）
+        if ($this->option('suggest')) {
+            $clusterer = app(\App\Services\Chatbot\FaqSuggestionClusterer::class);
+            $upserted = $clusterer->generate($days);
+            $this->info("FAQ候補を {$upserted} 件 upsert しました。");
+        }
 
         $this->info("=== FAQ未回答質問分析（直近 {$days} 日間） ===");
 

@@ -9,12 +9,12 @@ use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use Carbon\Carbon;
-use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -89,7 +89,7 @@ class IntegratedBillingDashboard extends Page implements HasForms, HasTable
             ->query($this->getTableQuery($yearMonth, $facilityId))
             ->columns($this->getTableColumns())
             ->filters($this->getTableFilters())
-            ->headerActions($this->getHeaderActions())
+            ->headerActions($this->getTableHeaderActions())
             ->defaultSort('room_number')
             ->paginated([10, 25, 50, 100])
             ->striped();
@@ -232,16 +232,32 @@ class IntegratedBillingDashboard extends Page implements HasForms, HasTable
             SelectFilter::make('status')
                 ->label('請求ステータス')
                 ->options(InvoiceStatus::class)
-                ->query(fn (Builder $query, array $data) => $query->whereHas('monthlyInvoices', fn ($q) => $q->where('billing_year_month', $this->filters['billing_year_month'])->whereIn('status', $data['values']))),
+                ->query(function (Builder $query, array $data) {
+                    $yearMonth = $this->filters['billing_year_month'] ?? now()->format('Y-m');
+                    $value = $data['value'] ?? null;
+                    if (blank($value)) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('monthlyInvoices', fn ($q) => $q->where('billing_year_month', $yearMonth)->where('status', $value));
+                }),
 
             SelectFilter::make('care_status')
                 ->label('介護請求ステータス')
                 ->options(ServiceInvoiceStatus::class)
-                ->query(fn (Builder $query, array $data) => $query->whereHas('serviceInvoices', fn ($q) => $q->where('billing_year_month', $this->filters['billing_year_month'])->whereIn('status', $data['values']))),
+                ->query(function (Builder $query, array $data) {
+                    $yearMonth = $this->filters['billing_year_month'] ?? now()->format('Y-m');
+                    $value = $data['value'] ?? null;
+                    if (blank($value)) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('serviceInvoices', fn ($q) => $q->where('billing_year_month', $yearMonth)->where('status', $value));
+                }),
         ];
     }
 
-    protected function getHeaderActions(): array
+    protected function getTableHeaderActions(): array
     {
         return [
             Action::make('exportCsv')

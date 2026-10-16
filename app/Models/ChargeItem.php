@@ -25,6 +25,7 @@ class ChargeItem extends Model
         'category',
         'is_active',
         'facility_id',
+        'tax_legal_basis',
     ];
 
     protected $casts = [
@@ -45,6 +46,7 @@ class ChargeItem extends Model
                 'tax_type',
                 'category',
                 'is_active',
+                'tax_legal_basis',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
@@ -114,6 +116,6 @@ class ChargeItem extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('is_active', true);
+        return $this->where('is_active', true);
     }
 }

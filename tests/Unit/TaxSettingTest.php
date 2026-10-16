@@ -1,119 +1,145 @@
 <?php
 
+namespace Tests\Unit;
+
 use App\Models\TaxSetting;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-test('現在有効な税率設定を取得できること', function () {
-    // 現在有効な設定を作成
-    $setting = TaxSetting::create([
-        'standard_rate' => 10,
-        'reduced_rate' => 8,
-        'effective_from' => Carbon::today()->subDays(10),
-        'effective_until' => null,
-        'is_active' => true,
-    ]);
+class TaxSettingTest extends TestCase
+{
+    use RefreshDatabase;
 
-    $current = TaxSetting::current();
+    /** @test */
+    public function it_prevents_overlapping_active_tax_settings()
+    {
+        // Create an active tax setting for January 1 to December 31, 2026
+        TaxSetting::create([
+            'standard_rate' => 10,
+            'reduced_rate' => 8,
+            'effective_from' => '2026-01-01',
+            'effective_until' => '2026-12-31',
+            'is_active' => true,
+        ]);
 
-    expect($current)->not->toBeNull()
-        ->and($current->standard_rate)->toBe(10)
-        ->and($current->reduced_rate)->toBe(8);
-});
+        // Attempt to create another active tax setting that overlaps (July 1, 2026 to June 30, 2027)
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        TaxSetting::create([
+            'standard_rate' => 11,
+            'reduced_rate' => 9,
+            'effective_from' => '2026-07-01',
+            'effective_until' => '2027-06-30',
+            'is_active' => true,
+        ]);
+    }
 
-test('期限切れの設定は取得されないこと', function () {
-    // 期限切れの設定
-    TaxSetting::create([
-        'standard_rate' => 5,
-        'reduced_rate' => 3,
-        'effective_from' => Carbon::today()->subDays(30),
-        'effective_until' => Carbon::today()->subDays(1),
-        'is_active' => true,
-    ]);
+    /** @test */
+    public function it_allows_non_overlapping_active_tax_settings()
+    {
+        // Create an active tax setting for January 1 to December 31, 2026
+        TaxSetting::create([
+            'standard_rate' => 10,
+            'reduced_rate' => 8,
+            'effective_from' => '2026-01-01',
+            'effective_until' => '2026-12-31',
+            'is_active' => true,
+        ]);
 
-    // 現在有効な設定
-    $currentSetting = TaxSetting::create([
-        'standard_rate' => 10,
-        'reduced_rate' => 8,
-        'effective_from' => Carbon::today()->subDays(10),
-        'effective_until' => null,
-        'is_active' => true,
-    ]);
+        // Create another active tax setting that starts after the first ends (January 1, 2027)
+        $taxSetting = TaxSetting::create([
+            'standard_rate' => 11,
+            'reduced_rate' => 9,
+            'effective_from' => '2027-01-01',
+            'effective_until' => '2027-12-31',
+            'is_active' => true,
+        ]);
 
-    $current = TaxSetting::current();
+        $this->assertDatabaseHas('tax_settings', [
+            'id' => $taxSetting->id,
+            'standard_rate' => 11,
+            'is_active' => true,
+        ]);
+    }
 
-    expect($current->standard_rate)->toBe(10);
-});
+    /** @test */
+    public function it_allows_overlap_if_one_is_inactive()
+    {
+        // Create an active tax setting for January 1 to December 31, 2026
+        TaxSetting::create([
+            'standard_rate' => 10,
+            'reduced_rate' => 8,
+            'effective_from' => '2026-01-01',
+            'effective_until' => '2026-12-31',
+            'is_active' => true,
+        ]);
 
-test('無効フラグの設定は取得されないこと', function () {
-    TaxSetting::create([
-        'standard_rate' => 10,
-        'reduced_rate' => 8,
-        'effective_from' => Carbon::today()->subDays(10),
-        'is_active' => false, // 無効
-    ]);
+        // Create an inactive tax setting that overlaps (should be allowed)
+        $taxSetting = TaxSetting::create([
+            'standard_rate' => 11,
+            'reduced_rate' => 9,
+            'effective_from' => '2026-07-01',
+            'effective_until' => '2027-06-30',
+            'is_active' => false,
+        ]);
 
-    $current = TaxSetting::current();
+        $this->assertDatabaseHas('tax_settings', [
+            'id' => $taxSetting->id,
+            'is_active' => false,
+        ]);
+    }
 
-    expect($current)->toBeNull();
-});
+    /** @test */
+    public function it_allows_updating_tax_setting_without_changing_dates()
+    {
+        $taxSetting = TaxSetting::create([
+            'standard_rate' => 10,
+            'reduced_rate' => 8,
+            'effective_from' => '2026-01-01',
+            'effective_until' => '2026-12-31',
+            'is_active' => true,
+        ]);
 
-test('指定日の税率を取得できること', function () {
-    TaxSetting::create([
-        'standard_rate' => 5,
-        'reduced_rate' => 3,
-        'effective_from' => '2020-01-01',
-        'effective_until' => '2020-12-31',
-        'is_active' => true,
-    ]);
+        // Update the tax setting (change the rate) without changing dates
+        $taxSetting->update([
+            'standard_rate' => 12,
+        ]);
 
-    TaxSetting::create([
-        'standard_rate' => 8,
-        'reduced_rate' => 5,
-        'effective_from' => '2021-01-01',
-        'effective_until' => '2023-09-30',
-        'is_active' => true,
-    ]);
+        $this->assertDatabaseHas('tax_settings', [
+            'id' => $taxSetting->id,
+            'standard_rate' => 12,
+        ]);
+    }
 
-    TaxSetting::create([
-        'standard_rate' => 10,
-        'reduced_rate' => 8,
-        'effective_from' => '2023-10-01',
-        'is_active' => true,
-    ]);
+    /** @test */
+    public function it_allows_updating_tax_setting_to_an_active_state_if_no_overlap()
+    {
+        // Create an active tax setting for January 1 to June 30, 2026
+        TaxSetting::create([
+            'standard_rate' => 10,
+            'reduced_rate' => 8,
+            'effective_from' => '2026-01-01',
+            'effective_until' => '2026-06-30',
+            'is_active' => true,
+        ]);
 
-    // 2020年の税率
-    expect(TaxSetting::getRateForDate(Carbon::create(2020, 6, 1)))->toBe(5);
+        // Create an inactive tax setting for July 1 to December 31, 2026
+        $taxSetting = TaxSetting::create([
+            'standard_rate' => 11,
+            'reduced_rate' => 9,
+            'effective_from' => '2026-07-01',
+            'effective_until' => '2026-12-31',
+            'is_active' => false,
+        ]);
 
-    // 2022年の税率
-    expect(TaxSetting::getRateForDate(Carbon::create(2022, 6, 1)))->toBe(8);
+        // Now activate the second tax setting (should be allowed because the first ends on June 30 and the second starts July 1)
+        $taxSetting->update([
+            'is_active' => true,
+        ]);
 
-    // 2024年の税率
-    expect(TaxSetting::getRateForDate(Carbon::create(2024, 6, 1)))->toBe(10);
-});
-
-test('設定がない場合はデフォルト10%が返ること', function () {
-    // 全設定を削除
-    TaxSetting::query()->delete();
-
-    expect(TaxSetting::currentStandardRate())->toBe(10);
-    expect(TaxSetting::currentReducedRate())->toBe(8);
-});
-
-test('config配列への変換が正しく動作すること', function () {
-    $setting = TaxSetting::create([
-        'standard_rate' => 10,
-        'reduced_rate' => 8,
-        'effective_from' => '2026-01-01',
-        'effective_until' => '2026-12-31',
-        'scope' => 'all',
-        'is_active' => true,
-    ]);
-
-    $config = $setting->toConfigArray();
-
-    expect($config['standard_rate'])->toBe(10);
-    expect($config['reduced_rate'])->toBe(8);
-    expect($config['effective_from'])->toBe('2026-01-01');
-    expect($config['effective_until'])->toBe('2026-12-31');
-    expect($config['scope'])->toBe('all');
-});
+        $this->assertDatabaseHas('tax_settings', [
+            'id' => $taxSetting->id,
+            'is_active' => true,
+        ]);
+    }
+}

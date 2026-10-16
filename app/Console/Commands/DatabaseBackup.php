@@ -17,6 +17,8 @@ class DatabaseBackup extends Command
                             {--destination=local : 保存先 (local|s3)}
                             {--retention=30 : 保持日数}
                             {--compress : 圧縮して保存}
+                            {--encrypt : 暗号化して保存}
+                            {--output= : 出力ファイルパス}
                             {--notify : 完了通知を送信}';
 
     protected $description = 'データベースとストレージのバックアップを実行';
@@ -57,6 +59,20 @@ class DatabaseBackup extends Command
                 $zipPath = $this->compressBackup($backupDir);
                 $this->backupInfo['zip_path'] = $zipPath;
                 $this->backupInfo['zip_size'] = filesize($zipPath);
+            }
+
+            // 暗号化
+            if ($this->option('encrypt') || $this->option('output')) {
+                $sqlFiles = glob($backupDir . '/*.sql');
+                if (!empty($sqlFiles)) {
+                    $raw = file_get_contents($sqlFiles[0]);
+                    $enc = \Illuminate\Support\Facades\Crypt::encryptString($raw);
+                    $dest = $this->option('output') ?: $sqlFiles[0] . '.enc';
+                    file_put_contents($dest, $enc);
+                    if ($this->option('output')) {
+                        @unlink($sqlFiles[0]);
+                    }
+                }
             }
 
             // 古いバックアップの削除
