@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use App\Models\User;
 
 class DailyCharge extends Model
 {
@@ -71,6 +70,20 @@ class DailyCharge extends Model
         });
 
         static::saving(function (DailyCharge $charge) {
+            // 月次締め（closed）ガード: 締め済み月の自費データは変更・作成できない
+            // （facility_id の自動補完は creating フックで行われるため、未設定なら入居者から解決する）
+            $closingFacilityId = $charge->facility_id
+                ?: $charge->resident?->facility_id
+                ?: ($charge->resident_id ? Resident::find($charge->resident_id)?->facility_id : null);
+
+            if ($charge->date && $closingFacilityId
+                && MonthlyClosingState::isClosed($charge->date->format('Y-m'), (int) $closingFacilityId)) {
+                throw new DomainException(
+                    $charge->date->format('Y-m').' は締め済みのため、自費データの変更・作成はできません。'
+                    .'変更が必要な場合は月次締めワザードから差戻しをしてください。'
+                );
+            }
+
             // 入居者が指定されている場合、利用日が入居期間内であるか検証
             $residentId = $charge->resident_id;
             if ($residentId !== null && $residentId !== '' && $residentId !== 0 && $charge->date) {
@@ -82,6 +95,17 @@ class DailyCharge extends Model
                         "利用日 ({$charge->date->format('Y/m/d')}) が入居者の在籍期間外です。(入居日: {$moveIn} 〜 退去日: {$moveOut})"
                     );
                 }
+            }
+        });
+
+        static::deleting(function (DailyCharge $charge) {
+            // 月次締め（closed）ガード: 締め済み月の自費データは削除できない
+            if ($charge->date && $charge->facility_id
+                && MonthlyClosingState::isClosed($charge->date->format('Y-m'), (int) $charge->facility_id)) {
+                throw new DomainException(
+                    $charge->date->format('Y-m').' は締め済みのため、自費データの削除はできません。'
+                    .'変更が必要な場合は月次締めワザードから差戻しをしてください。'
+                );
             }
         });
     }

@@ -20,14 +20,15 @@ class FacilityBillingSeeder extends Seeder
     public function run(): void
     {
         // 0. 管理者ユーザーの作成
-        User::updateOrCreate(
+        // （is_admin / role / facility_id は fillable 外のため unguarded で設定）
+        User::unguarded(fn () => User::updateOrCreate(
             ['email' => 'admin@care-himawari.example.jp'],
             [
                 'name' => '施設管理者',
                 'password' => Hash::make('password'),
                 'is_admin' => true,
             ]
-        );
+        ));
 
         // 1. デフォルト施設を取得または作成
         $facility = Facility::first();

@@ -348,3 +348,32 @@ test('不正なBase64 PDFはエラーになること', function () {
             ],
         ]);
 });
+
+test('pdf_filenameにパストラバーサルを含めても安全なパスに保存されること', function () {
+    $response = $this->postJson('/api/external-invoices', [
+        'facility_id' => $this->facility->id,
+        'billing_year_month' => '2026-10',
+        'external_system_name' => 'ケアプランシステム',
+        'invoices' => [
+            [
+                'resident_id' => $this->resident->id,
+                'service_type' => 'visiting_care',
+                'external_invoice_number' => 'VC-202610-900',
+                'amount' => 45000,
+                'tax_amount' => 4500,
+                'tax_rate' => 10.00,
+                'pdf_base64' => $this->dummyPdfBase64,
+                'pdf_filename' => '../../../evil.pdf',
+                'status' => 'confirmed',
+            ],
+        ],
+    ], $this->apiAuthHeader);
+
+    $response->assertStatus(200);
+
+    $invoice = ServiceInvoice::where('external_invoice_number', 'VC-202610-900')->first();
+    // 施設・入居者ディレクトリ配下に保存され、 ".." は残らない
+    expect($invoice->pdf_path)
+        ->toBe("service-invoices/{$this->facility->id}/{$this->resident->id}/evil.pdf")
+        ->and($invoice->pdf_path)->not->toContain('..');
+});

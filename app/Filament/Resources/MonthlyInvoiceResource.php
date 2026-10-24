@@ -7,14 +7,17 @@ use App\Enums\PaymentMethod;
 use App\Filament\Resources\MonthlyInvoiceResource\Pages;
 use App\Mail\InvoiceMail;
 use App\Models\AccountingExportProfile;
+use App\Models\DailyCharge;
+use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Models\DailyCharge;
-use App\Filament\Resources\DailyChargeResource;
-use App\Filament\Resources\ResidentResource;
+use App\Models\ResidentBankAccount;
+use App\Services\Banking\ZenginFormatService;
+use App\Services\Banking\ZenginReconcileService;
 use App\Services\InvoiceCsvExportService;
 use App\Services\InvoicePdfService;
 use App\Services\MailService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -22,6 +25,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
@@ -406,7 +410,8 @@ class MonthlyInvoiceResource extends Resource
                                 ->helperText('確定済みの介護サービスPDFがあれば添付します'),
                         ])
                         ->action(function (MonthlyInvoice $record, array $data, MailService $mailService) {
-                            $pdfUrl = URL::signedRoute('invoices.preview', [
+                            // メールに埋め込むURLは7日間有効（無期限署名URLの長期漏洩リスクを回避）
+                            $pdfUrl = URL::temporarySignedRoute('invoices.preview', now()->addDays(7), [
                                 'invoice' => $record->id,
                                 'type' => 'invoice',
                             ]);
@@ -737,7 +742,8 @@ class MonthlyInvoiceResource extends Resource
                                     continue;
                                 }
 
-                                $pdfUrl = URL::signedRoute('invoices.preview', [
+                                // メールに埋め込むURLは7日間有効（無期限署名URLの長期漏洩リスクを回避）
+                                $pdfUrl = URL::temporarySignedRoute('invoices.preview', now()->addDays(7), [
                                     'invoice' => $record->id,
                                     'type' => 'invoice',
                                 ]);
@@ -786,7 +792,7 @@ class MonthlyInvoiceResource extends Resource
 
                             $entries = [];
                             foreach ($records as $record) {
-                                $account = \App\Models\ResidentBankAccount::query()
+                                $account = ResidentBankAccount::query()
                                     ->where('resident_id', $record->resident_id)
                                     ->where('is_active', true)
                                     ->first();
@@ -806,15 +812,15 @@ class MonthlyInvoiceResource extends Resource
 
                             $user = auth()->user();
                             $facility = $user?->facility_id
-                                ? \App\Models\Facility::find($user->facility_id)
-                                : ($entries[0]['invoice']->facility ?? \App\Models\Facility::first());
+                                ? Facility::find($user->facility_id)
+                                : ($entries[0]['invoice']->facility ?? Facility::first());
 
-                            $service = app(\App\Services\Banking\ZenginFormatService::class);
+                            $service = app(ZenginFormatService::class);
                             $facilityBank = $facility?->bank ?? [];
                             $content = $service->generate([
                                 'delegate_code' => $facilityBank['delegate_code'] ?? '',
                                 'delegate_name_kana' => $facilityBank['delegate_name_kana'] ?? '',
-                                'transfer_date' => \Carbon\Carbon::parse($data['transfer_date'])->format('Ymd'),
+                                'transfer_date' => Carbon::parse($data['transfer_date'])->format('Ymd'),
                                 'bank_code' => $facilityBank['bank_code'] ?? '',
                                 'bank_name_kana' => $facilityBank['bank_name_kana'] ?? '',
                                 'branch_code' => $facilityBank['branch_code'] ?? '',
@@ -823,7 +829,7 @@ class MonthlyInvoiceResource extends Resource
                                 'account_number' => $facilityBank['account_number'] ?? '',
                             ], $entries);
 
-                            $fileName = '振替依頼_'.\Carbon\Carbon::parse($data['transfer_date'])->format('Ymd').'.dat';
+                            $fileName = '振替依頼_'.Carbon::parse($data['transfer_date'])->format('Ymd').'.dat';
 
                             Notification::make()
                                 ->title(count($entries).'件の口座振替依頼ファイルを生成しました')
@@ -865,16 +871,26 @@ class MonthlyInvoiceResource extends Resource
                         ])
                         ->action(function (array $data) {
                             $file = $data['result_file'];
-                            $content = $file instanceof \Illuminate\Http\UploadedFile
+                            $content = $file instanceof UploadedFile
                                 ? $file->getContent()
                                 : (is_string($file) ? file_get_contents($file) : '');
 
-                            $service = app(\App\Services\Banking\ZenginReconcileService::class);
+                            $service = app(ZenginReconcileService::class);
                             $result = $service->reconcile($content, $data['year_month'], $data['paid_at']);
+
+                            $body = "成功: {$result['success_count']}件 / 不能: {$result['failed_count']}件\n"
+                                .'成功金額: ¥'.number_format($result['success_amount']).' / 不能金額: ¥'.number_format($result['failed_amount']);
+
+                            if (($result['mismatch_count'] ?? 0) > 0) {
+                                $body .= "\n⚠️ 金額不一致: {$result['mismatch_count']}件（¥".number_format($result['mismatch_amount']).'）— 消込していません。請求内容を確認してください。';
+                            }
+                            if (($result['skipped_count'] ?? 0) > 0) {
+                                $body .= "\nスキップ（重複取込）: {$result['skipped_count']}件";
+                            }
 
                             Notification::make()
                                 ->title('全銀結果取込完了')
-                                ->body("成功: {$result['success_count']}件 / 不能: {$result['failed_count']}件\n成功金額: ¥".number_format($result['success_amount'])." / 不能金額: ¥".number_format($result['failed_amount']))
+                                ->body($body)
                                 ->success()
                                 ->send();
                         })
@@ -900,10 +916,10 @@ class MonthlyInvoiceResource extends Resource
     private static function getDailyChargesUrl(MonthlyInvoice $record): ?string
     {
         $yearMonth = $record->billing_year_month;
-        if (!$yearMonth) {
+        if (! $yearMonth) {
             return null;
         }
-        $startDate = $yearMonth . '-01';
+        $startDate = $yearMonth.'-01';
         $endDate = date('Y-m-t', strtotime($startDate));
 
         return DailyChargeResource::getUrl('index', [
@@ -916,16 +932,17 @@ class MonthlyInvoiceResource extends Resource
     private static function getDailyChargesLabel(MonthlyInvoice $record): string
     {
         $yearMonth = $record->billing_year_month;
-        if (!$yearMonth) {
+        if (! $yearMonth) {
             return '請求書なし';
         }
-        $startDate = $yearMonth . '-01';
+        $startDate = $yearMonth.'-01';
         $endDate = date('Y-m-t', strtotime($startDate));
         $count = DailyCharge::where('resident_id', $record->resident_id)
             ->whereDate('date', '>=', $startDate)
             ->whereDate('date', '<=', $endDate)
             ->count();
-        return $count . '件';
+
+        return $count.'件';
     }
 
     /**

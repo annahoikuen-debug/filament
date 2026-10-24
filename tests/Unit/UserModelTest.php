@@ -5,7 +5,7 @@ use App\Models\User;
 use Filament\Panel;
 use Illuminate\Support\Carbon;
 
-test('fillableフィールドのみが一括代入で設定されること', function () {
+test('権限関連フィールドはmass assignmentで設定できないこと（セキュリティ）', function () {
     $facility = Facility::factory()->create();
 
     $user = User::create([
@@ -20,8 +20,24 @@ test('fillableフィールドのみが一括代入で設定されること', fun
     expect($user->exists)->toBeTrue()
         ->and($user->name)->toBe('テストユーザー')
         ->and($user->email)->toBe('test@example.com')
-        ->and($user->is_admin)->toBeTrue()
-        ->and($user->role)->toBe('corporate_admin');
+        // 権限・施設紐付けは fillable 外のため一括代入されない
+        ->and($user->is_admin)->toBeNull()
+        ->and($user->role)->toBeNull()
+        ->and($user->facility_id)->toBeNull();
+
+    // 内部処理（シーダー等）は forceCreate / unguarded で明示的に設定する
+    $admin = User::forceCreate([
+        'name' => '管理者',
+        'email' => 'admin-force@example.com',
+        'password' => bcrypt('password'),
+        'is_admin' => true,
+        'role' => 'corporate_admin',
+        'facility_id' => $facility->id,
+    ]);
+
+    expect($admin->is_admin)->toBeTrue()
+        ->and($admin->role)->toBe('corporate_admin')
+        ->and($admin->facility_id)->toBe($facility->id);
 });
 
 test('fillable外のフィールド（id）が一括代入で無視されること', function () {
@@ -54,7 +70,7 @@ test('不正なフィールド名での一括代入は無視されること', fu
 test('キャストが正しく動作すること', function () {
     $facility = Facility::factory()->create();
 
-    $user = User::create([
+    $user = User::forceCreate([
         'name' => 'キャストテスト',
         'email' => 'test@example.com',
         'password' => bcrypt('password'),
@@ -77,14 +93,14 @@ test('施設リレーションが正しく動作すること', function () {
 });
 
 test('isCorporateAdminメソッドが正しく判定されること', function () {
-    $corporateAdmin = User::create([
+    $corporateAdmin = User::forceCreate([
         'name' => '法人管理者',
         'email' => 'corporate@example.com',
         'password' => bcrypt('password'),
         'role' => 'corporate_admin',
     ]);
 
-    $facilityAdmin = User::create([
+    $facilityAdmin = User::forceCreate([
         'name' => '施設管理者',
         'email' => 'facility@example.com',
         'password' => bcrypt('password'),
@@ -96,14 +112,14 @@ test('isCorporateAdminメソッドが正しく判定されること', function (
 });
 
 test('isFacilityAdminメソッドが正しく判定されること', function () {
-    $corporateAdmin = User::create([
+    $corporateAdmin = User::forceCreate([
         'name' => '法人管理者',
         'email' => 'corporate@example.com',
         'password' => bcrypt('password'),
         'role' => 'corporate_admin',
     ]);
 
-    $facilityAdmin = User::create([
+    $facilityAdmin = User::forceCreate([
         'name' => '施設管理者',
         'email' => 'facility@example.com',
         'password' => bcrypt('password'),
@@ -115,21 +131,21 @@ test('isFacilityAdminメソッドが正しく判定されること', function ()
 });
 
 test('canAccessPanelメソッドが管理者フラグに基づいて判定されること', function () {
-    $admin = User::create([
+    $admin = User::forceCreate([
         'name' => '管理者',
         'email' => 'admin@example.com',
         'password' => bcrypt('password'),
         'is_admin' => true,
     ]);
 
-    $nonAdmin = User::create([
+    $nonAdmin = User::forceCreate([
         'name' => '一般ユーザー',
         'email' => 'user@example.com',
         'password' => bcrypt('password'),
         'is_admin' => false,
     ]);
 
-    $nullAdmin = User::create([
+    $nullAdmin = User::forceCreate([
         'name' => '不明',
         'email' => 'null@example.com',
         'password' => bcrypt('password'),

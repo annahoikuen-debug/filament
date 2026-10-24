@@ -159,7 +159,8 @@ class TrialProvisioningService
         $password = Str::random(12); // 自動生成パスワード
 
         // 既存ユーザー（同一メールアドレス）がいる場合はパスワードを変更せず流用
-        $adminUser = User::firstOrCreate(
+        // （is_admin / role / facility_id は fillable 外のため unguarded で設定）
+        $adminUser = User::unguarded(fn () => User::firstOrCreate(
             ['email' => $trial->email],
             [
                 'name' => $trial->contact_name,
@@ -168,13 +169,13 @@ class TrialProvisioningService
                 'role' => 'facility_admin',
                 'facility_id' => $facility->id,
             ]
-        );
+        ));
 
         if (! $adminUser->facility_id) {
-            $adminUser->update([
+            $adminUser->forceFill([
                 'facility_id' => $facility->id,
                 'role' => $adminUser->role ?? 'facility_admin',
-            ]);
+            ])->save();
         }
 
         if ($adminUser->wasRecentlyCreated) {

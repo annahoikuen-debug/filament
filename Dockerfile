@@ -94,11 +94,13 @@ RUN mkdir -p \
 # OPcache + JIT configuration
 RUN echo "opcache.enable=1\nopcache.memory_consumption=64\nopcache.interned_strings_buffer=16\nopcache.max_accelerated_files=10000\nopcache.revalidate_freq=0\nopcache.jit_buffer_size=32M\nopcache.jit=1255" > /usr/local/etc/php/conf.d/opcache.ini
 
-# Clear and cache configuration
+# Clear caches
+# ※ config:cache はビルド時に実行しない。ビルド時には .env が存在しないため、
+#   実行時の環境変数が無視された設定（空の APP_KEY 等）が焼き込まれてしまう。
+#   設定のキャッシュはコンテナ起動時（CMD）に実行時環境で行う。
 RUN php artisan config:clear \
     && php artisan route:clear \
     && php artisan view:clear \
-    && php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache \
     && php artisan filament:optimize
@@ -111,4 +113,5 @@ ENV FRANKENPHP_CONFIG="/etc/frankenphp/Caddyfile"
 
 EXPOSE 8000
 
-CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
+# 起動時に実行時の環境変数で設定をキャッシュしてから起動する
+CMD ["sh", "-c", "php artisan config:cache && exec frankenphp run --config /etc/frankenphp/Caddyfile"]

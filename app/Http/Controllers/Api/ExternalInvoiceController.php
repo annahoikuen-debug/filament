@@ -166,13 +166,14 @@ class ExternalInvoiceController extends Controller
                             throw new \InvalidArgumentException('Invalid base64 PDF data');
                         }
 
-                        $filename = $data['pdf_filename'] ?? sprintf(
+                        $filename = $this->sanitizePdfFilename($data['pdf_filename'] ?? null) ?? sprintf(
                             '%s_%s_%s.pdf',
                             $data['service_type'],
                             $yearMonth,
                             $resident->id
                         );
-                        $pdfPath = "service-invoices/{$filename}";
+                        // 施設・入居者ごとのディレクトリに分離（他入居者のPDFを上書きできないようにする）
+                        $pdfPath = "service-invoices/{$facilityId}/{$resident->id}/{$filename}";
                         Storage::disk('local')->put($pdfPath, $pdfContent);
                         $pdfOriginalName = $filename;
                     }
@@ -305,13 +306,14 @@ class ExternalInvoiceController extends Controller
                 ], 422);
             }
 
-            $filename = $validated['pdf_filename'] ?? sprintf(
+            $filename = $this->sanitizePdfFilename($validated['pdf_filename'] ?? null) ?? sprintf(
                 '%s_%s_%s.pdf',
                 $validated['service_type'],
                 $validated['billing_year_month'],
                 $resident->id
             );
-            $pdfPath = "service-invoices/{$filename}";
+            // 施設・入居者ごとのディレクトリに分離（他入居者のPDFを上書きできないようにする）
+            $pdfPath = "service-invoices/{$validated['facility_id']}/{$validated['resident_id']}/{$filename}";
             Storage::disk('local')->put($pdfPath, $pdfContent);
             $pdfOriginalName = $filename;
         }
@@ -320,26 +322,34 @@ class ExternalInvoiceController extends Controller
 
         $externalInvoiceNumber = $validated['external_invoice_number'] ?? null;
 
-        $invoice = ServiceInvoice::updateOrCreate(
-            [
-                'resident_id' => $validated['resident_id'],
-                'billing_year_month' => $validated['billing_year_month'],
-                'service_type' => $validated['service_type'],
-                'external_invoice_number' => $externalInvoiceNumber ?? '',
-            ],
-            [
-                'facility_id' => $validated['facility_id'],
-                'service_type_label' => $validated['service_type_label'] ?? ServiceType::tryFrom($validated['service_type'])?->getLabel() ?? $validated['service_type'],
-                'external_system_name' => $validated['external_system_name'] ?? 'External System',
-                'amount' => $validated['amount'],
-                'tax_amount' => $validated['tax_amount'],
-                'tax_rate' => $validated['tax_rate'],
-                'pdf_path' => $pdfPath,
-                'pdf_original_name' => $pdfOriginalName,
-                'status' => $status,
-                'notes' => $validated['notes'] ?? null,
-            ]
-        );
+        try {
+            $invoice = ServiceInvoice::updateOrCreate(
+                [
+                    'resident_id' => $validated['resident_id'],
+                    'billing_year_month' => $validated['billing_year_month'],
+                    'service_type' => $validated['service_type'],
+                    'external_invoice_number' => $externalInvoiceNumber ?? '',
+                ],
+                [
+                    'facility_id' => $validated['facility_id'],
+                    'service_type_label' => $validated['service_type_label'] ?? ServiceType::tryFrom($validated['service_type'])?->getLabel() ?? $validated['service_type'],
+                    'external_system_name' => $validated['external_system_name'] ?? 'External System',
+                    'amount' => $validated['amount'],
+                    'tax_amount' => $validated['tax_amount'],
+                    'tax_rate' => $validated['tax_rate'],
+                    'pdf_path' => $pdfPath,
+                    'pdf_original_name' => $pdfOriginalName,
+                    'status' => $status,
+                    'notes' => $validated['notes'] ?? null,
+                ]
+            );
+        } catch (\RuntimeException $e) {
+            // 月次締めガード等のビジネス例外（締め済み月への取り込み等）
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -349,6 +359,37 @@ class ExternalInvoiceController extends Controller
                 'status' => $invoice->status->value,
             ],
         ]);
+    }
+
+    /**
+     * 外部から渡されたPDFファイル名をサニタイズする
+     *
+     * パス区切り文字と ".." を除去し、service-invoices 配下からの脱出や
+     * 他入居者のPDFの上書き（例: "../../1/2/他入居者.pdf"）を防止する。
+     */
+    private function sanitizePdfFilename(?string $filename): ?string
+    {
+        if ($filename === null || trim($filename) === '') {
+            return null;
+        }
+
+        // パスコンポーネントを除去（\ も区切りとして扱う）
+        $safe = basename(str_replace('\\', '/', $filename));
+        // 許可: 文字・数字・ピリオド・ハイフン・アンダースコアのみ（空白・制御文字は置換）
+        $safe = preg_replace('/[^\p{L}\p{N}._\-]/u', '_', $safe) ?? '';
+        // 先頭の "." で隠しファイル化・ ".." 化を防ぐ
+        $safe = ltrim($safe, '.');
+        $safe = mb_substr($safe, 0, 200);
+
+        if ($safe === '') {
+            return null;
+        }
+
+        if (strtolower(pathinfo($safe, PATHINFO_EXTENSION)) !== 'pdf') {
+            $safe .= '.pdf';
+        }
+
+        return $safe;
     }
 
     /**

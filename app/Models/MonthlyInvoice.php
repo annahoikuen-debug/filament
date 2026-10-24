@@ -79,6 +79,24 @@ class MonthlyInvoice extends Model
     ];
 
     /**
+     * 締め済み（closed）の月に変更を許可する入金・領収書系フィールド
+     *
+     * 締め後も入金消込（status=paid, paid_at, payment_method, 領収書番号）は
+     * 必要な操作であるため許可し、それ以外の請求金額・按分・年月の変更は禁止する。
+     */
+    private const CLOSED_MONTH_ALLOWED_FIELDS = [
+        'status',
+        'paid_at',
+        'payment_method',
+        'receipt_number',
+        'receipt_issued_at',
+        'receipt_date_mode',
+        'custom_receipt_date',
+        'version',
+        'updated_at',
+    ];
+
+    /**
      * モデル起動時のイベント設定
      * 計算ロジックは InvoiceCalculationService に委譲。
      * ここでは合計金額の再計算と楽観ロックのバージョン管理のみ行う。
@@ -86,6 +104,9 @@ class MonthlyInvoice extends Model
     protected static function booted(): void
     {
         static::saving(function (MonthlyInvoice $invoice) {
+            // 締め済み月のロック（金額・年月・新規作成を禁止、入金消込のみ許可）
+            $invoice->guardAgainstClosedMonth();
+
             // 合計金額の計算（税抜き小計）
             $invoice->total_amount = (int) $invoice->rent_subtotal
                 + (int) $invoice->management_fee_subtotal
@@ -100,6 +121,50 @@ class MonthlyInvoice extends Model
                 $invoice->version = ($invoice->version ?? 0) + 1;
             }
         });
+
+        static::deleting(function (MonthlyInvoice $invoice) {
+            // 締め済み月の請求書は削除禁止（削除時は dirty が空のため入金消込許可パスを使わない）
+            $invoice->guardAgainstClosedMonth(true);
+        });
+    }
+
+    /**
+     * 月次締め（closed）ガード: 締め済みの月の請求データは変更・削除・新規作成できない
+     *
+     * 差戻しが必要な場合は MonthlyClosingWizard から reopen すること。
+     *
+     * @param  bool  $isDelete  削除時（入金消込の許可パスを無効化する）
+     *
+     * @throws \RuntimeException
+     */
+    private function guardAgainstClosedMonth(bool $isDelete = false): void
+    {
+        if (! $this->facility_id || ! $this->billing_year_month) {
+            return;
+        }
+
+        // 入金消込など支払系の更新のみの場合はガードをパス（DBクエリも発行しない）
+        if ($this->exists && ! $isDelete) {
+            $dirtyKeys = array_keys($this->getDirty());
+            $onlyPaymentFields = $dirtyKeys === []
+                || array_diff($dirtyKeys, self::CLOSED_MONTH_ALLOWED_FIELDS) === [];
+
+            // ステータスは「入金済への遷移」または「変更なし」のみ許可
+            $statusOk = ! $this->isDirty('status')
+                || $this->status === InvoiceStatus::Paid
+                || $this->status === $this->getOriginal('status');
+
+            if ($onlyPaymentFields && $statusOk) {
+                return;
+            }
+        }
+
+        if (MonthlyClosingState::isClosed($this->billing_year_month, (int) $this->facility_id)) {
+            throw new \RuntimeException(
+                "{$this->billing_year_month} は締め済みのため、請求データの変更・削除・作成はできません。"
+                .'変更が必要な場合は月次締めワザードから差戻しをしてください。'
+            );
+        }
     }
 
     /**

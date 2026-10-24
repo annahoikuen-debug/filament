@@ -31,3 +31,9 @@ database/database.sqlite
 /storage/app/private/service-invoices/*
 /storage/fonts/*
 .phpunit.cache
+
+# 環境変数ファイル（APP_KEY 等の秘密情報を含むため追跡しない）
+/.env.*
+!/.env.example
+!/.env.production.example
+/*.env

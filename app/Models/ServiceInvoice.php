@@ -48,6 +48,59 @@ class ServiceInvoice extends Model
     ];
 
     /**
+     * 締め済み（closed）の月に変更を許可するフィールド
+     *
+     * 摘要・PDF差し替えなど請求金額に影響しない操作のみ許可する。
+     */
+    private const CLOSED_MONTH_ALLOWED_FIELDS = [
+        'notes',
+        'pdf_path',
+        'pdf_original_name',
+        'updated_at',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (ServiceInvoice $invoice) {
+            if (! $invoice->facility_id || ! $invoice->billing_year_month) {
+                return;
+            }
+
+            // 締め済み月への新規作成は禁止
+            if (! $invoice->exists) {
+                if (MonthlyClosingState::isClosed($invoice->billing_year_month, (int) $invoice->facility_id)) {
+                    throw new \RuntimeException(
+                        "{$invoice->billing_year_month} は締め済みのため、介護サービス請求の作成はできません。"
+                    );
+                }
+
+                return;
+            }
+
+            // 摘要・PDF差し替えのみの更新は許可（DBクエリも発行しない）
+            $dirtyKeys = array_keys($invoice->getDirty());
+            if ($dirtyKeys === [] || array_diff($dirtyKeys, self::CLOSED_MONTH_ALLOWED_FIELDS) === []) {
+                return;
+            }
+
+            if (MonthlyClosingState::isClosed($invoice->billing_year_month, (int) $invoice->facility_id)) {
+                throw new \RuntimeException(
+                    "{$invoice->billing_year_month} は締め済みのため、介護サービス請求の変更はできません。"
+                );
+            }
+        });
+
+        static::deleting(function (ServiceInvoice $invoice) {
+            if ($invoice->facility_id && $invoice->billing_year_month
+                && MonthlyClosingState::isClosed($invoice->billing_year_month, (int) $invoice->facility_id)) {
+                throw new \RuntimeException(
+                    "{$invoice->billing_year_month} は締め済みのため、介護サービス請求の削除はできません。"
+                );
+            }
+        });
+    }
+
+    /**
      * 施設リレーション
      */
     public function facility(): BelongsTo

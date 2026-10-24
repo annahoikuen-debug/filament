@@ -14,14 +14,17 @@ class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, LogsActivity, Notifiable;
 
+    /**
+     * mass assignment から保護するため、権限関連フィールド
+     * （is_admin / role / facility_id）は fillable に含めない。
+     * 内部処理（シーダー・トライアル自動作成等）では
+     * User::unguarded() / forceFill() / forceCreate() を使うこと。
+     */
     protected $fillable = [
         'name',
         'email',
         'password',
         'email_verified_at',
-        'is_admin',
-        'role',
-        'facility_id',
     ];
 
     protected $hidden = [

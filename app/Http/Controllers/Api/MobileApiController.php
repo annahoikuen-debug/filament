@@ -188,6 +188,7 @@ class MobileApiController extends Controller
                             'resident_id' => $data['resident_id'],
                             'error' => '入居者が見つからないか、施設が一致しません',
                         ];
+
                         continue;
                     }
 
@@ -201,6 +202,7 @@ class MobileApiController extends Controller
                             'charge_item_id' => $data['charge_item_id'],
                             'error' => '品目が見つからないか、施設が一致しません',
                         ];
+
                         continue;
                     }
 
@@ -211,6 +213,7 @@ class MobileApiController extends Controller
                             'resident_id' => $data['resident_id'],
                             'error' => '利用日が入居者の在籍期間外です',
                         ];
+
                         continue;
                     }
 
@@ -315,6 +318,7 @@ class MobileApiController extends Controller
                             'resident_id' => $data['resident_id'],
                             'error' => '入居者が見つからないか、施設が一致しません',
                         ];
+
                         continue;
                     }
 
@@ -327,13 +331,14 @@ class MobileApiController extends Controller
                             throw new \InvalidArgumentException('Invalid base64 PDF data');
                         }
 
-                        $filename = $data['pdf_filename'] ?? sprintf(
+                        $filename = $this->sanitizePdfFilename($data['pdf_filename'] ?? null) ?? sprintf(
                             '%s_%s_%s.pdf',
                             $data['service_type'],
                             $data['billing_year_month'],
                             $resident->id
                         );
-                        $pdfPath = "service-invoices/{$filename}";
+                        // 施設・入居者ごとのディレクトリに分離（他入居者のPDFを上書きできないようにする）
+                        $pdfPath = "service-invoices/{$facilityId}/{$resident->id}/{$filename}";
                         Storage::disk('local')->put($pdfPath, $pdfContent);
                         $pdfOriginalName = $filename;
                     }
@@ -413,6 +418,37 @@ class MobileApiController extends Controller
     /**
      * 記録済みの日々の消耗品一覧を取得（確認用）
      */
+    /**
+     * 外部から渡されたPDFファイル名をサニタイズする
+     *
+     * パス区切り文字と ".." を除去し、service-invoices 配下からの脱出や
+     * 他入居者のPDFの上書き（例: "../../1/2/他入居者.pdf"）を防止する。
+     */
+    private function sanitizePdfFilename(?string $filename): ?string
+    {
+        if ($filename === null || trim($filename) === '') {
+            return null;
+        }
+
+        // パスコンポーネントを除去（\ も区切りとして扱う）
+        $safe = basename(str_replace('\\', '/', $filename));
+        // 許可: 文字・数字・ピリオド・ハイフン・アンダースコアのみ（空白・制御文字は置換）
+        $safe = preg_replace('/[^\p{L}\p{N}._\-]/u', '_', $safe) ?? '';
+        // 先頭の "." で隠しファイル化・ ".." 化を防ぐ
+        $safe = ltrim($safe, '.');
+        $safe = mb_substr($safe, 0, 200);
+
+        if ($safe === '') {
+            return null;
+        }
+
+        if (strtolower(pathinfo($safe, PATHINFO_EXTENSION)) !== 'pdf') {
+            $safe .= '.pdf';
+        }
+
+        return $safe;
+    }
+
     public function dailyChargesList(Request $request): JsonResponse
     {
         $token = $this->authenticateRequest($request, 'mobile.read');

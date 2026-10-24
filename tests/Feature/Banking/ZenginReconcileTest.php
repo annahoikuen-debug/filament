@@ -4,11 +4,12 @@ namespace Tests\Feature\Banking;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use App\Models\DirectDebitResult;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Services\Banking\ZenginFormatService;
 use App\Services\Banking\ZenginReconcileService;
+use App\Services\Banking\ZenginResultParser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,7 +22,7 @@ class ZenginReconcileTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new ZenginReconcileService(new \App\Services\Banking\ZenginResultParser);
+        $this->service = new ZenginReconcileService(new ZenginResultParser);
     }
 
     public function test_振替成功分は入金済に更新され領収書番号が採番される(): void
@@ -84,10 +85,66 @@ class ZenginReconcileTest extends TestCase
 
     public function test_不能コードマッピングが正しい(): void
     {
-        $this->assertSame('資金不足', \App\Services\Banking\ZenginResultParser::FAILURE_REASONS['1']);
-        $this->assertSame('取引なし', \App\Services\Banking\ZenginResultParser::FAILURE_REASONS['2']);
-        $this->assertSame('預金者都合', \App\Services\Banking\ZenginResultParser::FAILURE_REASONS['3']);
-        $this->assertSame('委託者都合', \App\Services\Banking\ZenginResultParser::FAILURE_REASONS['8']);
+        $this->assertSame('資金不足', ZenginResultParser::FAILURE_REASONS['1']);
+        $this->assertSame('取引なし', ZenginResultParser::FAILURE_REASONS['2']);
+        $this->assertSame('預金者都合', ZenginResultParser::FAILURE_REASONS['3']);
+        $this->assertSame('委託者都合', ZenginResultParser::FAILURE_REASONS['8']);
+    }
+
+    public function test_金額不一致の振替成功エントリは消込されない(): void
+    {
+        $invoice = $this->createInvoice('3001');
+
+        $content = $this->buildResultFile([
+            ['resident_id' => $invoice->resident_id, 'amount' => $invoice->total_with_tax + 1000, 'code' => '0'],
+        ]);
+
+        $result = $this->service->reconcile($content, '2026-10', '2026-10-27');
+
+        $this->assertSame(0, $result['success_count']);
+        $this->assertSame(1, $result['mismatch_count']);
+        $this->assertSame($invoice->total_with_tax + 1000, $result['mismatch_amount']);
+        $this->assertSame($invoice->total_with_tax, $result['details']['mismatch'][0]['expected_amount']);
+
+        $invoice->refresh();
+        $this->assertNotSame(InvoiceStatus::Paid, $invoice->status);
+        $this->assertSame(0, DirectDebitResult::count());
+    }
+
+    public function test_同一ファイルの再取込で二重消込されない(): void
+    {
+        $invoice = $this->createInvoice('3002');
+
+        $content = $this->buildResultFile([
+            ['resident_id' => $invoice->resident_id, 'amount' => $invoice->total_with_tax, 'code' => '0'],
+        ]);
+
+        $first = $this->service->reconcile($content, '2026-10', '2026-10-27');
+        $second = $this->service->reconcile($content, '2026-10', '2026-10-27');
+
+        $this->assertSame(1, $first['success_count']);
+        $this->assertSame(0, $second['success_count']);
+        $this->assertSame(1, $second['skipped_count']);
+        // 結果レコードは1件のみ（二重記録されない）
+        $this->assertSame(1, DirectDebitResult::count());
+        $invoice->refresh();
+        $this->assertSame(InvoiceStatus::Paid, $invoice->status);
+    }
+
+    public function test_同一ファイル内の重複エントリは一度だけ処理される(): void
+    {
+        $invoice = $this->createInvoice('3003');
+
+        $content = $this->buildResultFile([
+            ['resident_id' => $invoice->resident_id, 'amount' => $invoice->total_with_tax, 'code' => '0'],
+            ['resident_id' => $invoice->resident_id, 'amount' => $invoice->total_with_tax, 'code' => '0'],
+        ]);
+
+        $result = $this->service->reconcile($content, '2026-10', '2026-10-27');
+
+        $this->assertSame(1, $result['success_count']);
+        $this->assertSame(1, $result['skipped_count']);
+        $this->assertSame(1, DirectDebitResult::count());
     }
 
     // ------------------------------------------------------------------

@@ -20,7 +20,8 @@ class DemoDataSeeder extends Seeder
     public function run(): void
     {
         // 1. 法人管理者ユーザー作成
-        User::updateOrCreate(
+        // （is_admin / role / facility_id は fillable 外のため unguarded で設定）
+        User::unguarded(fn () => User::updateOrCreate(
             ['email' => 'corporate@demo.example.jp'],
             [
                 'name' => '法人管理者',
@@ -29,7 +30,7 @@ class DemoDataSeeder extends Seeder
                 'role' => 'corporate_admin',
                 'facility_id' => null,
             ]
-        );
+        ));
 
         // 2. 3つの施設を作成
         $facilities = [];
@@ -114,7 +115,8 @@ class DemoDataSeeder extends Seeder
 
         // 施設管理者ユーザー作成（各施設1名）
         foreach ($facilities as $index => $facility) {
-            User::updateOrCreate(
+            // （is_admin / role / facility_id は fillable 外のため unguarded で設定）
+            User::unguarded(fn () => User::updateOrCreate(
                 ['email' => "facility{$index}@demo.example.jp"],
                 [
                     'name' => "{$facility->name} 管理者",
@@ -123,7 +125,7 @@ class DemoDataSeeder extends Seeder
                     'role' => 'facility_admin',
                     'facility_id' => $facility->id,
                 ]
-            );
+            ));
         }
 
         // 3. 自費サービス品目マスタの登録（全施設共通）

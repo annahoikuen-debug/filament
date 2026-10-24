@@ -80,7 +80,7 @@ test('ソフトデリート済みのemailは再申込可能であること', fun
 });
 
 test('既存ユーザーのemailでもプロビジョニングがクラッシュしないこと', function () use ($validPayload) {
-    User::create([
+    User::forceCreate([
         'name' => '既存ユーザー',
         'email' => 'existing@example.com',
         'password' => bcrypt('pass'),
