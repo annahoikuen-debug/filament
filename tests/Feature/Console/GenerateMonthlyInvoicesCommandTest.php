@@ -34,22 +34,30 @@ class GenerateMonthlyInvoicesCommandTest extends TestCase
 
     public function test_error_path_returns_failure(): void
     {
-        // データベース処理で致命的例外が発生するケース
+        // DBトランザクションで致命的例外が発生するケース
+        // （入居者単位で捕捉されてエラー件数にカウントされ、失敗終了する）
+        Resident::factory()->create([
+            'facility_id' => $this->facility->id,
+            'move_in_date' => '2026-01-01',
+        ]);
+
         DB::shouldReceive('transaction')
             ->once()
             ->andThrow(new \RuntimeException('計算エラー'));
 
         Log::shouldReceive('error')->atLeast()->once();
 
-        Artisan::call('billing:generate-monthly', ['--year-month' => '2026-03']);
+        $exitCode = Artisan::call('billing:generate-monthly', ['--year-month' => '2026-03']);
         $output = Artisan::output();
 
-        $this->assertStringContainsString('エラーが発生しました: 計算エラー', $output);
+        $this->assertSame(1, $exitCode);
+        $this->assertStringContainsString('| エラー   | 1    |', $output);
     }
 
     public function test_per_resident_error_is_counted(): void
     {
-        // 入居者単位の例外はエラー件数にカウントされ、コマンド自体は成功する
+        // 入居者単位の例外はエラー件数にカウントされ、エラー1件でも失敗終了する
+        // （スケジューラの onFailure が反応できるようにするため）
         Resident::factory()->create([
             'facility_id' => $this->facility->id,
             'move_in_date' => '2026-01-01',
@@ -61,14 +69,37 @@ class GenerateMonthlyInvoicesCommandTest extends TestCase
 
         Log::shouldReceive('error')->atLeast()->once();
 
-        Artisan::call('billing:generate-monthly', ['--year-month' => '2026-03']);
+        $exitCode = Artisan::call('billing:generate-monthly', ['--year-month' => '2026-03']);
         $output = Artisan::output();
 
+        $this->assertSame(1, $exitCode);
         $this->assertStringContainsString('| エラー   | 1    |', $output);
         $this->assertStringContainsString('エラーが 1 件発生しました。ログを確認してください。', $output);
         $this->assertSame(
             0,
             MonthlyInvoice::where('billing_year_month', '2026-03')->count()
+        );
+    }
+
+    public function test_mid_month_move_in_resident_is_billed(): void
+    {
+        // 2026-03-15 入居 → 月初日在居チェックだと 2026-03 の請求から漏れるが、
+        // 期間重複判定なら対象になる（InvoiceCalculationService と判定を一致させる）
+        $resident = Resident::factory()->create([
+            'facility_id' => $this->facility->id,
+            'move_in_date' => '2026-03-15',
+            'base_rent' => 50000,
+            'base_management_fee' => 20000,
+        ]);
+
+        $exitCode = Artisan::call('billing:generate-monthly', ['--year-month' => '2026-03']);
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame(
+            1,
+            MonthlyInvoice::where('resident_id', $resident->id)
+                ->where('billing_year_month', '2026-03')
+                ->count()
         );
     }
 

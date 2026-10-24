@@ -132,13 +132,13 @@ class Resident extends Model
         return $this->hasMany(MonthlyInvoice::class);
     }
 
-   /**
-    * 介護保険請求（サービス請求）一覧
-    */
-   public function serviceInvoices(): HasMany
-   {
-       return $this->hasMany(ServiceInvoice::class);
-   }
+    /**
+     * 介護保険請求（サービス請求）一覧
+     */
+    public function serviceInvoices(): HasMany
+    {
+        return $this->hasMany(ServiceInvoice::class);
+    }
 
     /**
      * 入居中のみのスコープ
@@ -168,6 +168,29 @@ class Resident extends Model
         }
 
         if ($this->move_out_date && $targetDate > $this->move_out_date->toDateString()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 指定期間と在籍期間が重複しているか（月中入居・月中退去を含む）
+     *
+     * 「月初日に在居しているか」で判定すると、月中入居者（例: 10/15入居）が
+     * 対象月の請求から丸ごと漏れてしまうため、請求月との期間重複で判定する。
+     * InvoiceCalculationService::generateForMonth() の判定と一致させる。
+     */
+    public function isResidentDuring(string|Carbon $start, string|Carbon $end): bool
+    {
+        $startStr = Carbon::parse($start)->toDateString();
+        $endStr = Carbon::parse($end)->toDateString();
+
+        if ($this->move_in_date && $this->move_in_date->toDateString() > $endStr) {
+            return false;
+        }
+
+        if ($this->move_out_date && $this->move_out_date->toDateString() < $startStr) {
             return false;
         }
 

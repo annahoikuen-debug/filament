@@ -2,6 +2,7 @@
 
 namespace App\Services\Chatbot;
 
+use App\Enums\InvoiceStatus;
 use App\Models\DailyCharge;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
@@ -204,7 +205,7 @@ class ResidentQueryService
             'status' => $invoice->status->value,
             'status_label' => $invoice->status->getLabel(),
             'billing_year_month' => $invoice->billing_year_month,
-            'total_amount' => $invoice->total_amount,
+            'total_amount' => $invoice->total_with_tax,
             'paid_at' => $invoice->paid_at?->format('Y/m/d'),
         ];
     }
@@ -284,7 +285,7 @@ class ResidentQueryService
      */
     private function applyFacilityScope(Builder $query, User $user): void
     {
-        if ($user->isFacilityAdmin() && $user->facility_id) {
+        if ($user->requiresFacilityScope()) {
             $query->where('facility_id', $user->facility_id);
         }
     }
@@ -295,23 +296,23 @@ class ResidentQueryService
      * @return Collection<int, array{resident: Resident, invoice: MonthlyInvoice, amount: int, billing_year_month: string}>
      */
     public function getUnpaidResidents(User $user): Collection
-   {
-       $query = MonthlyInvoice::query()
-           ->where('status', \App\Enums\InvoiceStatus::Billed)
-           ->with(['resident'])
-           ->orderBy('billing_year_month')
-           ->orderBy('resident_id');
+    {
+        $query = MonthlyInvoice::query()
+            ->where('status', InvoiceStatus::Billed)
+            ->with(['resident'])
+            ->orderBy('billing_year_month')
+            ->orderBy('resident_id');
 
-       $this->applyFacilityScope($query, $user);
+        $this->applyFacilityScope($query, $user);
 
-       return $query->get()
-           ->map(fn (MonthlyInvoice $invoice) => [
-               'resident' => $invoice->resident,
-               'invoice' => $invoice,
-               'amount' => $invoice->total_amount,
-               'billing_year_month' => $invoice->billing_year_month,
-           ]);
-   }
+        return $query->get()
+            ->map(fn (MonthlyInvoice $invoice) => [
+                'resident' => $invoice->resident,
+                'invoice' => $invoice,
+                'amount' => $invoice->total_with_tax,
+                'billing_year_month' => $invoice->billing_year_month,
+            ]);
+    }
 
     /**
      * 施設の月次請求集計を取得
@@ -330,13 +331,13 @@ class ResidentQueryService
 
         $invoices = $query->get();
 
-        $totalBilled = $invoices->sum('total_amount');
-        $unpaidInvoices = $invoices->where('status', \App\Enums\InvoiceStatus::Billed);
-        $paidInvoices = $invoices->where('status', \App\Enums\InvoiceStatus::Paid);
+        $totalBilled = $invoices->sum('total_with_tax');
+        $unpaidInvoices = $invoices->where('status', InvoiceStatus::Billed);
+        $paidInvoices = $invoices->where('status', InvoiceStatus::Paid);
 
         return [
             'total_billed' => $totalBilled,
-            'total_unpaid' => $unpaidInvoices->sum('total_amount'),
+            'total_unpaid' => $unpaidInvoices->sum('total_with_tax'),
             'unpaid_count' => $unpaidInvoices->count(),
             'paid_count' => $paidInvoices->count(),
             'total_count' => $invoices->count(),

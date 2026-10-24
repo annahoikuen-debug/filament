@@ -158,7 +158,7 @@ class ChatbotSynonymResource extends Resource
         $query = parent::getEloquentQuery();
 
         $user = Auth::user();
-        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+        if ($user && $user->requiresFacilityScope()) {
             $query->where(fn (Builder $q) => $q
                 ->whereNull('facility_id')
                 ->orWhere('facility_id', $user->facility_id));

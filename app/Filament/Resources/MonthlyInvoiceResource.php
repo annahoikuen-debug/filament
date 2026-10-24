@@ -23,6 +23,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 
 class MonthlyInvoiceResource extends Resource
@@ -81,7 +82,7 @@ class MonthlyInvoiceResource extends Resource
                             ->searchable(['room_number', 'name'])
                             ->required()
                             ->modifyQueryUsing(fn (Builder $query) => $query->when(
-                                Auth::user()?->isFacilityAdmin() && Auth::user()?->facility_id,
+                                Auth::user()?->requiresFacilityScope(),
                                 fn ($q) => $q->where('facility_id', Auth::user()->facility_id)
                             )),
 
@@ -123,12 +124,12 @@ class MonthlyInvoiceResource extends Resource
                             ->required(),
 
                         Forms\Components\TextInput::make('total_amount')
-                            ->label('合計請求金額')
+                            ->label('合計請求金額（税抜）')
                             ->numeric()
                             ->prefix('¥')
                             ->disabled()
                             ->dehydrated()
-                            ->helperText('Observerにより家賃・管理費・自費の合算値が自動計算されます。'),
+                            ->helperText('家賃・管理費・自費の税抜合算値（保存時に自動計算）。消費税込みの請求総額は一覧の「合計請求額(税込)」で確認できます。'),
                     ])->columns(2),
 
                 Forms\Components\Section::make('入金・領収書管理')
@@ -218,12 +219,12 @@ class MonthlyInvoiceResource extends Resource
                     ->toggleable()
                     ->hiddenFrom('md'),
 
-                Tables\Columns\TextColumn::make('total_amount')
-                    ->label('合計請求額')
+                Tables\Columns\TextColumn::make('total_with_tax')
+                    ->label('合計請求額(税込)')
                     ->money('JPY')
                     ->sortable()
                     ->weight('bold')
-                    ->summarize(Tables\Columns\Summarizers\Sum::make()->money('JPY')->label('請求総計')),
+                    ->summarize(Tables\Columns\Summarizers\Sum::make()->money('JPY')->label('請求総計(税込)')),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('ステータス')
@@ -295,6 +296,9 @@ class MonthlyInvoiceResource extends Resource
                             ->helperText('領収書日付モードが「任意」の場合のみ入力'),
                     ])
                     ->action(function (MonthlyInvoice $record, array $data) {
+                        // 認可（care_staff・他施設の請求書を消込できないようにする）
+                        Gate::authorize('markAsPaid', $record);
+
                         $method = $data['payment_method'] instanceof PaymentMethod
                             ? $data['payment_method']
                             : PaymentMethod::from($data['payment_method']);
@@ -439,6 +443,9 @@ class MonthlyInvoiceResource extends Resource
                         ->label('一括「請求済」に変更')
                         ->icon('heroicon-o-envelope')
                         ->action(function ($records) {
+                            // 請求確定は care_staff・他施設の請求書を対象にできない
+                            $records->each(fn (MonthlyInvoice $r) => Gate::authorize('finalize', $r));
+
                             $targetRecords = $records->filter(fn (MonthlyInvoice $r) => $r->status === InvoiceStatus::Unbilled);
                             $skippedCount = $records->count() - $targetRecords->count();
 
@@ -481,6 +488,9 @@ class MonthlyInvoiceResource extends Resource
                                 ->helperText('領収書日付モードが「任意」の場合のみ入力'),
                         ])
                         ->action(function ($records, array $data) {
+                            // 入金消込は care_staff・他施設の請求書を対象にできない
+                            $records->each(fn (MonthlyInvoice $r) => Gate::authorize('markAsPaid', $r));
+
                             $targetRecords = $records->filter(fn (MonthlyInvoice $r) => $r->status !== InvoiceStatus::Paid);
                             $skippedCount = $records->count() - $targetRecords->count();
 
@@ -522,7 +532,7 @@ class MonthlyInvoiceResource extends Resource
                         ->action(function (array $data) {
                             $service = app(InvoiceCsvExportService::class);
                             $user = auth()->user();
-                            $facilityId = ($user && $user->isFacilityAdmin()) ? $user->facility_id : null;
+                            $facilityId = ($user && $user->requiresFacilityScope()) ? $user->facility_id : null;
                             $csv = $service->exportMonthlyListCsv($data['year_month'], $facilityId);
                             $fileName = "請求入金一覧_{$data['year_month']}.csv";
 
@@ -771,6 +781,9 @@ class MonthlyInvoiceResource extends Resource
                                 ->required(),
                         ])
                         ->action(function (array $data, $records) {
+                            // 全銀出力は care_staff・他施設の請求書を対象にできない
+                            $records->each(fn (MonthlyInvoice $r) => Gate::authorize('exportZengin', $r));
+
                             $entries = [];
                             foreach ($records as $record) {
                                 $account = \App\Models\ResidentBankAccount::query()
@@ -923,7 +936,7 @@ class MonthlyInvoiceResource extends Resource
         $query = parent::getEloquentQuery();
 
         $user = Auth::user();
-        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+        if ($user && $user->requiresFacilityScope()) {
             $query->where('facility_id', $user->facility_id);
         }
 

@@ -46,7 +46,8 @@ test('請求一覧台帳CSVがUTF-8 BOM付きで正しく出力されること',
 
     expect($csv)->toContain('請求年月,部屋番号,入居者氏名')
         ->and($csv)->toContain('2026-10,101,CSVテスト入居者')
-        ->and($csv)->toContain('60000,30000,5000,0,0,35000,0,60000,3500,0,3500,95000');
+        // 最後の「請求合計金額」は税込（total_with_tax = 税抜95000 + 消費税3500）
+        ->and($csv)->toContain('60000,30000,5000,0,0,35000,0,60000,3500,0,3500,98500');
 });
 
 test('会計仕訳連携CSVがfreee標準プロファイル形式で出力されること', function () {
@@ -68,10 +69,11 @@ test('会計仕訳連携CSVがプレビュー機能で正しくデータを返�
     $preview = $this->service->previewAccountingJournal('2026-10', $this->facility->id);
 
     expect($preview)->toHaveKeys(['entries', 'headers', 'totals', 'profile'])
-        ->and($preview['entries'])->toHaveCount(3)
-        ->and($preview['totals']['debit'])->toBe(95000)
-        ->and($preview['totals']['credit'])->toBe(95000)
-        ->and($preview['totals']['count'])->toBe(3)
+        // 家賃・管理費・自費の3行 + 消費税分1行（売掛金を税込にするため）
+        ->and($preview['entries'])->toHaveCount(4)
+        ->and($preview['totals']['debit'])->toBe(98500)
+        ->and($preview['totals']['credit'])->toBe(98500)
+        ->and($preview['totals']['count'])->toBe(4)
         ->and($preview['profile']['software_type'])->toBe('freee');
 
     $entries = $preview['entries'];
@@ -79,6 +81,12 @@ test('会計仕訳連携CSVがプレビュー機能で正しくデータを返�
         ->and($entries[0]['credit_account_code'])->toBe('4110')
         ->and($entries[0]['amount'])->toBe(60000)
         ->and($entries[0]['tax_code'])->toBe('0');
+
+    // 住居費の消費税行（借方: 売掛金 1100 / 貸方: 仮受消費税 2220）
+    $taxEntry = collect($entries)->first(fn (array $e) => $e['credit_account_code'] === '2220');
+    expect($taxEntry)->not->toBeNull()
+        ->and($taxEntry['debit_account_code'])->toBe('1100')
+        ->and($taxEntry['amount'])->toBe(3500);
 });
 
 test('会計仕訳連携CSVがMFクラウド会計プロファイルで出力されること', function () {

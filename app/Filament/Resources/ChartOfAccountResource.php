@@ -296,7 +296,7 @@ class ChartOfAccountResource extends Resource
         $query = parent::getEloquentQuery();
 
         $user = auth()->user();
-        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+        if ($user && $user->requiresFacilityScope()) {
             $query->where('facility_id', $user->facility_id);
         }
 

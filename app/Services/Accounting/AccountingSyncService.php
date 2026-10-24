@@ -131,7 +131,7 @@ class AccountingSyncService
             return ['success' => false, 'synced_count' => 0, 'failed_count' => $invoices->count(), 'errors' => ['APIクライアント作成失敗']];
         }
 
-        $profile = $this->csvExportService->resolveProfile($facilityId, $softwareType, $profileId);
+        $profile = $this->csvExportService->resolveProfilePublic($facilityId, $softwareType, $profileId);
         $journalEntries = $this->buildJournalEntriesFromInvoices($invoices, $profile);
 
         return array_merge($client->syncJournalEntries($journalEntries), [
@@ -265,11 +265,11 @@ class AccountingSyncService
         }
 
         $facilityIds = $invoices->pluck('facility_id')->unique()->toArray();
-        $chartOfAccounts = $this->csvExportService->loadChartOfAccounts($facilityIds);
+        $chartOfAccounts = $this->csvExportService->loadChartOfAccountsPublic($facilityIds);
 
         $careServiceInvoices = new Collection; // 介護サービスは含めない
 
-        return $this->csvExportService->buildJournalEntries($invoices, $careServiceInvoices, $chartOfAccounts, $profile);
+        return $this->csvExportService->buildJournalEntriesPublic($invoices, $careServiceInvoices, $chartOfAccounts, $profile);
     }
 
     /**

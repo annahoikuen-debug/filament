@@ -81,8 +81,9 @@ test('消費税0円の介護サービスは税別行が出力されないこと'
 
     $csv = $this->service->exportAccountingJournalCsv('2026-04', $this->facility->id);
 
+    // 介護サービスの「消費税分」行が出ないこと（住居費側の消費税行は別物なので摘要で区別）
     expect($csv)->toContain('4210,介護サービス収入')
-        ->and($csv)->not->toContain('2220,仮受消費税');
+        ->and($csv)->not->toContain('介護サービス(訪問介護) 消費税分');
 });
 
 test('金額0円以下の介護サービスはスキップされること', function () {
@@ -125,10 +126,11 @@ test('プレビューにも介護サービス仕訳が反映されること', fu
 
     $preview = $this->service->previewAccountingJournal('2026-04', $this->facility->id);
 
-    // 住居費2行(家賃+管理費) + 介護サービス1行 + 消費税1行 = 4行
-    expect($preview['entries'])->toHaveCount(4)
-        ->and($preview['totals']['debit'])->toBe(103000)
-        ->and($preview['totals']['count'])->toBe(4);
+    // 住居費3行(家賃+管理費+消費税分) + 介護サービス1行 + 消費税1行 = 5行
+    // (住居費の消費税2000円 = 管理費20000円 × 10% も売掛金として計上)
+    expect($preview['entries'])->toHaveCount(5)
+        ->and($preview['totals']['debit'])->toBe(105000)
+        ->and($preview['totals']['count'])->toBe(5);
 
     $careEntry = collect($preview['entries'])->first(fn ($e) => $e['credit_account_code'] === '4210');
     expect($careEntry)->not->toBeNull()

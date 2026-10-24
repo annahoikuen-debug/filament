@@ -17,6 +17,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Support\Enums\IconPosition;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class Dashboard extends BaseDashboard implements HasActions
 {
@@ -87,7 +88,7 @@ class Dashboard extends BaseDashboard implements HasActions
     protected function getUserFacility(): ?Facility
     {
         $user = Auth::user();
-        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+        if ($user && $user->requiresFacilityScope()) {
             return Facility::find($user->facility_id);
         }
 
@@ -137,7 +138,7 @@ class Dashboard extends BaseDashboard implements HasActions
         }
 
         $this->unpaidResidents = $query
-            ->orderBy('total_amount', 'desc')
+            ->orderBy('total_with_tax', 'desc')
             ->limit(5)
             ->get()
             ->map(function ($invoice) {
@@ -145,7 +146,7 @@ class Dashboard extends BaseDashboard implements HasActions
                     'id' => $invoice->id,
                     'room_number' => $invoice->resident?->room_number ?? '不明',
                     'name' => $invoice->resident?->name ?? '不明',
-                    'total_amount' => $invoice->total_amount,
+                    'total_amount' => $invoice->total_with_tax,
                     'status' => $invoice->status->value,
                     'status_label' => $invoice->status->getLabel(),
                 ];
@@ -166,15 +167,15 @@ class Dashboard extends BaseDashboard implements HasActions
         $totalResidents = $residentQuery->count();
         $totalBilledAmount = (clone $invoiceQuery)
             ->where('billing_year_month', $this->currentYearMonth)
-            ->sum('total_amount');
+            ->sum('total_with_tax');
         $totalPaidAmount = (clone $invoiceQuery)
             ->where('billing_year_month', $this->currentYearMonth)
             ->where('status', InvoiceStatus::Paid)
-            ->sum('total_amount');
+            ->sum('total_with_tax');
         $totalUnpaidAmount = (clone $invoiceQuery)
             ->where('billing_year_month', $this->currentYearMonth)
             ->whereIn('status', [InvoiceStatus::Unbilled, InvoiceStatus::Billed])
-            ->sum('total_amount');
+            ->sum('total_with_tax');
 
         // 平均回収日数（入金済みの請求書について）
         $avgCollectionDays = (clone $invoiceQuery)
@@ -295,6 +296,9 @@ class Dashboard extends BaseDashboard implements HasActions
 
             return;
         }
+
+        // 他施設・権限外の請求書を消込できないように認可チェック
+        Gate::authorize('markAsPaid', $invoice);
 
         $invoice->markAsPaid(PaymentMethod::BankTransfer);
 

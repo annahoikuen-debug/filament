@@ -58,7 +58,7 @@ class ServiceInvoiceResource extends Resource
                             ->searchable(['room_number', 'name'])
                             ->required()
                             ->modifyQueryUsing(fn (Builder $query) => $query->when(
-                                Auth::user()?->isFacilityAdmin() && Auth::user()?->facility_id,
+                                Auth::user()?->requiresFacilityScope(),
                                 fn ($q) => $q->where('facility_id', Auth::user()->facility_id)
                             )),
 
@@ -415,7 +415,7 @@ class ServiceInvoiceResource extends Resource
         $query = parent::getEloquentQuery();
 
         $user = Auth::user();
-        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+        if ($user && $user->requiresFacilityScope()) {
             $query->where('facility_id', $user->facility_id);
         }
 

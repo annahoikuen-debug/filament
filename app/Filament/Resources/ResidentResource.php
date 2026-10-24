@@ -187,7 +187,7 @@ class ResidentResource extends Resource
         $query = parent::getEloquentQuery();
 
         $user = Auth::user();
-        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+        if ($user && $user->requiresFacilityScope()) {
             $query->where('facility_id', $user->facility_id);
         }
 

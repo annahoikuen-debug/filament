@@ -242,7 +242,7 @@ class ActivityLogResource extends Resource
         return parent::getEloquentQuery()
             ->with(['subject', 'causer'])
             ->when(
-                auth()->user()?->isFacilityAdmin() && auth()->user()?->facility_id,
+                auth()->user()?->requiresFacilityScope(),
                 fn (Builder $query) => $query->whereHas('subject', function ($q) {
                     $q->where('facility_id', auth()->user()->facility_id);
                 }),

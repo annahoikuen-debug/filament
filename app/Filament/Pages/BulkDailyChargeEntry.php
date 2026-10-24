@@ -118,7 +118,7 @@ class BulkDailyChargeEntry extends Page
         $user = Auth::user();
 
         $this->presets = DailyChargePreset::query()
-            ->availableFor($user?->isFacilityAdmin() ? $user->facility_id : null)
+            ->availableFor($user?->requiresFacilityScope() ? $user->facility_id : null)
             ->with(['items.chargeItem:id,name,default_price'])
             ->get()
             ->map(fn ($p) => [

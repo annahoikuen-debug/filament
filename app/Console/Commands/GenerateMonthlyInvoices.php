@@ -60,9 +60,9 @@ class GenerateMonthlyInvoices extends Command
         }
 
         try {
-            $result = DB::transaction(function () use ($yearMonth, $facilityId, $force, $dryRun) {
-                return $this->processMonthlyInvoices($yearMonth, $facilityId, $force, $dryRun);
-            });
+            // 月一括トランザクションは行わず、入居者ごとのチャンクトランザクションで
+            // 部分失敗時に全体を巻き戻さず、長時間のロック取得も避ける
+            $result = $this->processMonthlyInvoices($yearMonth, $facilityId, $force, $dryRun);
 
             $this->outputResults($result, $dryRun);
 
@@ -76,6 +76,18 @@ class GenerateMonthlyInvoices extends Command
                     'result' => $result,
                 ])
                 ->log("月次請求生成コマンド実行: {$yearMonth}");
+
+            // 住民ごとの処理エラーが1件でもあれば失敗終了する
+            // （スケジューラの onFailure が反応できるようにするため）
+            if ($result['errors'] > 0) {
+                Log::error('GenerateMonthlyInvoices completed with errors', [
+                    'year_month' => $yearMonth,
+                    'facility_id' => $facilityId,
+                    'errors' => $result['errors'],
+                ]);
+
+                return self::FAILURE;
+            }
 
             return self::SUCCESS;
 
@@ -127,8 +139,11 @@ class GenerateMonthlyInvoices extends Command
 
         foreach ($residents as $resident) {
             try {
-                // 指定年月に在籍しているかチェック
-                if (! $resident->isLivingAt(Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth())) {
+                // 指定年月と在籍期間が重複しているかチェック
+                // （月初日在居判定だと月中入居者が対象月の請求から漏れるため）
+                $monthStart = Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
+                $monthEnd = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
+                if (! $resident->isResidentDuring($monthStart, $monthEnd)) {
                     $skipped++;
                     $progressBar?->advance();
 
@@ -150,23 +165,27 @@ class GenerateMonthlyInvoices extends Command
                     }
 
                     if (! $dryRun) {
-                        // 再計算・更新
-                        $this->calculationService->calculate($existingInvoice);
-                        $existingInvoice->save();
+                        // 再計算・更新（入居者ごとのトランザクション）
+                        DB::transaction(function () use ($existingInvoice) {
+                            $this->calculationService->calculate($existingInvoice);
+                            $existingInvoice->save();
+                        });
                     }
                     $updated++;
                 } else {
-                    // 新規作成
+                    // 新規作成（入居者ごとのトランザクション）
                     if (! $dryRun) {
-                        $invoice = new MonthlyInvoice([
-                            'resident_id' => $resident->id,
-                            'facility_id' => $resident->facility_id,
-                            'billing_year_month' => $yearMonth,
-                            'status' => InvoiceStatus::Unbilled,
-                            'version' => 0,
-                        ]);
-                        $this->calculationService->calculate($invoice);
-                        $invoice->save();
+                        DB::transaction(function () use ($resident, $yearMonth) {
+                            $invoice = new MonthlyInvoice([
+                                'resident_id' => $resident->id,
+                                'facility_id' => $resident->facility_id,
+                                'billing_year_month' => $yearMonth,
+                                'status' => InvoiceStatus::Unbilled,
+                                'version' => 0,
+                            ]);
+                            $this->calculationService->calculate($invoice);
+                            $invoice->save();
+                        });
                     }
                     $created++;
                 }

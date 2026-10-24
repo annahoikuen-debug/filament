@@ -4,11 +4,10 @@ namespace App\Filament\Pages;
 
 use App\Enums\InvoiceStatus;
 use App\Models\MonthlyClosingState;
+use App\Models\MonthlyInvoice;
 use App\Services\BillingAnomalyDetector;
 use App\Services\InvoiceCalculationService;
 use App\Services\InvoiceCsvExportService;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -67,7 +66,7 @@ class MonthlyClosingWizard extends Page implements HasForms
         $this->yearMonth = now()->format('Y-m');
 
         $user = Auth::user();
-        if ($user?->isFacilityAdmin() && $user->facility_id) {
+        if ($user?->requiresFacilityScope()) {
             $this->facilityId = $user->facility_id;
         }
     }
@@ -289,7 +288,7 @@ class MonthlyClosingWizard extends Page implements HasForms
         try {
             DB::transaction(function () use ($state) {
                 // 未確定（unbilled）のまま残っている請求があればクローズ不可
-                $unbilledCount = \App\Models\MonthlyInvoice::query()
+                $unbilledCount = MonthlyInvoice::query()
                     ->forYearMonth($this->yearMonth)
                     ->forFacility($this->facilityId)
                     ->where('status', InvoiceStatus::Unbilled)
@@ -333,8 +332,8 @@ class MonthlyClosingWizard extends Page implements HasForms
     {
         $user = Auth::user();
 
-        // 施設管理者・法人管理者のみ
-        if (! $user || ! ($user->isFacilityAdmin() || $user->hasRole('admin'))) {
+        // 施設管理者・法人管理者のみ（※旧: hasRole() は未導入パッケージのため毎回例外になっていた）
+        if (! $user || ! in_array($user->role, ['corporate_admin', 'facility_admin'], true)) {
             Notification::make()
                 ->title('権限がありません')
                 ->body('締めの差戻しは施設管理者・法人管理者のみ実行できます。')

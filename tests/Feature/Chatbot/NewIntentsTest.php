@@ -105,7 +105,8 @@ class NewIntentsTest extends TestCase
         $this->assertStringContainsString('未払い', $response->reply);
         $this->assertStringNotContainsString('佐藤花子', $response->reply); // 入金済みは含まれない
         $this->assertEquals(1, $response->data['count']);
-        $this->assertEquals(75000, $response->data['total_amount']);
+        // 未払い額は税込（75000 + 消費税2500 = 77500）
+        $this->assertEquals(77500, $response->data['total_amount']);
     }
 
     /** @test */
@@ -190,8 +191,9 @@ class NewIntentsTest extends TestCase
 
         $this->assertEquals('billing_summary', $response->intent);
         // saving イベントで total_amount = rent + management + service に再計算される
-        $this->assertEquals(75000 + 80000 + 60000, $response->data['total_billed']);
-        $this->assertEquals(75000 + 80000, $response->data['total_unpaid']);
+        // 集計は税込（total_with_tax）: 77500 + 82500 + 62000
+        $this->assertEquals(77500 + 82500 + 62000, $response->data['total_billed']);
+        $this->assertEquals(77500 + 82500, $response->data['total_unpaid']);
         $this->assertEquals(2, $response->data['unpaid_count']);
         $this->assertEquals(1, $response->data['paid_count']);
         $this->assertEquals(3, $response->data['total_count']);

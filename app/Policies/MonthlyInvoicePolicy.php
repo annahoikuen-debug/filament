@@ -35,11 +35,39 @@ class MonthlyInvoicePolicy
      */
     public function finalize(User $user, ?MonthlyInvoice $invoice = null): bool
     {
+        return $this->allowsBillingAction($user, $invoice);
+    }
+
+    /**
+     * 全銀フォーマット出力の認可（経理・管理者のみ）
+     */
+    public function exportZengin(User $user, ?MonthlyInvoice $invoice = null): bool
+    {
+        return $this->allowsBillingAction($user, $invoice);
+    }
+
+    /**
+     * 入金消込の認可（経理・管理者のみ）
+     */
+    public function markAsPaid(User $user, ?MonthlyInvoice $invoice = null): bool
+    {
+        return $this->allowsBillingAction($user, $invoice);
+    }
+
+    /**
+     * 請求関連の重要操作に共通する認可判定
+     *
+     * - care_staff は禁止
+     * - 法人管理者は全施設OK
+     * - それ以外は自施設の請求書のみ（請求書未指定の能力チェックは可）
+     */
+    private function allowsBillingAction(User $user, ?MonthlyInvoice $invoice = null): bool
+    {
         if ($user->role === 'care_staff') {
             return false;
         }
 
-        if ($user->isCorporateAdmin()) {
+        if ($user->canAccessAllFacilities()) {
             return true;
         }
 
@@ -48,21 +76,5 @@ class MonthlyInvoicePolicy
         }
 
         return true;
-    }
-
-    /**
-     * 全銀フォーマット出力の認可（経理・管理者のみ）
-     */
-    public function exportZengin(User $user): bool
-    {
-        return $user->role !== 'care_staff';
-    }
-
-    /**
-     * 入金消込の認可（経理・管理者のみ）
-     */
-    public function markAsPaid(User $user): bool
-    {
-        return $user->role !== 'care_staff';
     }
 }

@@ -23,19 +23,19 @@ class UnpaidInvoicesAlert extends BaseWidget
         $query = MonthlyInvoice::query()
             ->where('status', '!=', InvoiceStatus::Paid);
 
-        // 施設管理者の場合は自施設のみ（法人管理者も facility_id を持つ場合は自施設基準）
-        if ($user && $user->role === 'facility_admin' && $user->facility_id) {
+        // 法人管理者以外は自施設のみ（未入金額は税込で集計）
+        if ($user && $user->requiresFacilityScope()) {
             $query->where('facility_id', $user->facility_id);
         }
 
         $unpaidCount = $query->count();
-        $unpaidTotal = $query->sum('total_amount');
+        $unpaidTotal = $query->sum('total_with_tax');
         $overdueCount = (clone $query)
             ->where('billing_year_month', '<', now()->subMonth()->format('Y-m'))
             ->count();
         $overdueTotal = (clone $query)
             ->where('billing_year_month', '<', now()->subMonth()->format('Y-m'))
-            ->sum('total_amount');
+            ->sum('total_with_tax');
 
         return [
             Stat::make('未入金件数', $unpaidCount)

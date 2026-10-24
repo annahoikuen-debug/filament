@@ -12,7 +12,7 @@ class CreateChatbotSynonym extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $user = auth()->user();
-        if ($user && $user->isFacilityAdmin() && empty($data['facility_id'])) {
+        if ($user && $user->requiresFacilityScope() && empty($data['facility_id'])) {
             $data['facility_id'] = $user->facility_id;
         }
 

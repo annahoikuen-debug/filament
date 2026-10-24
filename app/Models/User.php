@@ -77,6 +77,27 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * 施設スコープを適用すべきかどうか
+     *
+     * 法人管理者 (corporate_admin) のみ全施設のデータにアクセスできる。
+     * 施設管理者以外のロール（care_staff・ロール未設定等）で施設IDを持つ
+     * アカウントも、ここでは必ず自施設に限定される。
+     * 施設IDが未設定の従来アカウントは従来通りの挙動を維持する。
+     */
+    public function requiresFacilityScope(): bool
+    {
+        return ! $this->isCorporateAdmin() && (bool) $this->facility_id;
+    }
+
+    /**
+     * 全施設のデータにアクセスできるか（法人管理者のみ）
+     */
+    public function canAccessAllFacilities(): bool
+    {
+        return $this->isCorporateAdmin();
+    }
+
+    /**
      * Filament管理画面へのアクセス認可
      */
     public function canAccessPanel(Panel $panel): bool

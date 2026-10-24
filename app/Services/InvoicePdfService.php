@@ -104,14 +104,29 @@ class InvoicePdfService
 
     /**
      * 請求書へのアクセス認可を検証（他施設の請求書PDFへの不正アクセスを防止）
+     *
+     * - 法人管理者のみ全施設の請求書にアクセス可能
+     * - 上記以外で施設IDを持つアカウントは自施設の請求書のみ
+     * - 施設ID未設定のアカウントは care_staff を拒否（従来の管理者扱いは維持）
+     * - 未認可（署名付きURL経由のメール送信プレビュー等）は署名検証に委ねる
      */
     protected function authorizeInvoiceAccess(MonthlyInvoice $invoice): void
     {
         $user = Auth::user();
-        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+        if (! $user || $user->canAccessAllFacilities()) {
+            return;
+        }
+
+        if ($user->requiresFacilityScope()) {
             if ((int) $invoice->facility_id !== (int) $user->facility_id) {
                 abort(403, '他の施設の請求書にはアクセスできません。');
             }
+
+            return;
+        }
+
+        if ($user->role === 'care_staff') {
+            abort(403, '請求書へのアクセス権限がありません。');
         }
     }
 
@@ -410,6 +425,15 @@ class InvoicePdfService
         foreach ($invoices as $invoice) {
             $resident = $invoice->resident;
 
+            // 消費税は請求書の内訳（tax_breakdown / TaxCalculator）から算出する。
+            // 管理費は標準税率課税・自費は残余（軽減税率等を含む）とし、
+            // 3行の税額合計が必ず請求書の税額と一致するようにする。
+            $standardRate = (float) ($invoice->tax_breakdown['standard']['rate']
+                ?? $invoice->tax_rate
+                ?? 10);
+            $managementTax = (int) floor((int) $invoice->management_fee_subtotal * ($standardRate / 100));
+            $serviceTax = max(0, $invoice->tax_amount - $managementTax);
+
             // 住居費
             $rows[] = [
                 $yearMonth,
@@ -428,8 +452,8 @@ class InvoicePdfService
                 '住居費',
                 '管理費',
                 $invoice->management_fee_subtotal,
-                round($invoice->management_fee_subtotal * 0.1),
-                $invoice->management_fee_subtotal + round($invoice->management_fee_subtotal * 0.1),
+                $managementTax,
+                (int) $invoice->management_fee_subtotal + $managementTax,
             ];
             if ($invoice->service_subtotal > 0) {
                 $rows[] = [
@@ -439,8 +463,8 @@ class InvoicePdfService
                     '住居費',
                     '自費サービス',
                     $invoice->service_subtotal,
-                    round($invoice->service_subtotal * 0.1),
-                    $invoice->service_subtotal + round($invoice->service_subtotal * 0.1),
+                    $serviceTax,
+                    (int) $invoice->service_subtotal + $serviceTax,
                 ];
             }
 

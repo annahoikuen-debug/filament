@@ -100,7 +100,7 @@ class InvoiceCsvExportService
                 $standardTax,
                 $reducedTax,
                 $inv->tax_amount,
-                $inv->total_amount,
+                $inv->total_with_tax,
                 $inv->status?->getLabel() ?? $inv->status,
                 $inv->paid_at ? Carbon::parse($inv->paid_at)->format('Y/m/d') : '',
                 $inv->payment_method?->getLabel() ?? '',
@@ -462,6 +462,20 @@ class InvoiceCsvExportService
                     'description' => "{$summaryBase} {$config['label']}",
                 ];
             }
+
+            // 消費税分（管理費・自費）も別行で出力し、売掛金を税込金額にする。
+            // 全銀の引落額・請求書の税込合計（total_with_tax）と一致させるため、
+            // 介護サービス（ServiceInvoice）と同じ形式で出力する。
+            $taxEntry = $this->buildConsumptionTaxEntry(
+                $formattedDate,
+                $profile,
+                $facilityAccounts,
+                (int) $inv->tax_amount,
+                "{$summaryBase} 消費税分"
+            );
+            if ($taxEntry !== []) {
+                $entries[] = $taxEntry;
+            }
         }
 
         // ===== 介護サービス請求（ServiceInvoice）=====
@@ -540,60 +554,86 @@ class InvoiceCsvExportService
                 'description' => "{$summaryBase} 介護サービス({$label})",
             ];
 
-            // 消費税分も別行で出力（税額がある場合）
-            if ($si->tax_amount > 0) {
-                // 消費税預り金（借方：売掛金、貸方：仮受消費税等）
-                $taxDebitAccount = $facilityAccounts['tax_receivable.debit'][0] ?? null;
-                $taxCreditAccount = $facilityAccounts['tax_payable.credit'][0] ?? null;
-
-                $taxDebitAccount = $taxDebitAccount ?? [
-                    'account_code' => '1100',
-                    'account_name' => '売掛金',
-                    'sub_account_code' => null,
-                    'sub_account_name' => null,
-                    'tax_code' => 'tax_exempt',
-                    'department_code' => null,
-                    'department_name' => null,
-                    'tag_codes' => [],
-                ];
-
-                $taxCreditAccount = $taxCreditAccount ?? [
-                    'account_code' => '2220',
-                    'account_name' => '仮受消費税',
-                    'sub_account_code' => null,
-                    'sub_account_name' => null,
-                    'tax_code' => 'tax_exempt',
-                    'department_code' => null,
-                    'department_name' => null,
-                    'tag_codes' => [],
-                ];
-
-                $taxMappedCode = $profile->mapTaxCode('tax_exempt');
-
-                $entries[] = [
-                    'date' => $formattedDate,
-                    'debit_account_code' => $taxDebitAccount['account_code'],
-                    'debit_account_name' => $taxDebitAccount['account_name'],
-                    'debit_sub_account_code' => $taxDebitAccount['sub_account_code'] ?? '',
-                    'debit_sub_account_name' => $taxDebitAccount['sub_account_name'] ?? '',
-                    'debit_department_code' => $taxDebitAccount['department_code'] ?? '',
-                    'debit_department_name' => $taxDebitAccount['department_name'] ?? '',
-                    'debit_tag_codes' => implode(',', $taxDebitAccount['tag_codes'] ?? []),
-                    'credit_account_code' => $taxCreditAccount['account_code'],
-                    'credit_account_name' => $taxCreditAccount['account_name'],
-                    'credit_sub_account_code' => $taxCreditAccount['sub_account_code'] ?? '',
-                    'credit_sub_account_name' => $taxCreditAccount['sub_account_name'] ?? '',
-                    'credit_department_code' => $taxCreditAccount['department_code'] ?? '',
-                    'credit_department_name' => $taxCreditAccount['department_name'] ?? '',
-                    'credit_tag_codes' => implode(',', $taxCreditAccount['tag_codes'] ?? []),
-                    'amount' => $si->tax_amount,
-                    'tax_code' => $taxMappedCode,
-                    'description' => "{$summaryBase} 介護サービス({$label}) 消費税分",
-                ];
+            // 消費税分も別行で出力（住居費と同じ形式: 借方売掛金・貸方仮受消費税）
+            $taxEntry = $this->buildConsumptionTaxEntry(
+                $formattedDate,
+                $profile,
+                $facilityAccounts,
+                (int) $si->tax_amount,
+                "{$summaryBase} 介護サービス({$label}) 消費税分"
+            );
+            if ($taxEntry !== []) {
+                $entries[] = $taxEntry;
             }
         }
 
         return $entries;
+    }
+
+    /**
+     * 消費税行（借方: 売掛金 / 貸方: 仮受消費税）を構築する
+     *
+     * 住居費（MonthlyInvoice）と介護サービス（ServiceInvoice）の両方で使い、
+     * 売掛金が税込金額（全銀の引落額・請求書の税込合計と一致）になるようにする。
+     *
+     * @return array<string, mixed> 税額が0以下の場合は空配列
+     */
+    private function buildConsumptionTaxEntry(
+        string $formattedDate,
+        AccountingExportProfile $profile,
+        array $facilityAccounts,
+        int $taxAmount,
+        string $description
+    ): array {
+        if ($taxAmount <= 0) {
+            return [];
+        }
+
+        // 消費税預り金（借方：売掛金、貸方：仮受消費税等）
+        $taxDebitAccount = $facilityAccounts['tax_receivable.debit'][0] ?? [
+            'account_code' => '1100',
+            'account_name' => '売掛金',
+            'sub_account_code' => null,
+            'sub_account_name' => null,
+            'tax_code' => 'tax_exempt',
+            'department_code' => null,
+            'department_name' => null,
+            'tag_codes' => [],
+        ];
+
+        $taxCreditAccount = $facilityAccounts['tax_payable.credit'][0] ?? [
+            'account_code' => '2220',
+            'account_name' => '仮受消費税',
+            'sub_account_code' => null,
+            'sub_account_name' => null,
+            'tax_code' => 'tax_exempt',
+            'department_code' => null,
+            'department_name' => null,
+            'tag_codes' => [],
+        ];
+
+        $taxMappedCode = $profile->mapTaxCode('tax_exempt');
+
+        return [
+            'date' => $formattedDate,
+            'debit_account_code' => $taxDebitAccount['account_code'],
+            'debit_account_name' => $taxDebitAccount['account_name'],
+            'debit_sub_account_code' => $taxDebitAccount['sub_account_code'] ?? '',
+            'debit_sub_account_name' => $taxDebitAccount['sub_account_name'] ?? '',
+            'debit_department_code' => $taxDebitAccount['department_code'] ?? '',
+            'debit_department_name' => $taxDebitAccount['department_name'] ?? '',
+            'debit_tag_codes' => implode(',', $taxDebitAccount['tag_codes'] ?? []),
+            'credit_account_code' => $taxCreditAccount['account_code'],
+            'credit_account_name' => $taxCreditAccount['account_name'],
+            'credit_sub_account_code' => $taxCreditAccount['sub_account_code'] ?? '',
+            'credit_sub_account_name' => $taxCreditAccount['sub_account_name'] ?? '',
+            'credit_department_code' => $taxCreditAccount['department_code'] ?? '',
+            'credit_department_name' => $taxCreditAccount['department_name'] ?? '',
+            'credit_tag_codes' => implode(',', $taxCreditAccount['tag_codes'] ?? []),
+            'amount' => $taxAmount,
+            'tax_code' => $taxMappedCode,
+            'description' => $description,
+        ];
     }
 
     /**

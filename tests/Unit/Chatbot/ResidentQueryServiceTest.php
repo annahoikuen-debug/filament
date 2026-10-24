@@ -116,7 +116,7 @@ test('getPaymentStatus が請求ありの場合に状態を返すこと', functi
     expect($status['has_invoice'])->toBeTrue()
         ->and($status['status'])->toBe('billed')
         ->and($status['billing_year_month'])->toBe('2026-02')
-        ->and($status['total_amount'])->toBe(70000) // オブザーバーが構成要素合計で再計算
+        ->and($status['total_amount'])->toBe(72000) // 税込: 税抜70000 + 消費税2000（オブザーバーが構成要素合計で再計算）
         ->and($status['paid_at'])->toBe('2026/03/05');
 });
 

@@ -55,6 +55,7 @@ class MonthlyInvoice extends Model
         'management_fee_subtotal' => 'integer',
         'service_subtotal' => 'integer',
         'total_amount' => 'integer',
+        'total_with_tax' => 'integer',
         'status' => InvoiceStatus::class,
         'paid_at' => 'date',
         'payment_method' => PaymentMethod::class,
@@ -90,6 +91,10 @@ class MonthlyInvoice extends Model
                 + (int) $invoice->management_fee_subtotal
                 + (int) $invoice->service_subtotal;
 
+            // 税込み合計（SQL集計・CSV出力用に永続化。表示はアクセッサで再計算）
+            // $invoice->tax_amount はアクセッサ経由（tax_breakdown → 保存値 → floor算出）
+            $invoice->total_with_tax = $invoice->total_amount + (int) $invoice->tax_amount;
+
             // 楽観ロック: 更新時のみバージョンをインクリメント
             if ($invoice->exists && $invoice->isDirty()) {
                 $invoice->version = ($invoice->version ?? 0) + 1;
@@ -118,41 +123,60 @@ class MonthlyInvoice extends Model
      */
     public function getNonTaxableAmountAttribute(): int
     {
-        return $this->rent_subtotal;
+        // rent_subtotal が null の行でも TypeError にならないようキャスト
+        return (int) $this->rent_subtotal;
     }
 
     /**
      * 課税対象額（管理費＋自費）を取得する
-     * tax_breakdown がある場合はそこから算出、なければ従来通り
+     *
+     * tax_breakdown がある場合はそこから算出、なければ保存値（$value = DB生値）、
+     * それも無ければ小計から算出する。
+     * ※ 自己参照（$this->taxable_amount）を避け、無限再帰を防ぐ。
      */
-    public function getTaxableAmountAttribute(): int
+    public function getTaxableAmountAttribute($value = null): int
     {
         if ($this->tax_breakdown && isset($this->tax_breakdown['standard']['taxable_amount'], $this->tax_breakdown['reduced']['taxable_amount'])) {
             return (int) $this->tax_breakdown['standard']['taxable_amount'] + (int) $this->tax_breakdown['reduced']['taxable_amount'];
         }
 
-        return $this->taxable_amount ?? ($this->management_fee_subtotal + $this->service_subtotal);
+        if ($value !== null) {
+            return (int) $value;
+        }
+
+        return (int) $this->management_fee_subtotal + (int) $this->service_subtotal;
     }
 
     /**
      * 消費税額を取得する
-     * tax_breakdown がある場合はそこから算出、なければ従来通り
+     *
+     * tax_breakdown がある場合はそこから算出、なければ保存値（$value = DB生値）、
+     * それも無ければ TaxCalculator と同じ切り捨て（floor）で算出する。
+     * ※ 自己参照（$this->tax_amount）を避け、無限再帰を防ぐ。
      */
-    public function getTaxAmountAttribute(): int
+    public function getTaxAmountAttribute($value = null): int
     {
         if ($this->tax_breakdown && isset($this->tax_breakdown['standard']['tax_amount'], $this->tax_breakdown['reduced']['tax_amount'])) {
             return (int) $this->tax_breakdown['standard']['tax_amount'] + (int) $this->tax_breakdown['reduced']['tax_amount'];
         }
 
-        return $this->tax_amount ?? (int) round($this->getTaxableAmountAttribute() * (($this->tax_rate ?? 10) / 100));
+        if ($value !== null) {
+            return (int) $value;
+        }
+
+        // 消費税の端数処理は切り捨て（floor）: TaxCalculator と同一のルール
+        return (int) floor($this->getTaxableAmountAttribute() * ((float) ($this->tax_rate ?? 10) / 100));
     }
 
     /**
      * 税込み合計額を取得する
+     *
+     * DBには total_with_tax カラムを持つが、表示・計算では常に内訳から
+     * 再計算した値を返す（単一の正解 = tax_breakdown / TaxCalculator）。
      */
     public function getTotalWithTaxAttribute(): int
     {
-        return $this->rent_subtotal + $this->getTaxableAmountAttribute() + $this->getTaxAmountAttribute();
+        return (int) $this->rent_subtotal + $this->getTaxableAmountAttribute() + $this->getTaxAmountAttribute();
     }
 
     /**

@@ -47,7 +47,7 @@ class DailyChargeResource extends Resource
                         Forms\Components\Select::make('resident_id')
                             ->label('入居者')
                             ->relationship('resident', 'full_title', fn (Builder $query) => $query->when(
-                                Auth::user()?->isFacilityAdmin() && Auth::user()?->facility_id,
+                                Auth::user()?->requiresFacilityScope(),
                                 fn ($q) => $q->where('facility_id', Auth::user()->facility_id)
                             ))
                             ->searchable(['room_number', 'name'])
@@ -60,7 +60,7 @@ class DailyChargeResource extends Resource
                             ->relationship('chargeItem', 'name', fn (Builder $query) => $query
                                 ->where('is_active', true)
                                 ->when(
-                                    Auth::user()?->isFacilityAdmin() && Auth::user()?->facility_id,
+                                    Auth::user()?->requiresFacilityScope(),
                                     fn ($q) => $q->where(function ($qq) {
                                         $qq->whereNull('facility_id')
                                             ->orWhere('facility_id', Auth::user()->facility_id);
@@ -183,7 +183,7 @@ class DailyChargeResource extends Resource
                     ->preload()
                     ->multiple()
                     ->modifyQueryUsing(fn (Builder $query) => $query->when(
-                        Auth::user()?->isFacilityAdmin() && Auth::user()?->facility_id,
+                        Auth::user()?->requiresFacilityScope(),
                         fn ($q) => $q->where('facility_id', Auth::user()->facility_id)
                     )),
 
@@ -236,7 +236,7 @@ class DailyChargeResource extends Resource
         $query = parent::getEloquentQuery();
 
         $user = Auth::user();
-        if ($user && $user->isFacilityAdmin() && $user->facility_id) {
+        if ($user && $user->requiresFacilityScope()) {
             $query->where('facility_id', $user->facility_id);
         }
 
