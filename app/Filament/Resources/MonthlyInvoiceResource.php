@@ -946,7 +946,7 @@ class MonthlyInvoiceResource extends Resource
     }
 
     /**
-     * 譁ｽ險ｭ縺ｫ繧医ｋ繝・・繧ｿ蛻・屬
+     * 施設によるデータ分離
      */
     public static function getEloquentQuery(): Builder
     {
