@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:1.7
-FROM dunglas/frankenphp:1-php8.3-alpine AS builder
+FROM dunglas/frankenphp:1-php8.4-alpine AS builder
 
 WORKDIR /app
 
@@ -38,7 +38,7 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
 
 # Production stage
-FROM dunglas/frankenphp:1-php8.3-alpine
+FROM dunglas/frankenphp:1-php8.4-alpine
 
 WORKDIR /app
 

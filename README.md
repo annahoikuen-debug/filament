@@ -468,7 +468,7 @@ flowchart LR
 
 | 項目 | 内容 |
 | --- | --- |
-| PHP | 8.3+ |
+| PHP | 8.2+（CI・Docker は 8.4） |
 | Laravel | 12.x |
 | Filament | v3（管理パネル） |
 | PDF | dompdf/dompdf |
