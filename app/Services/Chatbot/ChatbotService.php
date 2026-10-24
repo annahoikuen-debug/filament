@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Services\Chatbot\DTO\ChatRequest;
 use App\Services\Chatbot\DTO\ChatResponse;
 use App\Services\Chatbot\DTO\IntentDTO;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class ChatbotService
@@ -484,10 +484,10 @@ class ChatbotService
 
         $reply = sprintf(
             "%s年%s月の請求集計:\n"
-            . "総請求額: %s円\n"
-            . "入金済み: %s円 (%d件)\n"
-            . "未回収: %s円 (%d件)\n"
-            . "請求件数: %d件",
+            ."総請求額: %s円\n"
+            ."入金済み: %s円 (%d件)\n"
+            ."未回収: %s円 (%d件)\n"
+            .'請求件数: %d件',
             substr($summary['year_month'], 0, 4),
             (int) substr($summary['year_month'], 5, 2),
             number_format($summary['total_billed']),
@@ -520,7 +520,7 @@ class ChatbotService
                 reply: '入居者を特定できませんでした。名前または部屋番号を教えてください。',
                 intent: 'invoice_pdf',
                 quickReplies: $this->activeResidentsForSuggestions($user, '')->mapWithKeys(fn ($r) => [
-                    sprintf('%s（%s号室）', $r->name, $r->room_number) => sprintf('%s の請求書PDFを教えてください', $r->name)
+                    sprintf('%s（%s号室）', $r->name, $r->room_number) => sprintf('%s の請求書PDFを教えてください', $r->name),
                 ])->toArray(),
                 categoryQuickReplies: config('chatbot.quick_reply_categories', []),
             );
@@ -546,6 +546,7 @@ class ChatbotService
             $monthNotice = $yearMonth !== null
                 ? sprintf('%s年%d月の', substr($yearMonth, 0, 4), (int) substr($yearMonth, 5, 2))
                 : '';
+
             return new ChatResponse(
                 reply: "{$resident->name} さんの{$monthNotice}請求データはまだありません。",
                 intent: 'invoice_pdf',
@@ -560,7 +561,7 @@ class ChatbotService
 
         return new ChatResponse(
             reply: sprintf(
-                "%s さんの %s 年 %s 月の請求書PDFを生成できます。",
+                '%s さんの %s 年 %s 月の請求書PDFを生成できます。',
                 $resident->name,
                 substr($billingYm, 0, 4),
                 (int) substr($billingYm, 5, 2)
@@ -595,7 +596,7 @@ class ChatbotService
                 reply: '入居者を特定できませんでした。名前または部屋番号を教えてください。',
                 intent: 'daily_charge_detail',
                 quickReplies: $this->activeResidentsForSuggestions($user, '')->mapWithKeys(fn ($r) => [
-                    sprintf('%s（%s号室）', $r->name, $r->room_number) => sprintf('%s の自費明細を教えてください', $r->name)
+                    sprintf('%s（%s号室）', $r->name, $r->room_number) => sprintf('%s の自費明細を教えてください', $r->name),
                 ])->toArray(),
                 categoryQuickReplies: config('chatbot.quick_reply_categories', []),
             );
@@ -629,7 +630,7 @@ class ChatbotService
             );
         }
 
-        $lines = [sprintf("%s さんの %s 年 %s 月の自費利用料明細:", $resident->name, substr($yearMonth, 0, 4), (int) substr($yearMonth, 5, 2))];
+        $lines = [sprintf('%s さんの %s 年 %s 月の自費利用料明細:', $resident->name, substr($yearMonth, 0, 4), (int) substr($yearMonth, 5, 2))];
         $total = 0;
         foreach ($details as $d) {
             $lines[] = sprintf('・%s %s: %s円 × %d = %s円', $d['date'], $d['item_name'], number_format($d['unit_price']), $d['quantity'], number_format($d['subtotal']));
@@ -672,7 +673,7 @@ class ChatbotService
                 reply: '入居者を特定できませんでした。名前または部屋番号を教えてください。',
                 intent: 'service_invoice',
                 quickReplies: $this->activeResidentsForSuggestions($user, '')->mapWithKeys(fn ($r) => [
-                    sprintf('%s（%s号室）', $r->name, $r->room_number) => sprintf('%s の介護請求を教えてください', $r->name)
+                    sprintf('%s（%s号室）', $r->name, $r->room_number) => sprintf('%s の介護請求を教えてください', $r->name),
                 ])->toArray(),
                 categoryQuickReplies: config('chatbot.quick_reply_categories', []),
             );
@@ -686,6 +687,7 @@ class ChatbotService
             $monthNotice = $yearMonth !== null
                 ? sprintf('%s年%d月の', substr($yearMonth, 0, 4), (int) substr($yearMonth, 5, 2))
                 : '';
+
             return new ChatResponse(
                 reply: "{$resident->name} さんの{$monthNotice}介護保険請求データはありません。",
                 intent: 'service_invoice',
@@ -693,7 +695,7 @@ class ChatbotService
             );
         }
 
-        $lines = [sprintf("%s さんの介護保険請求一覧:", $resident->name)];
+        $lines = [sprintf('%s さんの介護保険請求一覧:', $resident->name)];
         $totalAmount = 0;
         foreach ($invoices as $inv) {
             $ym = $inv['billing_year_month'];
@@ -765,9 +767,9 @@ class ChatbotService
     /**
      * 候補確認質問用: 同 facility の在籍者上位 N 名（キーワードを名前に含まない者を優先）
      *
-     * @return \Illuminate\Support\Collection<int, Resident>
+     * @return Collection<int, Resident>
      */
-    private function activeResidentsForSuggestions(User $user, string $excludeKeyword): \Illuminate\Support\Collection
+    private function activeResidentsForSuggestions(User $user, string $excludeKeyword): Collection
     {
         $excludeKeyword = trim($excludeKeyword);
 

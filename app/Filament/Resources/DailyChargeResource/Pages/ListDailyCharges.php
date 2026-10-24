@@ -6,7 +6,6 @@ use App\Filament\Resources\DailyChargeResource;
 use App\Services\QuickInputService;
 use Filament\Actions;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,7 +26,8 @@ class ListDailyCharges extends ListRecords
                     $service = app(QuickInputService::class);
                     $defaults = $service->getLastInputForUser(Auth::user());
                     $query = http_build_query(array_filter($defaults, fn ($v) => $v !== null && $v !== ''));
-                    return static::getResource()::getUrl('create') . '?' . $query;
+
+                    return static::getResource()::getUrl('create').'?'.$query;
                 })
                 ->visible(fn () => Auth::check()),
         ];

@@ -2,8 +2,6 @@
 
 namespace Tests\Feature\Banking;
 
-use App\Enums\InvoiceStatus;
-use App\Enums\PaymentMethod;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;

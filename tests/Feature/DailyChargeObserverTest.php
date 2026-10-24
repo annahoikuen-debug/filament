@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\InvoiceStatus;
+use App\Models\ChargeItem;
 use App\Models\DailyCharge;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Models\ChargeItem;
-use App\Enums\InvoiceStatus;
 use App\Notifications\DailyChargeAddedToBilledInvoice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -219,9 +219,9 @@ class DailyChargeObserverTest extends TestCase
         Notification::assertSentOnDemand(
             DailyChargeAddedToBilledInvoice::class,
             function ($notification, $channels, $notifiable) use ($resident, $invoice) {
-                return $notification->toArray(new \stdClass())['resident_id'] === $resident->id
-                    && $notification->toArray(new \stdClass())['invoice_id'] === $invoice->id
-                    && $notification->toArray(new \stdClass())['amount'] === 3600 // 1800 * 2
+                return $notification->toArray(new \stdClass)['resident_id'] === $resident->id
+                    && $notification->toArray(new \stdClass)['invoice_id'] === $invoice->id
+                    && $notification->toArray(new \stdClass)['amount'] === 3600 // 1800 * 2
                     && in_array('mail', $channels);
             }
         );
@@ -270,9 +270,9 @@ class DailyChargeObserverTest extends TestCase
         Notification::assertSentOnDemand(
             DailyChargeAddedToBilledInvoice::class,
             function ($notification, $channels, $notifiable) use ($resident, $invoice) {
-                return $notification->toArray(new \stdClass())['resident_id'] === $resident->id
-                    && $notification->toArray(new \stdClass())['invoice_id'] === $invoice->id
-                    && $notification->toArray(new \stdClass())['amount'] === 2200 // 2200 * 1
+                return $notification->toArray(new \stdClass)['resident_id'] === $resident->id
+                    && $notification->toArray(new \stdClass)['invoice_id'] === $invoice->id
+                    && $notification->toArray(new \stdClass)['amount'] === 2200 // 2200 * 1
                     && in_array('mail', $channels);
             }
         );
@@ -391,10 +391,10 @@ class DailyChargeObserverTest extends TestCase
         Notification::assertSentOnDemand(
             DailyChargeAddedToBilledInvoice::class,
             function ($notification, $channels, $notifiable) use ($resident, $invoice) {
-                return $notification->toArray(new \stdClass())['resident_id'] === $resident->id
-                    && $notification->toArray(new \stdClass())['invoice_id'] === $invoice->id
-                    && $notification->toArray(new \stdClass())['charge_item_name'] === '品目A'
-                    && $notification->toArray(new \stdClass())['amount'] === 800 // 800 * 1
+                return $notification->toArray(new \stdClass)['resident_id'] === $resident->id
+                    && $notification->toArray(new \stdClass)['invoice_id'] === $invoice->id
+                    && $notification->toArray(new \stdClass)['charge_item_name'] === '品目A'
+                    && $notification->toArray(new \stdClass)['amount'] === 800 // 800 * 1
                     && in_array('mail', $channels);
             }
         );

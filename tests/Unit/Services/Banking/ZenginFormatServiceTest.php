@@ -7,7 +7,6 @@ use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Models\ResidentBankAccount;
 use App\Services\Banking\ZenginFormatService;
-use App\Services\Banking\ZenginResultParser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

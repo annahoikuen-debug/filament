@@ -6,10 +6,10 @@ use App\Enums\InvoiceStatus;
 use App\Models\DailyCharge;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Services\InvoiceCalculationService;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Log;
 use App\Notifications\DailyChargeAddedToBilledInvoice;
+use App\Services\InvoiceCalculationService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class DailyChargeObserver
 {
@@ -56,6 +56,7 @@ class DailyChargeObserver
                 $resident = Resident::find($dailyCharge->resident_id);
                 if (! $resident) {
                     Log::warning("DailyCharge observer: Resident not found for ID {$dailyCharge->resident_id}");
+
                     return;
                 }
 
@@ -98,7 +99,7 @@ class DailyChargeObserver
                 'resident_id' => $dailyCharge->resident_id ?? null,
                 'date' => $dailyCharge->date ?? null,
                 'event' => $eventType,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             // 例外はそのまま投げずにログのみ記録（本処理の失敗で主要機能を止めない）
         }

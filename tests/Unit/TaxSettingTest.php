@@ -3,8 +3,8 @@
 namespace Tests\Unit;
 
 use App\Models\TaxSetting;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class TaxSettingTest extends TestCase
@@ -24,7 +24,7 @@ class TaxSettingTest extends TestCase
         ]);
 
         // Attempt to create another active tax setting that overlaps (July 1, 2026 to June 30, 2027)
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
         TaxSetting::create([
             'standard_rate' => 11,
             'reduced_rate' => 9,

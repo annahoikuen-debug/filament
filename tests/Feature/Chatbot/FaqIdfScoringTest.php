@@ -13,6 +13,7 @@ class FaqIdfScoringTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Facility $facility;
 
     protected function setUp(): void

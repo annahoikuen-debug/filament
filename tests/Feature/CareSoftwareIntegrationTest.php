@@ -3,10 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\ServiceInvoiceStatus;
-use App\Enums\ServiceType;
 use App\Models\Facility;
 use App\Models\Resident;
-use App\Models\ServiceInvoice;
 use App\Services\CareSoftware\CareCsvParserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,10 +22,10 @@ class CareSoftwareIntegrationTest extends TestCase
         ]);
 
         $csv = "被保険者番号,氏名,サービス種別,請求年月,自己負担額,保険請求額\n"
-             . "H123456789,介護太郎,訪問介護,2026-09,8500,76500\n"
-             . "H999999999,未登録花子,通所介護,2026-09,12000,108000\n";
+             ."H123456789,介護太郎,訪問介護,2026-09,8500,76500\n"
+             ."H999999999,未登録花子,通所介護,2026-09,12000,108000\n";
 
-        $service = new CareCsvParserService();
+        $service = new CareCsvParserService;
         $result = $service->parse($csv, $facility);
 
         // 1件パース成功、1件エラー（未登録入居者）

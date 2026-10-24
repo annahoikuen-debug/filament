@@ -17,14 +17,16 @@ class ZenginFormatService
 
     // レコード種別
     public const RECORD_HEADER = '1';
+
     public const RECORD_DATA = '2';
+
     public const RECORD_TRAILER = '8';
+
     public const RECORD_END = '9';
 
     public function __construct(
         protected ZenginResultParser $parser = new ZenginResultParser,
-    ) {
-    }
+    ) {}
 
     /**
      * 口座振替依頼ファイル（総合振込依頼/口座振替依頼）を生成する

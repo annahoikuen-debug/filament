@@ -2,7 +2,6 @@
 
 use App\Enums\ResidentStatus;
 use App\Filament\Resources\DailyChargeResource\Pages\CreateDailyCharge;
-use App\Filament\Resources\DailyChargeResource\Pages\ListDailyCharges;
 use App\Models\ChargeItem;
 use App\Models\DailyCharge;
 use App\Models\Facility;

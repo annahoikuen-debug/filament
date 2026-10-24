@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\Enums\InvoiceStatus;
 use App\Enums\ResidentStatus;
+use App\Enums\ServiceInvoiceStatus;
 use App\Models\DailyCharge;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
+use App\Models\ServiceInvoice;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
 /**
  * Step 17-18: 月次締め整合性・異常値検知エンジン
@@ -29,7 +29,6 @@ class BillingAnomalyDetector
      * 異常検知を実行
      *
      * @param  string  $yearMonth  'YYYY-MM'
-     * @param  int|null  $facilityId
      * @return array{errors: list<array>, warnings: list<array>, error_count: int, warning_count: int, checked_at: string}
      */
     public function detect(string $yearMonth, ?int $facilityId = null): array
@@ -39,7 +38,7 @@ class BillingAnomalyDetector
 
         $residents = Resident::query()
             ->when($facilityId, fn ($q) => $q->where('facility_id', $facilityId))
-            ->where(function ($q) use ($start, $end) {
+            ->where(function ($q) use ($start) {
                 $q->whereNull('move_out_date')->orWhere('move_out_date', '>=', $start);
             })
             ->where(function ($q) use ($end) {
@@ -141,10 +140,10 @@ class BillingAnomalyDetector
         }
 
         // Rule 3: 未確定（下書き）状態の介護サービス請求（ServiceInvoice）（Warning）
-        $draftServiceInvoices = \App\Models\ServiceInvoice::query()
+        $draftServiceInvoices = ServiceInvoice::query()
             ->whereIn('resident_id', $residents->pluck('id'))
             ->where('billing_year_month', $yearMonth)
-            ->where('status', \App\Enums\ServiceInvoiceStatus::Draft->value)
+            ->where('status', ServiceInvoiceStatus::Draft->value)
             ->get();
 
         foreach ($draftServiceInvoices as $serviceInvoice) {

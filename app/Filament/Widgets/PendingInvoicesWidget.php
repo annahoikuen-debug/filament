@@ -2,8 +2,8 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\MonthlyInvoice;
 use App\Enums\InvoiceStatus;
+use App\Models\MonthlyInvoice;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Auth;

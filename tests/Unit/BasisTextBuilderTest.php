@@ -6,7 +6,7 @@ use App\Models\Resident;
 use App\Services\Invoice\BasisTextBuilder;
 
 beforeEach(function () {
-    $this->builder = new BasisTextBuilder();
+    $this->builder = new BasisTextBuilder;
 });
 
 test('満月在籍の場合は満額計算表記を返すこと', function () {

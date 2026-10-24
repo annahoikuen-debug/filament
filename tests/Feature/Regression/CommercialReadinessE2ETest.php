@@ -17,6 +17,7 @@ use App\Services\Auth\TwoFactorAuthService;
 use App\Services\Banking\ZenginFormatService;
 use App\Services\Billing\OverdueClassificationService;
 use App\Services\Denchoho\ElectronicRecordService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -92,7 +93,7 @@ class CommercialReadinessE2ETest extends TestCase
             'status' => InvoiceStatus::Unbilled,
         ]);
 
-        $policy = new MonthlyInvoicePolicy();
+        $policy = new MonthlyInvoicePolicy;
         // 介護スタッフは確定不可、経理は確定可能
         $this->assertFalse($policy->finalize($careStaff, $monthlyInvoice));
         $this->assertTrue($policy->finalize($accountant, $monthlyInvoice));
@@ -123,7 +124,7 @@ class CommercialReadinessE2ETest extends TestCase
         $dummyPdf = storage_path('app/dummy_commercial.pdf');
         File::put($dummyPdf, '%PDF-1.4 commercial dummy content');
 
-        $denchohoService = new ElectronicRecordService();
+        $denchohoService = new ElectronicRecordService;
         $record = $denchohoService->recordInvoicePdf($monthlyInvoice, $dummyPdf);
         $this->assertTrue($record->verifyIntegrity());
         File::delete($dummyPdf);
@@ -133,18 +134,18 @@ class CommercialReadinessE2ETest extends TestCase
             ->causedBy($accountant)
             ->log('請求確定および全銀出力完了');
 
-        $auditService = new AuditLogExportService();
+        $auditService = new AuditLogExportService;
         $csv = $auditService->exportCsv(logName: 'commercial_e2e');
         $this->assertStringContainsString('請求確定および全銀出力完了', $csv);
 
         // 8. 2FA認証検証（Step 21-24）
-        $twoFactorService = new TwoFactorAuthService();
+        $twoFactorService = new TwoFactorAuthService;
         $secret = $twoFactorService->generateSecretKey();
         $this->assertEquals(32, strlen($secret));
 
         // 9. 滞納判定ロジック検証（Step 25-28: 期日から45日経過で reminder）
-        $overdueService = new OverdueClassificationService();
-        $due = \Carbon\Carbon::parse($monthlyInvoice->billing_year_month . '-27');
+        $overdueService = new OverdueClassificationService;
+        $due = Carbon::parse($monthlyInvoice->billing_year_month.'-27');
         $overdueRes = $overdueService->classify($monthlyInvoice, (clone $due)->addDays(45));
         $this->assertEquals(OverdueClassificationService::STAGE_REMINDER, $overdueRes['stage']);
     }

@@ -65,8 +65,11 @@ class BulkDailyChargeEntry extends Page
 
     // --- 保存前確認モーダル用 ---
     public bool $showConfirmModal = false;
+
     public int $confirmSelectedCount = 0;
+
     public int $confirmTotalAmount = 0;
+
     public int $confirmSkippedLocked = 0;
 
     public function mount(): void
@@ -355,6 +358,7 @@ class BulkDailyChargeEntry extends Page
         if ($this->confirmSelectedCount === 0) {
             $this->confirmTotalAmount = 0;
             $this->confirmSkippedLocked = 0;
+
             return;
         }
 
@@ -404,6 +408,7 @@ class BulkDailyChargeEntry extends Page
         if ($this->confirmSelectedCount === 0) {
             $this->confirmTotalAmount = 0;
             $this->confirmSkippedLocked = 0;
+
             return;
         }
 

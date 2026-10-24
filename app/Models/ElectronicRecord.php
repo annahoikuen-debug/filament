@@ -36,7 +36,7 @@ class ElectronicRecord extends Model
      */
     public function verifyIntegrity(): bool
     {
-        if (!File::exists($this->file_path)) {
+        if (! File::exists($this->file_path)) {
             return false;
         }
 

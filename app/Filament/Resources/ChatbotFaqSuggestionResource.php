@@ -8,6 +8,7 @@ use App\Models\ChatbotFaqSuggestion;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -28,7 +29,7 @@ class ChatbotFaqSuggestionResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    public static function form(\Filament\Forms\Form $form): \Filament\Forms\Form
+    public static function form(Form $form): Form
     {
         return $form
             ->schema([

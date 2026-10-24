@@ -37,6 +37,7 @@ class RebuildKeywordStats extends Command
 
         if ($faqs->isEmpty()) {
             $this->warn('No active FAQs found. Stats table will be empty.');
+
             return self::SUCCESS;
         }
 
@@ -45,10 +46,10 @@ class RebuildKeywordStats extends Command
 
         foreach ($faqs as $faq) {
             $keywords = $this->extractKeywordsFromFaq($faq->question, $faq->keywords ?? []);
-            
+
             // Use array_unique to count each keyword once per FAQ (document frequency)
             $uniqueKeywords = array_unique($keywords);
-            
+
             foreach ($uniqueKeywords as $keyword) {
                 if (mb_strlen($keyword) < 2) {
                     continue;
@@ -91,7 +92,7 @@ class RebuildKeywordStats extends Command
      */
     private function extractKeywordsFromFaq(string $question, array $faqKeywords): array
     {
-        $allText = $question . ' ' . implode(' ', $faqKeywords);
+        $allText = $question.' '.implode(' ', $faqKeywords);
 
         $allText = preg_replace('/[？?。.!！｡\s]+/u', ' ', $allText);
         $allText = preg_replace('/(の|は|が|を|で|に|です|ます|か|について|どう|なん|何|如何)/u', ' ', (string) $allText);

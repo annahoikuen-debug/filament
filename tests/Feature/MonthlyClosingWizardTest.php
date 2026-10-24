@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PaymentMethod;
 use App\Models\Facility;
 use App\Models\MonthlyClosingState;
 use App\Models\MonthlyInvoice;
@@ -53,7 +54,7 @@ class MonthlyClosingWizardTest extends TestCase
             'payment_method' => 'bank_transfer',
             'tax_rate' => 10,
         ]);
-        $invoice->markAsPaid(\App\Enums\PaymentMethod::Cash, '2026-10-31');
+        $invoice->markAsPaid(PaymentMethod::Cash, '2026-10-31');
 
         return $invoice;
     }

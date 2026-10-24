@@ -2,9 +2,9 @@
 
 namespace App\Filament\Widgets;
 
-use Spatie\Activitylog\Models\Activity;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Auth;
+use Spatie\Activitylog\Models\Activity;
 
 class RecentActivityWidget extends Widget
 {
@@ -19,7 +19,7 @@ class RecentActivityWidget extends Widget
 
         // If the user is a facility admin, limit to their facility's activities
         if (Auth::user()?->facility_id) {
-            // We need to join on the subject to get the facility_id? 
+            // We need to join on the subject to get the facility_id?
             // The activity log might not have facility_id directly.
             // We'll skip this for now and show all activities.
             // Alternatively, we can filter by the log name or by checking the subject type.
@@ -35,6 +35,7 @@ class RecentActivityWidget extends Widget
         $items = $activities->map(function ($activity) {
             $description = $activity->description ?? 'No description';
             $time = $activity->created_at?->diffForHumans() ?? 'unknown time';
+
             return "<div class='mb-2'><strong>{$time}</strong>: {$description}</div>";
         })->implode('');
 

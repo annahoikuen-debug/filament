@@ -7,13 +7,11 @@ use App\Services\Invoice\ProrationCalculator;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Auth;
 
 class InvoiceSimulationPage extends Page implements HasForms
 {
@@ -34,11 +32,17 @@ class InvoiceSimulationPage extends Page implements HasForms
     public ?array $data = [];
 
     public int $resultLivingDays = 0;
+
     public int $resultDaysInMonth = 0;
+
     public int $resultRent = 0;
+
     public int $resultManagementFee = 0;
+
     public int $resultServiceTotal = 0;
+
     public int $resultTotalAmount = 0;
+
     public bool $hasCalculated = false;
 
     public function mount(): void
@@ -100,7 +104,7 @@ class InvoiceSimulationPage extends Page implements HasForms
         $year = (int) $year;
         $month = (int) $month;
 
-        $calc = new ProrationCalculator();
+        $calc = new ProrationCalculator;
         $this->resultDaysInMonth = Carbon::create($year, $month)->daysInMonth;
 
         $mockResident = new Resident([

@@ -3,11 +3,10 @@
 namespace App\Filament\Resources\DailyChargeResource\Pages;
 
 use App\Filament\Resources\DailyChargeResource;
-use App\Services\QuickInputService;
+use App\Models\DailyCharge;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\Auth;
 
 class CreateDailyCharge extends CreateRecord
 {
@@ -16,7 +15,7 @@ class CreateDailyCharge extends CreateRecord
     protected function getFormActions(): array
     {
         $actions = parent::getFormActions();
-        
+
         array_unshift($actions, Action::make('saveAndContinue')
             ->label('保存して続けて入力')
             ->icon('heroicon-o-plus-circle')
@@ -29,7 +28,7 @@ class CreateDailyCharge extends CreateRecord
         return $actions;
     }
 
-    protected function handleRecordCreation(array $data): \App\Models\DailyCharge
+    protected function handleRecordCreation(array $data): DailyCharge
     {
         $record = static::getModel()::create($data);
 
@@ -37,9 +36,9 @@ class CreateDailyCharge extends CreateRecord
             // クイック入力用データをセッションに保存
             session()->flash('quick_input_data', [
                 'charge_item_id' => $record->charge_item_id,
-                'unit_price'     => $record->unit_price,
-                'quantity'       => $record->quantity,
-                'note'           => $record->note,
+                'unit_price' => $record->unit_price,
+                'quantity' => $record->quantity,
+                'note' => $record->note,
             ]);
 
             Notification::make()
@@ -88,7 +87,7 @@ class CreateDailyCharge extends CreateRecord
             // 入居者と日付は初期化（連続記録用）
             $this->form->fill(array_merge($this->form->getState(), [
                 'resident_id' => null,
-                'date'        => now()->toDateString(),
+                'date' => now()->toDateString(),
             ]));
         }
     }

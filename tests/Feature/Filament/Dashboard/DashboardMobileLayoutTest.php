@@ -2,7 +2,6 @@
 
 use App\Filament\Widgets\PendingInvoicesWidget;
 use App\Filament\Widgets\QuickActionsWidget;
-use App\Filament\Widgets\RecentActivityWidget;
 use App\Filament\Widgets\UnpaidInvoicesAlert;
 use App\Filament\Widgets\UnprocessedDailyChargesWidget;
 use App\Models\User;
@@ -20,7 +19,7 @@ test('ダッシュボードの主要ウィジェットが存在し動作する�
 });
 
 test('クイックアクションウィジェットに必要なURLが含まれていること', function () {
-    $widget = new QuickActionsWidget();
+    $widget = new QuickActionsWidget;
     $html = $widget->view();
 
     expect($html)->toContain('daily-charges/create')

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Chatbot;
 
 use App\Models\ChatbotSynonym;
+use App\Models\Facility;
 use App\Services\Chatbot\SynonymExpander;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -40,7 +41,7 @@ class SynonymDbTest extends TestCase
 
     public function test_facility_specific_takes_priority_over_global(): void
     {
-        $facility = \App\Models\Facility::factory()->create();
+        $facility = Facility::factory()->create();
         ChatbotSynonym::create(['facility_id' => null, 'from_word' => '部署代', 'to_word' => '全館共通語', 'is_active' => true]);
         ChatbotSynonym::create(['facility_id' => $facility->id, 'from_word' => '部署代', 'to_word' => '施設固有語', 'is_active' => true]);
 

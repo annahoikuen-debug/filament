@@ -3,11 +3,7 @@
 namespace App\Services;
 
 use App\Models\DailyCharge;
-use App\Models\Resident;
 use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 class QuickInputService
 {
@@ -45,12 +41,12 @@ class QuickInputService
         }
 
         return [
-            'resident_id'   => null,
+            'resident_id' => null,
             'charge_item_id' => $lastCharge->charge_item_id,
-            'unit_price'    => $lastCharge->unit_price,
-            'quantity'      => $lastCharge->quantity,
-            'note'          => $lastCharge->note ?? '',
-            'date'          => $today,
+            'unit_price' => $lastCharge->unit_price,
+            'quantity' => $lastCharge->quantity,
+            'note' => $lastCharge->note ?? '',
+            'date' => $today,
         ];
     }
 
@@ -80,12 +76,12 @@ class QuickInputService
     private function getDefaults(string $today): array
     {
         return [
-            'resident_id'    => null,
+            'resident_id' => null,
             'charge_item_id' => null,
-            'unit_price'     => 0,
-            'quantity'       => 1,
-            'note'           => '',
-            'date'           => $today,
+            'unit_price' => 0,
+            'quantity' => 1,
+            'note' => '',
+            'date' => $today,
         ];
     }
 }

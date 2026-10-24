@@ -55,4 +55,3 @@ test('ダッシュボードの請求生成アクションが正常に呼び出�
         ->assertHasNoErrors()
         ->assertActionMounted('generateBilling');
 });
-

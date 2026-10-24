@@ -14,7 +14,7 @@ class TwoFactorAuthSecurityTest extends TestCase
 
     public function test_two_factor_auth_service_generates_and_validates_totp_code(): void
     {
-        $service = new TwoFactorAuthService();
+        $service = new TwoFactorAuthService;
         $secret = $service->generateSecretKey();
 
         $this->assertEquals(32, strlen($secret));
@@ -33,7 +33,7 @@ class TwoFactorAuthSecurityTest extends TestCase
 
     public function test_recovery_codes_can_be_consumed_only_once(): void
     {
-        $service = new TwoFactorAuthService();
+        $service = new TwoFactorAuthService;
         $recoveryCodes = $service->generateRecoveryCodes();
 
         $this->assertCount(8, $recoveryCodes);

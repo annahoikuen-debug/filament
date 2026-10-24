@@ -49,7 +49,7 @@ class ElectronicRecordTest extends TestCase
             'tax_amount' => 12000,
         ]);
 
-        $service = new ElectronicRecordService();
+        $service = new ElectronicRecordService;
         $record = $service->recordInvoicePdf($invoice, $this->tempPdfPath);
 
         $this->assertDatabaseHas('electronic_records', [
@@ -99,7 +99,7 @@ class ElectronicRecordTest extends TestCase
             'file_size' => 2000,
         ]);
 
-        $service = new ElectronicRecordService();
+        $service = new ElectronicRecordService;
 
         // 範囲検索（日付: 10/11〜10/20、金額: 100,000〜200,000）
         $results = $service->search(

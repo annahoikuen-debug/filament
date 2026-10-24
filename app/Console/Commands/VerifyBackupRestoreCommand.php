@@ -10,25 +10,28 @@ use Illuminate\Support\Facades\Log;
 class VerifyBackupRestoreCommand extends Command
 {
     protected $signature = 'backup:verify-restore {file? : 検証する暗号化バックアップファイルパス}';
+
     protected $description = '暗号化バックアップファイルの完全性を復号テスト・構文検証してDR復旧可能か確認する';
 
     public function handle(): int
     {
         $file = $this->argument('file');
 
-        if (!$file) {
+        if (! $file) {
             // 最新のバックアップを自動検出
             $backups = File::glob(storage_path('app/backups/backup_*.sql.enc'));
             if (empty($backups)) {
                 $this->error('No backup files found in storage/app/backups/');
+
                 return self::FAILURE;
             }
             rsort($backups);
             $file = $backups[0];
         }
 
-        if (!File::exists($file)) {
+        if (! File::exists($file)) {
             $this->error("Backup file not found: {$file}");
+
             return self::FAILURE;
         }
 
@@ -56,7 +59,7 @@ class VerifyBackupRestoreCommand extends Command
                 || str_contains($decryptedContent, 'SQLite')
                 || str_contains($decryptedContent, '--');
 
-            if (!$hasValidSignature) {
+            if (! $hasValidSignature) {
                 throw new \RuntimeException('Decrypted content does not appear to be a valid SQL dump.');
             }
 
@@ -65,8 +68,9 @@ class VerifyBackupRestoreCommand extends Command
 
             return self::SUCCESS;
         } catch (\Throwable $e) {
-            $this->error("✗ Verification FAILED: " . $e->getMessage());
-            Log::error("Backup verification failed for {$file}: " . $e->getMessage());
+            $this->error('✗ Verification FAILED: '.$e->getMessage());
+            Log::error("Backup verification failed for {$file}: ".$e->getMessage());
+
             return self::FAILURE;
         }
     }

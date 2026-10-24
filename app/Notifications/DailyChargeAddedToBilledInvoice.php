@@ -2,21 +2,24 @@
 
 namespace App\Notifications;
 
+use App\Models\DailyCharge;
+use App\Models\MonthlyInvoice;
+use App\Models\Resident;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use App\Models\Resident;
-use App\Models\MonthlyInvoice;
-use App\Models\DailyCharge;
 
 class DailyChargeAddedToBilledInvoice extends Notification implements ShouldQueue
 {
     use Queueable;
 
     protected $resident;
+
     protected $invoice;
+
     protected $dailyCharge;
+
     protected $eventType;
 
     /**
@@ -47,14 +50,14 @@ class DailyChargeAddedToBilledInvoice extends Notification implements ShouldQueu
     {
         return (new MailMessage)
             ->subject('請求確定済み月への日々課金追加警告')
-            ->line('入居者「' . $this->resident->name . '」（' . $this->resident->room_number . '号室）の'
-                . $this->invoice->billing_year_month . '月分請求データに、'
-                . $this->eventType . 'された日々課金が追加されました。')
+            ->line('入居者「'.$this->resident->name.'」（'.$this->resident->room_number.'号室）の'
+                .$this->invoice->billing_year_month.'月分請求データに、'
+                .$this->eventType.'された日々課金が追加されました。')
             ->line('日々課金詳細: ')
-            ->line('- 品目: ' . $this->dailyCharge->chargeItem->name)
-            ->line('- 日付: ' . $this->dailyCharge->date->format('Y-m-d'))
-            ->line('- 金額: ' . number_format($this->dailyCharge->unit_price * $this->dailyCharge->quantity) . '円')
-            ->action('請求データを確認', url('/admin/monthly-invoices/' . $this->invoice->id))
+            ->line('- 品目: '.$this->dailyCharge->chargeItem->name)
+            ->line('- 日付: '.$this->dailyCharge->date->format('Y-m-d'))
+            ->line('- 金額: '.number_format($this->dailyCharge->unit_price * $this->dailyCharge->quantity).'円')
+            ->action('請求データを確認', url('/admin/monthly-invoices/'.$this->invoice->id))
             ->line('この月分の請求はすでに確定済みのため、')
             ->line('手動で再計算を行うか、次月分への繰越しをご検討ください。');
     }

@@ -1,9 +1,9 @@
 <?php
 
-use App\Filament\Widgets\UnprocessedDailyChargesWidget;
 use App\Filament\Widgets\PendingInvoicesWidget;
-use App\Filament\Widgets\RecentActivityWidget;
 use App\Filament\Widgets\QuickActionsWidget;
+use App\Filament\Widgets\RecentActivityWidget;
+use App\Filament\Widgets\UnprocessedDailyChargesWidget;
 use App\Models\User;
 
 beforeEach(function () {
@@ -19,9 +19,9 @@ test('All 4 new widget classes exist and are valid', function () {
 });
 
 test('QuickActionsWidget generates action links', function () {
-    $widget = new QuickActionsWidget();
+    $widget = new QuickActionsWidget;
     $view = $widget->view();
-    
+
     expect($view)->toContain('href');
 });
 

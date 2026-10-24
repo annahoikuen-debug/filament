@@ -1,10 +1,12 @@
 <?php
 
+use App\Enums\InvoiceStatus;
 use App\Enums\ResidentStatus;
 use App\Filament\Pages\BulkDailyChargeEntry;
 use App\Models\ChargeItem;
 use App\Models\DailyCharge;
 use App\Models\Facility;
+use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Models\User;
 use Livewire\Livewire;
@@ -49,27 +51,27 @@ test('自費一括入力ページが正常にマウントされ入居者一覧�
         ->assertSee('テスト入居者2');
 });
 
-    test('選択した入居者のみ自費記録が一括登録されること', function () {
-        $component = Livewire::test(BulkDailyChargeEntry::class)
-            ->set('date', '2026-10-14')
-            ->set('chargeItemId', $this->chargeItem->id)
-            ->set('entries.0.selected', true)
-            ->set('entries.0.quantity', 3)
-            ->set('entries.0.note', '午前3枚')
-            ->set('entries.1.selected', false)
-            ->call('saveBulk')
-            ->assertHasNoErrors()
-            ->call('executeSave')
-            ->assertHasNoErrors();
+test('選択した入居者のみ自費記録が一括登録されること', function () {
+    $component = Livewire::test(BulkDailyChargeEntry::class)
+        ->set('date', '2026-10-14')
+        ->set('chargeItemId', $this->chargeItem->id)
+        ->set('entries.0.selected', true)
+        ->set('entries.0.quantity', 3)
+        ->set('entries.0.note', '午前3枚')
+        ->set('entries.1.selected', false)
+        ->call('saveBulk')
+        ->assertHasNoErrors()
+        ->call('executeSave')
+        ->assertHasNoErrors();
 
-        // 101号室の入居者1のみDailyChargeが作成されること
-        $charges = DailyCharge::where('charge_item_id', $this->chargeItem->id)->get();
-        expect($charges->count())->toBe(1)
-            ->and($charges->first()->resident_id)->toBe($this->resident1->id)
-            ->and($charges->first()->quantity)->toBe(3)
-            ->and($charges->first()->unit_price)->toBe(150)
-            ->and($charges->first()->note)->toBe('午前3枚');
-    });
+    // 101号室の入居者1のみDailyChargeが作成されること
+    $charges = DailyCharge::where('charge_item_id', $this->chargeItem->id)->get();
+    expect($charges->count())->toBe(1)
+        ->and($charges->first()->resident_id)->toBe($this->resident1->id)
+        ->and($charges->first()->quantity)->toBe(3)
+        ->and($charges->first()->unit_price)->toBe(150)
+        ->and($charges->first()->note)->toBe('午前3枚');
+});
 
 test('施設管理者は自施設の入居者のみロードされること', function () {
     $facilityB = Facility::factory()->create();
@@ -98,14 +100,14 @@ test('施設管理者は自施設の入居者のみロードされること', fu
 });
 
 test('請求確定済みの年月は自費一括登録がスキップされること', function () {
-    \App\Models\MonthlyInvoice::create([
+    MonthlyInvoice::create([
         'facility_id' => $this->facility->id,
         'resident_id' => $this->resident1->id,
         'billing_year_month' => '2026-10',
         'rent_subtotal' => 50000,
         'management_fee_subtotal' => 20000,
         'service_subtotal' => 0,
-        'status' => \App\Enums\InvoiceStatus::Billed,
+        'status' => InvoiceStatus::Billed,
     ]);
 
     $component = Livewire::test(BulkDailyChargeEntry::class)

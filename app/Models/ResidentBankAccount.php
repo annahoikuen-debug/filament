@@ -13,6 +13,7 @@ class ResidentBankAccount extends Model
     use LogsActivity;
 
     public const ACCOUNT_TYPE_ORDINARY = 1; // 普通
+
     public const ACCOUNT_TYPE_CURRENT = 2;  // 当座
 
     protected $guarded = ['id'];

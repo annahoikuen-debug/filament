@@ -4,12 +4,10 @@ namespace App\Filament\Resources\ApiTokenResource\Pages;
 
 use App\Filament\Resources\ApiTokenResource;
 use App\Models\ApiToken;
-use Filament\Forms\Components\TextInput;
-use Filament\Resources\Pages\CreateRecord;
 use Filament\Infolists\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
-use Illuminate\Support\Facades\Auth;
+use Filament\Resources\Pages\CreateRecord;
 
 class CreateApiToken extends CreateRecord
 {

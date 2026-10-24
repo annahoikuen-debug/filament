@@ -172,4 +172,3 @@ it('does not overwrite other resident invoices when updating', function () {
     expect(MonthlyInvoice::where('resident_id', $resident1->id)->first()->total_amount)->toBe(90000)
         ->and(MonthlyInvoice::where('resident_id', $resident2->id)->first()->total_amount)->toBe(70000);
 });
-

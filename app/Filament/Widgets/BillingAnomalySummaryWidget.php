@@ -13,8 +13,11 @@ class BillingAnomalySummaryWidget extends Widget
     protected static string $view = 'filament.widgets.billing-anomaly-summary-widget';
 
     public string $yearMonth;
+
     public int $errorCount = 0;
+
     public int $warningCount = 0;
+
     public array $topIssues = [];
 
     public function mount(): void
@@ -28,6 +31,7 @@ class BillingAnomalySummaryWidget extends Widget
         $cacheKey = "anomaly_summary_{$this->yearMonth}";
         $data = Cache::remember($cacheKey, 1800, function () {
             $detector = app(BillingAnomalyDetector::class);
+
             return $detector->detect($this->yearMonth);
         });
 

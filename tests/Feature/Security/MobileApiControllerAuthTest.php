@@ -8,9 +8,7 @@ use App\Models\DailyCharge;
 use App\Models\Facility;
 use App\Models\Resident;
 use App\Models\ServiceInvoice;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -19,9 +17,13 @@ class MobileApiControllerAuthTest extends TestCase
     use RefreshDatabase;
 
     protected Facility $facility;
+
     protected Facility $otherFacility;
+
     protected Resident $resident;
+
     protected ChargeItem $chargeItem;
+
     protected string $validToken;
 
     protected function setUp(): void
@@ -68,7 +70,7 @@ class MobileApiControllerAuthTest extends TestCase
     public function read権限のあるトークンで_get_residentsすると入居者一覧を返す()
     {
         $response = $this->withHeaders(['Authorization' => "Bearer {$this->validToken}"])
-            ->getJson('/api/mobile/residents?facility_id=' . $this->facility->id);
+            ->getJson('/api/mobile/residents?facility_id='.$this->facility->id);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -84,7 +86,7 @@ class MobileApiControllerAuthTest extends TestCase
     public function 他施設のidで_get_residentsすると403を返す()
     {
         $response = $this->withHeaders(['Authorization' => "Bearer {$this->validToken}"])
-            ->getJson('/api/mobile/residents?facility_id=' . $this->otherFacility->id);
+            ->getJson('/api/mobile/residents?facility_id='.$this->otherFacility->id);
 
         $response->assertStatus(403);
     }
@@ -92,7 +94,7 @@ class MobileApiControllerAuthTest extends TestCase
     /** @test */
     public function bearer_tokenなしで_get_charge_itemsすると401を返す()
     {
-        $response = $this->getJson('/api/mobile/charge-items?facility_id=' . $this->facility->id);
+        $response = $this->getJson('/api/mobile/charge-items?facility_id='.$this->facility->id);
         $response->assertStatus(401);
     }
 
@@ -100,7 +102,7 @@ class MobileApiControllerAuthTest extends TestCase
     public function read権限のあるトークンで_get_charge_itemsすると品目一覧を返す()
     {
         $response = $this->withHeaders(['Authorization' => "Bearer {$this->validToken}"])
-            ->getJson('/api/mobile/charge-items?facility_id=' . $this->facility->id);
+            ->getJson('/api/mobile/charge-items?facility_id='.$this->facility->id);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -153,7 +155,7 @@ class MobileApiControllerAuthTest extends TestCase
         $this->assertDatabaseHas('daily_charges', [
             'resident_id' => $this->resident->id,
             'charge_item_id' => $this->chargeItem->id,
-            'date' => $date . ' 00:00:00',
+            'date' => $date.' 00:00:00',
             'quantity' => 3,
             'note' => 'テスト備考',
         ]);
@@ -190,7 +192,7 @@ class MobileApiControllerAuthTest extends TestCase
         $this->assertDatabaseHas('daily_charges', [
             'resident_id' => $this->resident->id,
             'charge_item_id' => $this->chargeItem->id,
-            'date' => $date . ' 00:00:00',
+            'date' => $date.' 00:00:00',
             'quantity' => 5,
         ]);
     }
@@ -362,7 +364,7 @@ class MobileApiControllerAuthTest extends TestCase
         ]);
 
         $response = $this->withHeaders(['Authorization' => "Bearer {$this->validToken}"])
-            ->getJson('/api/mobile/daily-charges?facility_id=' . $this->facility->id . '&billing_year_month=' . $yearMonth);
+            ->getJson('/api/mobile/daily-charges?facility_id='.$this->facility->id.'&billing_year_month='.$yearMonth);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -388,7 +390,7 @@ class MobileApiControllerAuthTest extends TestCase
         ]);
 
         $response = $this->withHeaders(['Authorization' => "Bearer {$this->validToken}"])
-            ->getJson('/api/mobile/service-invoices?facility_id=' . $this->facility->id . '&billing_year_month=' . $yearMonth);
+            ->getJson('/api/mobile/service-invoices?facility_id='.$this->facility->id.'&billing_year_month='.$yearMonth);
 
         $response->assertStatus(200)
             ->assertJsonStructure([

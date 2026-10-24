@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\Filament\Resources\MonthlyInvoiceResource;
+use App\Models\User;
 
 beforeEach(function () {
     $this->user = User::factory()->create();

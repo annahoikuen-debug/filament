@@ -19,6 +19,7 @@ class TwoFactorAuthService
         for ($i = 0; $i < 32; $i++) {
             $secret .= $validChars[random_int(0, 31)];
         }
+
         return $secret;
     }
 
@@ -30,7 +31,7 @@ class TwoFactorAuthService
     public function generateRecoveryCodes(): array
     {
         return Collection::times(8, function () {
-            return Str::random(10) . '-' . Str::random(10);
+            return Str::random(10).'-'.Str::random(10);
         })->all();
     }
 
@@ -40,7 +41,7 @@ class TwoFactorAuthService
     public function verifyCode(string $secret, string $code): bool
     {
         $code = trim($code);
-        if (strlen($code) !== 6 || !ctype_digit($code)) {
+        if (strlen($code) !== 6 || ! ctype_digit($code)) {
             return false;
         }
 
@@ -71,7 +72,7 @@ class TwoFactorAuthService
             return false;
         }
 
-        if (!is_array($codes)) {
+        if (! is_array($codes)) {
             return false;
         }
 
@@ -80,6 +81,7 @@ class TwoFactorAuthService
                 unset($codes[$key]);
                 $user->two_factor_recovery_codes = Crypt::encryptString(json_encode(array_values($codes)));
                 $user->save();
+
                 return true;
             }
         }
@@ -93,7 +95,7 @@ class TwoFactorAuthService
     protected function calculateTotp(string $secret, int $timeSlice): string
     {
         $secretKey = $this->base32Decode($secret);
-        $timeBytes = pack('N*', 0) . pack('N*', $timeSlice);
+        $timeBytes = pack('N*', 0).pack('N*', $timeSlice);
 
         $hmac = hash_hmac('sha1', $timeBytes, $secretKey, true);
         $offset = ord(substr($hmac, -1)) & 0x0F;

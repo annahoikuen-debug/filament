@@ -7,6 +7,7 @@ use App\Models\DailyCharge;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
+use App\Models\ServiceInvoice;
 use App\Services\BillingAnomalyDetector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -158,7 +159,7 @@ class BillingAnomalyDetectorTest extends TestCase
         $this->createInvoice($resident, '2026-10', ['service_subtotal' => 10000]);
 
         // 未確定（下書き）の介護サービス請求を作成
-        \App\Models\ServiceInvoice::create([
+        ServiceInvoice::create([
             'facility_id' => $facility->id,
             'resident_id' => $resident->id,
             'billing_year_month' => '2026-10',

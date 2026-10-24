@@ -17,8 +17,7 @@ class DirectDebitRequestService
 {
     public function __construct(
         protected ZenginFormatService $formatService,
-    ) {
-    }
+    ) {}
 
     /**
      * 指定年月の口座振替対象請求を取得する

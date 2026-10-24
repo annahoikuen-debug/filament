@@ -3,6 +3,7 @@
 namespace Tests\Feature\Chatbot;
 
 use App\Enums\InvoiceStatus;
+use App\Models\ChatbotFaq;
 use App\Models\DailyCharge;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
@@ -10,6 +11,7 @@ use App\Models\Resident;
 use App\Models\User;
 use App\Services\Chatbot\ChatbotService;
 use App\Services\Chatbot\DTO\ChatRequest;
+use App\Services\Chatbot\DTO\ChatResponse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,8 +20,11 @@ class DisplayTypeTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Facility $facility;
+
     private Resident $resident1;
+
     private Resident $resident2;
 
     protected function setUp(): void
@@ -143,7 +148,7 @@ class DisplayTypeTest extends TestCase
     /** @test */
     public function faq_miss_with_maybe_suggestions_returns_list_display_type(): void
     {
-        \App\Models\ChatbotFaq::factory()->create([
+        ChatbotFaq::factory()->create([
             'facility_id' => $this->facility->id,
             'question' => '支払い方法について教えてください',
             'answer' => '口座振替と現金払いに対応しています。',
@@ -185,7 +190,7 @@ class DisplayTypeTest extends TestCase
     /** @test */
     public function with_display_creates_modified_clone(): void
     {
-        $base = new \App\Services\Chatbot\DTO\ChatResponse(reply: 'test', intent: 'faq');
+        $base = new ChatResponse(reply: 'test', intent: 'faq');
         $modified = $base->withDisplay('table', ['A'], [['1']]);
 
         $this->assertEquals('text', $base->displayType);

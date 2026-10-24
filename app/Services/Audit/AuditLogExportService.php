@@ -2,7 +2,6 @@
 
 namespace App\Services\Audit;
 
-use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Activity;
 
 class AuditLogExportService
@@ -53,6 +52,6 @@ class AuditLogExportService
         $csv = stream_get_contents($fp);
         fclose($fp);
 
-        return "\xEF\xBB\xBF" . $csv; // UTF-8 BOM
+        return "\xEF\xBB\xBF".$csv; // UTF-8 BOM
     }
 }

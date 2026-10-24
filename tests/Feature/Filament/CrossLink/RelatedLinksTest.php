@@ -1,17 +1,19 @@
 <?php
 
+use App\Enums\InvoiceStatus;
+use App\Enums\ResidentStatus;
+use App\Filament\Resources\MonthlyInvoiceResource;
 use App\Filament\Resources\ResidentResource;
 use App\Models\ChargeItem;
+use App\Models\DailyCharge;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Models\User;
-use App\Enums\ResidentStatus;
-use App\Enums\InvoiceStatus;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->actingAs($this->user);
-    
+
     $this->resident = Resident::create([
         'room_number' => '101',
         'name' => 'テスト入居者',
@@ -20,7 +22,7 @@ beforeEach(function () {
         'status' => ResidentStatus::Active,
         'move_in_date' => '2026-01-01',
     ]);
-    
+
     $this->item = ChargeItem::create([
         'name' => 'テスト品目',
         'default_price' => 1000,
@@ -29,16 +31,16 @@ beforeEach(function () {
 });
 
 test('DailyChargeResource generates correct resident edit link', function () {
-    $charge = \App\Models\DailyCharge::create([
+    $charge = DailyCharge::create([
         'resident_id' => $this->resident->id,
         'charge_item_id' => $this->item->id,
         'date' => now()->toDateString(),
         'unit_price' => 1000,
         'quantity' => 1,
     ]);
-    
+
     $url = ResidentResource::getUrl('edit', ['record' => $charge->resident]);
-    
+
     expect($url)->toContain('residents')
         ->and($url)->toContain('edit');
 });
@@ -52,9 +54,9 @@ test('MonthlyInvoiceResource generates correct resident edit link', function () 
         'service_subtotal' => 0,
         'status' => InvoiceStatus::Unbilled,
     ]);
-    
+
     $url = ResidentResource::getUrl('edit', ['record' => $invoice->resident]);
-    
+
     expect($url)->toContain('residents')
         ->and($url)->toContain('edit');
 });
@@ -68,16 +70,16 @@ test('MonthlyInvoiceResource generates correct daily charges link with filters',
         'service_subtotal' => 0,
         'status' => InvoiceStatus::Unbilled,
     ]);
-    
+
     // Call the private static method using reflection
-    $reflection = new \ReflectionClass(\App\Filament\Resources\MonthlyInvoiceResource::class);
+    $reflection = new ReflectionClass(MonthlyInvoiceResource::class);
     $method = $reflection->getMethod('getDailyChargesUrl');
     $method->setAccessible(true);
     $url = $method->invoke(null, $invoice);
-    
+
     expect($url)->toContain('daily-charges')
         ->and($url)->toContain('tableFilters')
-        ->and($url)->toContain((string)$invoice->resident_id);
+        ->and($url)->toContain((string) $invoice->resident_id);
 });
 
 test('MonthlyInvoiceResource generates correct daily charges label', function () {
@@ -89,12 +91,12 @@ test('MonthlyInvoiceResource generates correct daily charges label', function ()
         'service_subtotal' => 0,
         'status' => InvoiceStatus::Unbilled,
     ]);
-    
+
     // Call the private static method
-    $reflection = new \ReflectionClass(\App\Filament\Resources\MonthlyInvoiceResource::class);
+    $reflection = new ReflectionClass(MonthlyInvoiceResource::class);
     $method = $reflection->getMethod('getDailyChargesLabel');
     $method->setAccessible(true);
     $label = $method->invoke(null, $invoice);
-    
+
     expect($label)->toBeString();
 });

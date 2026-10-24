@@ -7,7 +7,7 @@ use App\Models\Resident;
 use App\Services\DailyChargeCoverageService;
 
 beforeEach(function () {
-    $this->service = new DailyChargeCoverageService();
+    $this->service = new DailyChargeCoverageService;
     $this->facility = Facility::factory()->create();
 
     $this->resident = Resident::create([

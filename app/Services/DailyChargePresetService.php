@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\ChargeItem;
+use App\Models\ChargeItemPrice;
 use App\Models\DailyCharge;
 use App\Models\DailyChargePreset;
 use App\Models\Resident;
@@ -176,7 +176,7 @@ class DailyChargePresetService
         $min = $dates->min();
         $max = $dates->max();
 
-        $prices = \App\Models\ChargeItemPrice::query()
+        $prices = ChargeItemPrice::query()
             ->whereIn('charge_item_id', $itemIds)
             ->where(function ($q) use ($min, $max) {
                 $q->where(function ($qq) use ($min, $max) {

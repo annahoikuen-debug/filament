@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\ChatLog;
 use App\Services\Chatbot\BigramTokenizer;
+use App\Services\Chatbot\FaqSuggestionClusterer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class AnalyzeChatFaqMisses extends Command
 
         // FAQ候補の自動生成（夜間バッチ用オプション）
         if ($this->option('suggest')) {
-            $clusterer = app(\App\Services\Chatbot\FaqSuggestionClusterer::class);
+            $clusterer = app(FaqSuggestionClusterer::class);
             $upserted = $clusterer->generate($days);
             $this->info("FAQ候補を {$upserted} 件 upsert しました。");
         }

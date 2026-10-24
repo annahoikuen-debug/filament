@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Chatbot;
 
+use App\Enums\InvoiceStatus;
+use App\Enums\ServiceInvoiceStatus;
+use App\Enums\ServiceType;
 use App\Models\DailyCharge;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
@@ -18,8 +21,11 @@ class NewIntentsTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Facility $facility;
+
     private Resident $resident1;
+
     private Resident $resident2;
 
     protected function setUp(): void
@@ -83,7 +89,7 @@ class NewIntentsTest extends TestCase
             'management_fee_subtotal' => 20000,
             'service_subtotal' => 5000,
             'total_amount' => 75000,
-            'status' => \App\Enums\InvoiceStatus::Billed,
+            'status' => InvoiceStatus::Billed,
         ]);
 
         // 住民2: 入金済み
@@ -95,7 +101,7 @@ class NewIntentsTest extends TestCase
             'management_fee_subtotal' => 22000,
             'service_subtotal' => 3000,
             'total_amount' => 80000,
-            'status' => \App\Enums\InvoiceStatus::Paid,
+            'status' => InvoiceStatus::Paid,
         ]);
 
         $response = $this->getService()->handle($this->makeRequest('未払いの一覧'), $this->user);
@@ -119,7 +125,7 @@ class NewIntentsTest extends TestCase
             'facility_id' => $this->facility->id,
             'billing_year_month' => $ym,
             'total_amount' => 75000,
-            'status' => \App\Enums\InvoiceStatus::Paid,
+            'status' => InvoiceStatus::Paid,
         ]);
 
         $response = $this->getService()->handle($this->makeRequest('未払い一覧'), $this->user);
@@ -141,7 +147,7 @@ class NewIntentsTest extends TestCase
             'facility_id' => $otherFacility->id,
             'billing_year_month' => $ym,
             'total_amount' => 100000,
-            'status' => \App\Enums\InvoiceStatus::Billed,
+            'status' => InvoiceStatus::Billed,
         ]);
 
         $response = $this->getService()->handle($this->makeRequest('未払い一覧'), $this->user);
@@ -163,7 +169,7 @@ class NewIntentsTest extends TestCase
             'rent_subtotal' => 50000,
             'management_fee_subtotal' => 25000,
             'service_subtotal' => 0,
-            'status' => \App\Enums\InvoiceStatus::Billed,
+            'status' => InvoiceStatus::Billed,
         ]);
         MonthlyInvoice::factory()->create([
             'resident_id' => $this->resident2->id,
@@ -172,7 +178,7 @@ class NewIntentsTest extends TestCase
             'rent_subtotal' => 55000,
             'management_fee_subtotal' => 25000,
             'service_subtotal' => 0,
-            'status' => \App\Enums\InvoiceStatus::Billed,
+            'status' => InvoiceStatus::Billed,
         ]);
 
         // 入金済み1件
@@ -184,7 +190,7 @@ class NewIntentsTest extends TestCase
             'rent_subtotal' => 40000,
             'management_fee_subtotal' => 20000,
             'service_subtotal' => 0,
-            'status' => \App\Enums\InvoiceStatus::Paid,
+            'status' => InvoiceStatus::Paid,
         ]);
 
         $response = $this->getService()->handle($this->makeRequest('今月の請求集計'), $this->user);
@@ -211,7 +217,7 @@ class NewIntentsTest extends TestCase
             'facility_id' => $this->facility->id,
             'billing_year_month' => $lastMonth,
             'total_amount' => 70000,
-            'status' => \App\Enums\InvoiceStatus::Paid,
+            'status' => InvoiceStatus::Paid,
         ]);
 
         $response = $this->getService()->handle($this->makeRequest('先月の請求集計'), $this->user);
@@ -230,7 +236,7 @@ class NewIntentsTest extends TestCase
             'facility_id' => $this->facility->id,
             'billing_year_month' => $ym,
             'total_amount' => 75000,
-            'status' => \App\Enums\InvoiceStatus::Billed,
+            'status' => InvoiceStatus::Billed,
         ]);
 
         $response = $this->getService()->handle($this->makeRequest('山田太郎の請求書PDF'), $this->user);
@@ -301,21 +307,21 @@ class NewIntentsTest extends TestCase
             'resident_id' => $this->resident1->id,
             'facility_id' => $this->facility->id,
             'billing_year_month' => $ym,
-            'service_type' => \App\Enums\ServiceType::VisitingCare,
+            'service_type' => ServiceType::VisitingCare,
             'service_type_label' => '訪問介護',
             'amount' => 100000,
             'tax_amount' => 10000,
-            'status' => \App\Enums\ServiceInvoiceStatus::Confirmed,
+            'status' => ServiceInvoiceStatus::Confirmed,
         ]);
         ServiceInvoice::factory()->create([
             'resident_id' => $this->resident1->id,
             'facility_id' => $this->facility->id,
             'billing_year_month' => now()->subMonth()->format('Y-m'),
-            'service_type' => \App\Enums\ServiceType::DayCare,
+            'service_type' => ServiceType::DayCare,
             'service_type_label' => '通所介護',
             'amount' => 80000,
             'tax_amount' => 8000,
-            'status' => \App\Enums\ServiceInvoiceStatus::Sent,
+            'status' => ServiceInvoiceStatus::Sent,
         ]);
 
         $response = $this->getService()->handle($this->makeRequest('山田太郎の介護請求'), $this->user);
@@ -337,14 +343,14 @@ class NewIntentsTest extends TestCase
             'resident_id' => $this->resident1->id,
             'facility_id' => $this->facility->id,
             'billing_year_month' => $ym,
-            'service_type' => \App\Enums\ServiceType::VisitingCare,
+            'service_type' => ServiceType::VisitingCare,
             'amount' => 100000,
         ]);
         ServiceInvoice::factory()->create([
             'resident_id' => $this->resident1->id,
             'facility_id' => $this->facility->id,
             'billing_year_month' => now()->subMonth()->format('Y-m'),
-            'service_type' => \App\Enums\ServiceType::DayCare,
+            'service_type' => ServiceType::DayCare,
             'amount' => 80000,
         ]);
 
@@ -375,7 +381,7 @@ class NewIntentsTest extends TestCase
             'facility_id' => $this->facility->id,
             'billing_year_month' => $ym,
             'total_amount' => 75000,
-            'status' => \App\Enums\InvoiceStatus::Billed,
+            'status' => InvoiceStatus::Billed,
         ]);
 
         $sessionId = 'test-session-new-intents';

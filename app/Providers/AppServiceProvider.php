@@ -2,10 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\ChatbotSynonym;
+use App\Models\DailyCharge;
 use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\PdfTemplateSetting;
 use App\Models\TaxSetting;
+use App\Observers\ChatbotSynonymObserver;
+use App\Observers\DailyChargeObserver;
 use App\Policies\MonthlyInvoicePolicy;
 use App\Services\Accounting\AccountingSyncService;
 use App\Services\FacilityConfigService;
@@ -37,8 +41,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MonthlyInvoice::class, MonthlyInvoicePolicy::class);
 
         // Observer登録
-        \App\Models\DailyCharge::observe(\App\Observers\DailyChargeObserver::class);
-        \App\Models\ChatbotSynonym::observe(\App\Observers\ChatbotSynonymObserver::class);
+        DailyCharge::observe(DailyChargeObserver::class);
+        ChatbotSynonym::observe(ChatbotSynonymObserver::class);
 
         $this->registerRateLimiters();
     }

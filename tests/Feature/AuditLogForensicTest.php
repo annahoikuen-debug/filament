@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\Audit\AuditLogExportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
 class AuditLogForensicTest extends TestCase
@@ -36,7 +35,7 @@ class AuditLogForensicTest extends TestCase
             ->withProperties(['ip' => '10.0.0.1'])
             ->log('請求書 #1001 金額手動修正');
 
-        $service = new AuditLogExportService();
+        $service = new AuditLogExportService;
         $csv = $service->exportCsv();
 
         $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);

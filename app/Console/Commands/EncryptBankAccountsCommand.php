@@ -37,7 +37,7 @@ class EncryptBankAccountsCommand extends Command
             $isAlreadyEncrypted = false;
             try {
                 // すでに暗号化されているかテスト復号
-                if (!empty($record->account_number)) {
+                if (! empty($record->account_number)) {
                     Crypt::decryptString($record->account_number);
                     $isAlreadyEncrypted = true;
                 }
@@ -47,6 +47,7 @@ class EncryptBankAccountsCommand extends Command
 
             if ($isAlreadyEncrypted) {
                 $skippedCount++;
+
                 continue;
             }
 
@@ -54,10 +55,10 @@ class EncryptBankAccountsCommand extends Command
             DB::table('resident_bank_accounts')
                 ->where('id', $record->id)
                 ->update([
-                    'bank_code' => !empty($record->bank_code) ? Crypt::encryptString($record->bank_code) : $record->bank_code,
-                    'branch_code' => !empty($record->branch_code) ? Crypt::encryptString($record->branch_code) : $record->branch_code,
-                    'account_number' => !empty($record->account_number) ? Crypt::encryptString($record->account_number) : $record->account_number,
-                    'account_holder_kana' => !empty($record->account_holder_kana) ? Crypt::encryptString($record->account_holder_kana) : $record->account_holder_kana,
+                    'bank_code' => ! empty($record->bank_code) ? Crypt::encryptString($record->bank_code) : $record->bank_code,
+                    'branch_code' => ! empty($record->branch_code) ? Crypt::encryptString($record->branch_code) : $record->branch_code,
+                    'account_number' => ! empty($record->account_number) ? Crypt::encryptString($record->account_number) : $record->account_number,
+                    'account_holder_kana' => ! empty($record->account_holder_kana) ? Crypt::encryptString($record->account_holder_kana) : $record->account_holder_kana,
                     'updated_at' => now(),
                 ]);
 

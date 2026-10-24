@@ -49,7 +49,7 @@ class BackupAndRestoreTest extends TestCase
     public function test_verify_restore_command_validates_healthy_and_corrupt_dumps(): void
     {
         // 1. 正常なダンプ
-        $healthySql = "CREATE TABLE users (id int); INSERT INTO users VALUES (1);";
+        $healthySql = 'CREATE TABLE users (id int); INSERT INTO users VALUES (1);';
         File::put($this->testBackupPath, Crypt::encryptString($healthySql));
 
         $exitCodeSuccess = Artisan::call('backup:verify-restore', [
@@ -58,7 +58,7 @@ class BackupAndRestoreTest extends TestCase
         $this->assertEquals(0, $exitCodeSuccess);
 
         // 2. 破損したファイル（暗号化キー不一致や改ざん）
-        File::put($this->testBackupPath, "CORRUPTED_GARBAGE_DATA_12345");
+        File::put($this->testBackupPath, 'CORRUPTED_GARBAGE_DATA_12345');
 
         $exitCodeFail = Artisan::call('backup:verify-restore', [
             'file' => $this->testBackupPath,
@@ -70,10 +70,10 @@ class BackupAndRestoreTest extends TestCase
     {
         Storage::fake('s3');
 
-        $healthySql = "CREATE TABLE dummy (id int);";
+        $healthySql = 'CREATE TABLE dummy (id int);';
         File::put($this->testBackupPath, Crypt::encryptString($healthySql));
 
-        $service = new BackupStorageService();
+        $service = new BackupStorageService;
         $success = $service->syncAndRotate($this->testBackupPath, 's3', 30);
 
         $this->assertTrue($success);

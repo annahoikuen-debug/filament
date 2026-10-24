@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Security;
 
+use App\Http\Controllers\Api\ExternalInvoiceController;
 use App\Models\ApiToken;
 use App\Models\Facility;
 use App\Models\Resident;
 use App\Models\ServiceInvoice;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -323,14 +323,14 @@ class ExternalInvoiceControllerAuthTest extends TestCase
     {
         [$plain, $token] = $this->issueToken($this->facility);
 
-        $controller = new \App\Http\Controllers\Api\ExternalInvoiceController();
+        $controller = new ExternalInvoiceController;
 
         $this->assertTrue($this->invokeAuthorizeFacility($controller, $token, $this->facility->id));
         $this->assertFalse($this->invokeAuthorizeFacility($controller, $token, $this->otherFacility->id));
     }
 
     private function invokeAuthorizeFacility(
-        \App\Http\Controllers\Api\ExternalInvoiceController $controller,
+        ExternalInvoiceController $controller,
         ApiToken $token,
         int $facilityId
     ): bool {

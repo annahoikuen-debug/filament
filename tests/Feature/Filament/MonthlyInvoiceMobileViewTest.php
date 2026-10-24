@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\InvoiceStatus;
-use App\Enums\PaymentMethod;
 use App\Filament\Resources\MonthlyInvoiceResource\Pages\ListMonthlyInvoices;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;

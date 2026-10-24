@@ -6,10 +6,9 @@ use App\Models\Facility;
 use App\Models\Resident;
 use App\Models\User;
 use App\Services\QuickInputService;
-use Carbon\Carbon;
 
 beforeEach(function () {
-    $this->service = new QuickInputService();
+    $this->service = new QuickInputService;
     $this->user = User::factory()->create(['is_admin' => true]);
     $this->actingAs($this->user);
 

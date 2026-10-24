@@ -9,8 +9,8 @@ use App\Models\Facility;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\DailyChargePresetService;
+use App\Services\InvoiceCalculationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -184,7 +184,7 @@ class BulkDailyChargeEntryPresetTest extends TestCase
         $this->assertSame(60, $result['created']); // 2品目 × 30日
 
         // 月次請求書生成（Step 15: service_subtotalへの合算検証）
-        app(\App\Services\InvoiceCalculationService::class)->generateForMonth('2026-10');
+        app(InvoiceCalculationService::class)->generateForMonth('2026-10');
 
         $invoice = MonthlyInvoice::where('resident_id', $resident->id)
             ->where('billing_year_month', '2026-10')

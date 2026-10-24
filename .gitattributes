@@ -1,0 +1,20 @@
+# 行末コードの統一:
+# リポジトリ内のテキストファイルはすべて LF で正規化して保存する。
+# core.autocrlf に依存せず、Windows のチェックアウトでも作業ツリーが LF になり、
+# Laravel Pint の line_ending 検査（LF 要求）と衝突しなくなる。
+* text=auto eol=lf
+
+# バイナリは変換しない
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.enc binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary

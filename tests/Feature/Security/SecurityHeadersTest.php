@@ -3,7 +3,6 @@
 namespace Tests\Feature\Security;
 
 use App\Http\Middleware\SecurityHeaders;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
@@ -22,7 +21,7 @@ class SecurityHeadersTest extends TestCase
             $request->server->set('HTTPS', 'on');
         }
 
-        $middleware = new SecurityHeaders();
+        $middleware = new SecurityHeaders;
 
         return $middleware->handle($request, fn () => new Response('OK'));
     }
@@ -32,7 +31,7 @@ class SecurityHeadersTest extends TestCase
     /** @test */
     public function build_production_csp_は必要なディレクティブを含む()
     {
-        $middleware = new SecurityHeaders();
+        $middleware = new SecurityHeaders;
         $method = new \ReflectionMethod($middleware, 'buildProductionCsp');
         $method->setAccessible(true);
         $csp = $method->invoke($middleware);
@@ -52,7 +51,7 @@ class SecurityHeadersTest extends TestCase
     /** @test */
     public function build_local_csp_は開発用緩和設定を含む()
     {
-        $middleware = new SecurityHeaders();
+        $middleware = new SecurityHeaders;
         $method = new \ReflectionMethod($middleware, 'buildLocalCsp');
         $method->setAccessible(true);
         $csp = $method->invoke($middleware);
@@ -128,7 +127,7 @@ class SecurityHeadersTest extends TestCase
     public function 除外パスではヘッダーが適用されない()
     {
         $request = Request::create('http://example.com/chatbot/widget.js');
-        $middleware = new SecurityHeaders();
+        $middleware = new SecurityHeaders;
 
         $response = $middleware->handle($request, fn () => new Response('OK'));
 
@@ -140,7 +139,7 @@ class SecurityHeadersTest extends TestCase
     public function ヘルスチェックパス_up_ではヘッダーが適用されない()
     {
         $request = Request::create('http://example.com/up');
-        $middleware = new SecurityHeaders();
+        $middleware = new SecurityHeaders;
 
         $response = $middleware->handle($request, fn () => new Response('OK'));
 

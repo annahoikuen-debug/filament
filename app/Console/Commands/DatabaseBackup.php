@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
@@ -63,11 +64,11 @@ class DatabaseBackup extends Command
 
             // 暗号化
             if ($this->option('encrypt') || $this->option('output')) {
-                $sqlFiles = glob($backupDir . '/*.sql');
-                if (!empty($sqlFiles)) {
+                $sqlFiles = glob($backupDir.'/*.sql');
+                if (! empty($sqlFiles)) {
                     $raw = file_get_contents($sqlFiles[0]);
-                    $enc = \Illuminate\Support\Facades\Crypt::encryptString($raw);
-                    $dest = $this->option('output') ?: $sqlFiles[0] . '.enc';
+                    $enc = Crypt::encryptString($raw);
+                    $dest = $this->option('output') ?: $sqlFiles[0].'.enc';
                     file_put_contents($dest, $enc);
                     if ($this->option('output')) {
                         @unlink($sqlFiles[0]);

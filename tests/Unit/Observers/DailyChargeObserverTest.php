@@ -2,16 +2,17 @@
 
 namespace Tests\Unit\Observers;
 
+use App\Enums\InvoiceStatus;
+use App\Models\ChargeItem;
 use App\Models\DailyCharge;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
-use App\Models\ChargeItem;
-use App\Enums\InvoiceStatus;
+use App\Notifications\DailyChargeAddedToBilledInvoice;
 use App\Observers\DailyChargeObserver;
 use App\Services\InvoiceCalculationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Mockery;
 use Tests\TestCase;
 
@@ -20,6 +21,7 @@ class DailyChargeObserverTest extends TestCase
     use RefreshDatabase;
 
     protected $calculationServiceMock;
+
     protected $observer;
 
     protected function setUp(): void
@@ -33,7 +35,7 @@ class DailyChargeObserverTest extends TestCase
         $this->observer = new DailyChargeObserver($this->calculationServiceMock);
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
@@ -138,7 +140,7 @@ class DailyChargeObserverTest extends TestCase
         // 通知が送信されていることを確認
         // （Observerは Notification::route('mail', ...) 宛に送信するため assertSentOnDemand を使用）
         Notification::assertSentOnDemand(
-            \App\Notifications\DailyChargeAddedToBilledInvoice::class,
+            DailyChargeAddedToBilledInvoice::class,
             function ($notification, $channels, $notifiable) use ($resident, $invoice) {
                 $props = (new \ReflectionObject($notification));
                 $residentProp = $props->getProperty('resident');
@@ -194,7 +196,7 @@ class DailyChargeObserverTest extends TestCase
 
         // 通知が送信されていることを確認
         Notification::assertSentOnDemand(
-            \App\Notifications\DailyChargeAddedToBilledInvoice::class,
+            DailyChargeAddedToBilledInvoice::class,
             function ($notification, $channels, $notifiable) use ($resident, $invoice) {
                 $props = (new \ReflectionObject($notification));
                 $residentProp = $props->getProperty('resident');
@@ -262,7 +264,7 @@ class DailyChargeObserverTest extends TestCase
 
         // 存在しない住民IDでのDailyCharge作成はDBの外部キー制約で失敗するため、
         // モデルインスタンス経由でObserverの分岐のみを直接検証する
-        $observer = new \App\Observers\DailyChargeObserver(app(\App\Services\InvoiceCalculationService::class));
+        $observer = new DailyChargeObserver(app(InvoiceCalculationService::class));
         $charge = new DailyCharge([
             'resident_id' => 99999, // 存在しないID
             'charge_item_id' => $chargeItem->id,

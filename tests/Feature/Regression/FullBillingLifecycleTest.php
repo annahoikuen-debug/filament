@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Models\ChargeItem;
 use App\Models\DailyCharge;
 use App\Models\Facility;
@@ -8,7 +9,6 @@ use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Models\User;
 use App\Services\InvoiceCalculationService;
-use Carbon\Carbon;
 
 beforeEach(function () {
     $this->facility = Facility::factory()->create();
@@ -65,7 +65,7 @@ test('自費記録入力から月次請求生成、消込までのライフサ�
     expect($invoice->status)->toBe(InvoiceStatus::Billed);
 
     // 4. 入金消込の実行
-    $invoice->markAsPaid(\App\Enums\PaymentMethod::BankTransfer, '2026-10-25');
+    $invoice->markAsPaid(PaymentMethod::BankTransfer, '2026-10-25');
     $invoice->refresh();
 
     expect($invoice->status)->toBe(InvoiceStatus::Paid)

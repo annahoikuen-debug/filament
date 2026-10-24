@@ -7,7 +7,6 @@ use App\Enums\ServiceType;
 use App\Models\Facility;
 use App\Models\Resident;
 use App\Models\ServiceInvoice;
-use Illuminate\Support\Collection;
 
 class CareCsvParserService
 {
@@ -37,7 +36,8 @@ class CareCsvParserService
 
             $row = str_getcsv($line);
             if (count($row) < 5) {
-                $errors[] = "行 " . ($index + 2) . ": 列数が不足しています。";
+                $errors[] = '行 '.($index + 2).': 列数が不足しています。';
+
                 continue;
             }
 
@@ -49,13 +49,14 @@ class CareCsvParserService
 
             // 入居者マッチング（氏名または被保険者番号）
             $resident = Resident::where('facility_id', $facility->id)
-                ->where(function ($q) use ($residentName, $insuranceNumber) {
+                ->where(function ($q) use ($residentName) {
                     $q->where('name', $residentName);
                 })
                 ->first();
 
-            if (!$resident) {
-                $errors[] = "行 " . ($index + 2) . ": 入居者「{$residentName}」が施設内に見つかりません。";
+            if (! $resident) {
+                $errors[] = '行 '.($index + 2).": 入居者「{$residentName}」が施設内に見つかりません。";
+
                 continue;
             }
 
@@ -98,6 +99,7 @@ class CareCsvParserService
             );
             $imported++;
         }
+
         return $imported;
     }
 }

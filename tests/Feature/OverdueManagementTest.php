@@ -29,7 +29,7 @@ class OverdueManagementTest extends TestCase
             'status' => InvoiceStatus::Billed,
         ]);
 
-        $service = new OverdueClassificationService();
+        $service = new OverdueClassificationService;
 
         // 1. 期日当日（2026-08-27） -> 期日内
         $asOfDate1 = Carbon::parse('2026-08-27');
@@ -71,7 +71,7 @@ class OverdueManagementTest extends TestCase
             'status' => InvoiceStatus::Billed,
         ]);
 
-        $service = new OverdueNoticePdfService();
+        $service = new OverdueNoticePdfService;
         $pdfPath = $service->generateNoticePdf($invoice, 'reminder');
 
         $this->assertTrue(File::exists($pdfPath));

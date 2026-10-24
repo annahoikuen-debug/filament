@@ -16,10 +16,15 @@ class RoleBasedAccessControlTest extends TestCase
     use RefreshDatabase;
 
     private Facility $facilityA;
+
     private Facility $facilityB;
+
     private User $corporateAdmin;
+
     private User $facilityAdmin;
+
     private User $accountant;
+
     private User $careStaff;
 
     protected function setUp(): void
@@ -56,7 +61,7 @@ class RoleBasedAccessControlTest extends TestCase
 
     public function test_care_staff_cannot_finalize_invoices(): void
     {
-        $policy = new MonthlyInvoicePolicy();
+        $policy = new MonthlyInvoicePolicy;
         $resident = Resident::factory()->create(['facility_id' => $this->facilityA->id]);
         $invoice = MonthlyInvoice::factory()->create([
             'facility_id' => $this->facilityA->id,
@@ -75,7 +80,7 @@ class RoleBasedAccessControlTest extends TestCase
 
     public function test_care_staff_cannot_export_zengin_or_mark_paid(): void
     {
-        $policy = new MonthlyInvoicePolicy();
+        $policy = new MonthlyInvoicePolicy;
 
         $this->assertFalse($policy->exportZengin($this->careStaff));
         $this->assertFalse($policy->markAsPaid($this->careStaff));
@@ -86,7 +91,7 @@ class RoleBasedAccessControlTest extends TestCase
 
     public function test_facility_admin_cannot_finalize_other_facility_invoice(): void
     {
-        $policy = new MonthlyInvoicePolicy();
+        $policy = new MonthlyInvoicePolicy;
         $residentB = Resident::factory()->create(['facility_id' => $this->facilityB->id]);
         $invoiceB = MonthlyInvoice::factory()->create([
             'facility_id' => $this->facilityB->id,
