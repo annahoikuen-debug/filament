@@ -1,6 +1,9 @@
 # syntax = docker/dockerfile:1.7
 FROM dunglas/frankenphp:1-php8.4-alpine AS builder
 
+# PHP セキュリティ脆弱性対応: PHP 8.4.27 未満は CVE-2026-109618/CVE-2026-109619 の影響を受けるためビルドを失敗させる
+RUN php -r "if (version_compare(PHP_VERSION, '8.4.27', '<')) { fwrite(STDERR, 'ERROR: PHP ' . PHP_VERSION . ' is vulnerable to CVE-2026-109618/CVE-2026-109619. PHP 8.4.27 or higher is required.' . PHP_EOL); exit(1); } echo 'PHP version OK: ' . PHP_VERSION . PHP_EOL;"
+
 WORKDIR /app
 
 # Install system dependencies and PHP extensions
@@ -39,6 +42,9 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progre
 
 # Production stage
 FROM dunglas/frankenphp:1-php8.4-alpine
+
+# PHP セキュリティ脆弱性対応: PHP 8.4.27 未満は CVE-2026-109618/CVE-2026-109619 の影響を受けるためビルドを失敗させる
+RUN php -r "if (version_compare(PHP_VERSION, '8.4.27', '<')) { fwrite(STDERR, 'ERROR: PHP ' . PHP_VERSION . ' is vulnerable to CVE-2026-109618/CVE-2026-109619. PHP 8.4.27 or higher is required.' . PHP_EOL); exit(1); } echo 'PHP version OK: ' . PHP_VERSION . PHP_EOL;"
 
 WORKDIR /app
 
