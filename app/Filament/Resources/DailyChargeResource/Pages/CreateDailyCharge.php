@@ -7,6 +7,7 @@ use App\Models\DailyCharge;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\QueryException;
 
 class CreateDailyCharge extends CreateRecord
 {
@@ -30,7 +31,47 @@ class CreateDailyCharge extends CreateRecord
 
     protected function handleRecordCreation(array $data): DailyCharge
     {
-        $record = static::getModel()::create($data);
+        $residentId = $data['resident_id'] ?? null;
+        $chargeItemId = $data['charge_item_id'] ?? null;
+        $date = $data['date'] ?? null;
+        $quantity = (int) ($data['quantity'] ?? 1);
+
+        // 同一日・同一品目・同一入居者の既存レコードがある場合は数量を加算（二重登録防止：1行に統一）
+        if ($residentId && $chargeItemId && $date) {
+            $existing = DailyCharge::where('resident_id', $residentId)
+                ->where('charge_item_id', $chargeItemId)
+                ->where('date', $date)
+                ->first();
+
+            if ($existing) {
+                $existing->quantity = (int) $existing->quantity + $quantity;
+                $existing->save();
+
+                return $existing;
+            }
+        }
+
+        try {
+            $record = static::getModel()::create($data);
+        } catch (QueryException $e) {
+            // 競合により一意制約違反となった場合、既存レコードに数量を加算
+            if ($residentId && $chargeItemId && $date
+                && str_contains($e->getMessage(), 'unique')) {
+                $existing = DailyCharge::where('resident_id', $residentId)
+                    ->where('charge_item_id', $chargeItemId)
+                    ->where('date', $date)
+                    ->first();
+
+                if ($existing) {
+                    $existing->quantity = (int) $existing->quantity + $quantity;
+                    $existing->save();
+
+                    return $existing;
+                }
+            }
+
+            throw $e;
+        }
 
         if (request()->has('saveAndContinue')) {
             // クイック入力用データをセッションに保存

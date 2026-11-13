@@ -4,11 +4,13 @@ namespace App\Models;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Config;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -77,7 +79,6 @@ class MonthlyInvoice extends Model
         'tax_amount',
         'total_with_tax',
     ];
-
     /**
      * 締め済み（closed）の月に変更を許可する入金・領収書系フィールド
      *
@@ -184,6 +185,166 @@ class MonthlyInvoice extends Model
     }
 
     /**
+     * 申請者（承認ワークフロー用）
+     */
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    /**
+     * 承認者（承認ワークフロー用）
+     */
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * 入金処理を行い、領収書番号を発行する
+     */
+    public function markAsPaid(PaymentMethod $method, ?string $paidAt = null, ?string $receiptDateMode = null, ?string $customReceiptDate = null): void
+    {
+        // 証憑添付必須モードの場合、証憑がないと入金消込をブロック
+        if (Config::get('billing.payment_evidence_required', false)
+            && $this->paymentEvidences()->count() === 0) {
+            throw new \DomainException(
+                '入金消込には証憑（受領書・明細書・振込明細等）の添付が必要です。'
+                .'証憑をアップロードしてから実行してください。'
+            );
+        }
+
+        $paidDate = $paidAt ? Carbon::parse($paidAt)->toDateString() : now()->toDateString();
+
+        $this->update([
+            'status' => InvoiceStatus::Paid,
+            'paid_at' => $paidDate,
+            'payment_method' => $method,
+            'receipt_number' => $this->receipt_number ?? sprintf('REC-%s-%04d', str_replace('-', '', $this->billing_year_month), $this->resident_id),
+            'receipt_issued_at' => $this->receipt_issued_at ?? now(),
+            'receipt_date_mode' => $receiptDateMode ?? 'auto',
+            'custom_receipt_date' => $customReceiptDate,
+        ]);
+    }
+
+    /**
+     * 承認申請を行う（Unbilled → PendingApproval）
+     *
+     * @throws \DomainException 申請できない状態の場合
+     */
+    public function submitForApproval(int $userId): void
+    {
+        if ($this->status !== InvoiceStatus::Unbilled) {
+            throw new \DomainException(
+                '承認申請は「未請求」の請求書に対してのみ行えます。現在のステータス: '.$this->status->getLabel()
+            );
+        }
+
+        $this->update([
+            'status' => InvoiceStatus::PendingApproval,
+            'submitted_by' => $userId,
+            'submitted_at' => now(),
+        ]);
+    }
+
+    /**
+     * 承認する（PendingApproval → Billed）
+     *
+     * double_check モードでは申請者と承認者が同一不可。
+     *
+     * @throws \DomainException 承認できない状態の場合
+     */
+    public function approve(int $userId): void
+    {
+        $mode = Config::get('billing.mode', 'off');
+
+        if ($mode === 'off') {
+            // 承認フロー未使用時は直接 Billed へ
+            if ($this->status !== InvoiceStatus::Unbilled) {
+                throw new \DomainException(
+                    '請求確定は「未請求」の請求書に対してのみ行えます。現在のステータス: '.$this->status->getLabel()
+                );
+            }
+
+            $this->update([
+                'status' => InvoiceStatus::Billed,
+            ]);
+
+            return;
+        }
+
+        if ($this->status !== InvoiceStatus::PendingApproval) {
+            throw new \DomainException(
+                '承認は「承認待ち」の請求書に対してのみ行えます。現在のステータス: '.$this->status->getLabel()
+            );
+        }
+
+        if ($mode === 'double_check' && $this->submitted_by === $userId) {
+            throw new \DomainException(
+                '申請者自身による承認はできません。別のユーザーが承認してください。'
+            );
+        }
+
+        if ($mode === 'admin_only' && ! auth()->user()?->is_admin) {
+            throw new \DomainException(
+                '承認は法人管理者のみ行えます。'
+            );
+        }
+
+        $this->update([
+            'status' => InvoiceStatus::Billed,
+            'approved_by' => $userId,
+            'approved_at' => now(),
+        ]);
+    }
+
+    /**
+     * 承認待ちに戻す（Billed → PendingApproval または PendingApproval → Unbilled 差戻し）
+     *
+     * @throws \DomainException 差戻しできない状態の場合
+     */
+    public function returnToPending(?int $userId = null): void
+    {
+        if ($this->status === InvoiceStatus::PendingApproval) {
+            // 差戻し（承認待ちから未請求へ）
+            $this->update([
+                'status' => InvoiceStatus::Unbilled,
+                'submitted_by' => null,
+                'submitted_at' => null,
+                'approved_by' => null,
+                'approved_at' => null,
+            ]);
+
+            return;
+        }
+
+        if ($this->status === InvoiceStatus::Billed && $userId) {
+            // 請求済から承認待ちへ差戻し（承認取り消し）
+            $this->update([
+                'status' => InvoiceStatus::PendingApproval,
+                'submitted_by' => $userId,
+                'submitted_at' => now(),
+                'approved_by' => null,
+                'approved_at' => null,
+            ]);
+
+            return;
+        }
+
+        throw new \DomainException(
+            '差戻しできないステータスです: '.$this->status->getLabel()
+        );
+    }
+
+    /**
+     * 証憑リレーション
+     */
+    public function paymentEvidences(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PaymentEvidence::class, 'monthly_invoice_id');
+    }
+
+    /**
      * 非課税額（家賃）を取得する
      */
     public function getNonTaxableAmountAttribute(): int
@@ -242,24 +403,6 @@ class MonthlyInvoice extends Model
     public function getTotalWithTaxAttribute(): int
     {
         return (int) $this->rent_subtotal + $this->getTaxableAmountAttribute() + $this->getTaxAmountAttribute();
-    }
-
-    /**
-     * 入金処理を行い、領収書番号を発行する
-     */
-    public function markAsPaid(PaymentMethod $method, ?string $paidAt = null, ?string $receiptDateMode = null, ?string $customReceiptDate = null): void
-    {
-        $paidDate = $paidAt ? Carbon::parse($paidAt)->toDateString() : now()->toDateString();
-
-        $this->update([
-            'status' => InvoiceStatus::Paid,
-            'paid_at' => $paidDate,
-            'payment_method' => $method,
-            'receipt_number' => $this->receipt_number ?? sprintf('REC-%s-%04d', str_replace('-', '', $this->billing_year_month), $this->resident_id),
-            'receipt_issued_at' => $this->receipt_issued_at ?? now(),
-            'receipt_date_mode' => $receiptDateMode ?? 'auto',
-            'custom_receipt_date' => $customReceiptDate,
-        ]);
     }
 
     /**

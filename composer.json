@@ -11,6 +11,7 @@
         "laravel/framework": "^11.69.0|^12.69.0",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^2.9",
+        "sentry/sentry-laravel": "^4.30",
         "setasign/fpdf": "^1.9",
         "setasign/fpdi": "^2.6.1",
         "spatie/laravel-activitylog": "^4.12",
@@ -41,7 +42,10 @@
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi",
             "@php artisan filament:upgrade"
-        ]
+        ],
+        "test": "@php artisan test",
+        "lint": "@php vendor/bin/pint --test app tests routes config database",
+        "lint:fix": "@php vendor/bin/pint app tests routes config database"
     },
     "config": {
         "audit": {

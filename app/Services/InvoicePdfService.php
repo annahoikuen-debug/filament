@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\InvoiceStatus;
 use App\Jobs\GenerateMonthlyZipJob;
+use App\Models\InvoiceDocument;
 use App\Models\MonthlyInvoice;
 use App\Models\ServiceInvoice;
 use App\Services\Pdf\Contracts\FontRegistryInterface;
@@ -30,6 +31,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class InvoicePdfService
 {
@@ -64,8 +66,12 @@ class InvoicePdfService
     public function generateInvoicePdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
         $html = $this->generator->previewInvoice($invoice, $facility);
+        $pdf = $this->createDomPdfInstance($html);
 
-        return $this->createDomPdfInstance($html);
+        // 電子帳簿保存法：発行記録を保存（PDF出力後に記録）
+        $this->recordIssuedDocumentFromDomPdf($invoice, InvoiceDocument::TYPE_INVOICE, $pdf);
+
+        return $pdf;
     }
 
     /**
@@ -74,8 +80,12 @@ class InvoicePdfService
     public function generateReceiptPdf(MonthlyInvoice $invoice, ?array $facility = null): DomPdfInstance
     {
         $html = $this->generator->previewReceipt($invoice, $facility);
+        $pdf = $this->createDomPdfInstance($html);
 
-        return $this->createDomPdfInstance($html);
+        // 電子帳簿保存法：発行記録を保存（PDF出力後に記録）
+        $this->recordIssuedDocumentFromDomPdf($invoice, InvoiceDocument::TYPE_RECEIPT, $pdf);
+
+        return $pdf;
     }
 
     private function createDomPdfInstance(string $html): DomPdfInstance
@@ -142,6 +152,9 @@ class InvoicePdfService
             $invoice
         );
 
+        // 電子帳簿保存法：発行記録を保存
+        $this->recordIssuedDocument($invoice, InvoiceDocument::TYPE_INVOICE, $pdfBinary);
+
         return response($pdfBinary, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$this->generator->generateInvoiceFilename($invoice).'"',
@@ -159,6 +172,9 @@ class InvoicePdfService
             $this->generator->generateInvoice($invoice, false, null),
             $invoice
         );
+
+        // 電子帳簿保存法：発行記録を保存
+        $this->recordIssuedDocument($invoice, InvoiceDocument::TYPE_INVOICE, $pdfBinary);
 
         return response($pdfBinary, 200, [
             'Content-Type' => 'application/pdf',
@@ -820,5 +836,61 @@ class InvoicePdfService
             // 例外を再スローして呼び出し元でハンドリングできるようにする
             throw new \RuntimeException('QRコードの生成に失敗しました: '.$e->getMessage(), 0, $e);
         }
+    }
+
+    /**
+     * 電子帳簿保存法：DomPdfInstanceから帳票発行記録を保存する。
+     *
+     * PDFバイナリを取得し、ストレージに保存してSHA-256ハッシュとともに
+     * invoice_documents テーブルに記録する。
+     */
+    private function recordIssuedDocumentFromDomPdf(MonthlyInvoice $invoice, string $type, DomPdfInstance $pdf): void
+    {
+        try {
+            $pdfBinary = $pdf->output();
+            $this->recordIssuedDocument($invoice, $type, $pdfBinary);
+        } catch (\Throwable $e) {
+            // 帳票記録の失敗は本処理を中断させない（ログのみ）
+            Log::warning('Invoice document record failed', [
+                'invoice_id' => $invoice->id,
+                'type' => $type,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 電子帳簿保存法：帳票発行記録を保存する。
+     */
+    private function recordIssuedDocument(MonthlyInvoice $invoice, string $type, string $pdfBinary): void
+    {
+        $yearMonth = $invoice->billing_year_month;
+        $fileName = sprintf(
+            'invoices/%s/%s_%s_%s.pdf',
+            $yearMonth,
+            $type,
+            $invoice->resident->room_number ?? 'unknown',
+            now()->format('YmdHis')
+        );
+
+        // ストレージに保存
+        Storage::put($fileName, $pdfBinary);
+
+        // SHA-256ハッシュを計算（改ざん検知用）
+        $tempPath = tempnam(sys_get_temp_dir(), 'invdoc_');
+        file_put_contents($tempPath, $pdfBinary);
+        $fileHash = hash_file('sha256', $tempPath);
+        @unlink($tempPath);
+
+        InvoiceDocument::create([
+            'monthly_invoice_id' => $invoice->id,
+            'type' => $type,
+            'file_path' => $fileName,
+            'file_hash' => $fileHash,
+            'issued_to' => $invoice->resident->name ?? '不明',
+            'issued_at' => now(),
+            'total_amount' => (int) $invoice->total_with_tax,
+            'sent_to' => null,
+        ]);
     }
 }

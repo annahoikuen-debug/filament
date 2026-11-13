@@ -8,7 +8,11 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use App\Notifications\BackupFailedAlert;
+use App\Services\Ops\AlertDispatcher;
 use ZipArchive;
 
 class DatabaseBackup extends Command
@@ -429,8 +433,35 @@ class DatabaseBackup extends Command
 
     private function sendNotification(?Exception $error = null): void
     {
-        // 通知実装（メール、Slack、Webhook等）
-        $this->info('通知送信機能は別途実装が必要です');
+        $type = $this->option('type');
+        $destination = $this->option('destination');
+
+        if ($error) {
+            $this->error("バックアップ失敗通知を送信中...");
+            AlertDispatcher::backupFailed(
+                "backup:database (type={$type}, destination={$destination})",
+                $error->getMessage(),
+                $this->backupInfo
+            );
+
+            // 管理者へDB通知も送信
+            $recipients = app(\App\Services\Ops\NotificationTargetResolver::class)
+                ->resolveAllCorporateAdmins();
+            if ($recipients->isNotEmpty()) {
+                Notification::send($recipients, new BackupFailedAlert(
+                    command: "backup:database (type={$type}, destination={$destination})",
+                    error: $error->getMessage(),
+                    context: $this->backupInfo,
+                ));
+            }
+
+            $this->backupInfo['notification_sent'] = true;
+
+            return;
+        }
+
+        // 正常時はログ出力のみ（通知過多防止）
+        $this->info('バックアップ正常完了（通知は抑制）');
         $this->backupInfo['notification_sent'] = true;
     }
 

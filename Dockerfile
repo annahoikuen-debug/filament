@@ -113,5 +113,7 @@ ENV FRANKENPHP_CONFIG="/etc/frankenphp/Caddyfile"
 
 EXPOSE 8000
 
-# 起動時に実行時の環境変数で設定をキャッシュしてから起動する
-CMD ["sh", "-c", "php artisan config:cache && exec frankenphp run --config /etc/frankenphp/Caddyfile"]
+# 起動時に実行時環境変数で設定キャッシュ→スケジューラ/キュー起動→FrankenPHP フォアグラウンド
+COPY docker/entrypoint.sh /app/docker/entrypoint.sh
+RUN chmod +x /app/docker/entrypoint.sh
+CMD ["/app/docker/entrypoint.sh"]

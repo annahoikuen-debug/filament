@@ -324,7 +324,67 @@ class MonthlyInvoiceResource extends Resource
                             ->send();
                     }),
 
-                // 2. 帳票・連携関連のアクショングループ
+                // 2. 承認ワークフローアクション（承認モード時のみ表示）
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('submitForApproval')
+                        ->label('承認申請')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->color('warning')
+                        ->visible(fn (MonthlyInvoice $record) => config('billing.mode', 'off') !== 'off'
+                            && $record->status === InvoiceStatus::Unbilled)
+                        ->action(function (MonthlyInvoice $record) {
+                            Gate::authorize('submitForApproval', $record);
+                            $record->submitForApproval((int) auth()->id());
+
+                            Notification::make()
+                                ->title('承認申請を送信しました')
+                                ->body('承認者による承認後、「請求済」に確定されます。')
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation(),
+
+                    Tables\Actions\Action::make('approveInvoice')
+                        ->label('承認して確定')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->visible(fn (MonthlyInvoice $record) => config('billing.mode', 'off') !== 'off'
+                            && $record->status === InvoiceStatus::PendingApproval)
+                        ->action(function (MonthlyInvoice $record) {
+                            Gate::authorize('approve', $record);
+                            $record->approve((int) auth()->id());
+
+                            Notification::make()
+                                ->title('承認し、請求済に確定しました')
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation(),
+
+                    Tables\Actions\Action::make('returnInvoice')
+                        ->label('差戻し')
+                        ->icon('heroicon-o-arrow-left')
+                        ->color('danger')
+                        ->visible(fn (MonthlyInvoice $record) => config('billing.mode', 'off') !== 'off'
+                            && in_array($record->status, [InvoiceStatus::PendingApproval, InvoiceStatus::Billed], true))
+                        ->action(function (MonthlyInvoice $record) {
+                            Gate::authorize('approve', $record);
+                            $record->returnToPending((int) auth()->id());
+
+                            Notification::make()
+                                ->title('差戻ししました')
+                                ->warning()
+                                ->send();
+                        })
+                        ->requiresConfirmation(),
+                ])
+                    ->visible(fn () => config('billing.mode', 'off') !== 'off')
+                    ->label('承認')
+                    ->icon('heroicon-o-shield-check')
+                    ->color('gray')
+                    ->button(),
+
+                // 3. 帳票・連携関連のアクショングループ
                 Tables\Actions\ActionGroup::make([
                     // 請求書PDFダウンロード
                     Tables\Actions\Action::make('downloadPdf')
@@ -448,7 +508,34 @@ class MonthlyInvoiceResource extends Resource
                         ->label('一括「請求済」に変更')
                         ->icon('heroicon-o-envelope')
                         ->action(function ($records) {
-                            // 請求確定は care_staff・他施設の請求書を対象にできない
+                            $mode = config('billing.mode', 'off');
+
+                            // 承認モード時は「承認申請」（Unbilled → PendingApproval）
+                            if ($mode !== 'off') {
+                                $targetRecords = $records->filter(fn (MonthlyInvoice $r) => $r->status === InvoiceStatus::Unbilled);
+                                $skippedCount = $records->count() - $targetRecords->count();
+
+                                $targetRecords->each(function (MonthlyInvoice $r) {
+                                    Gate::authorize('submitForApproval', $r);
+                                    $r->submitForApproval((int) auth()->id());
+                                });
+
+                                $message = "{$targetRecords->count()}件を「承認待ち」に申請しました。";
+                                if ($skippedCount > 0) {
+                                    $message .= "（未請求以外の{$skippedCount}件をスキップしました）";
+                                }
+                                $message .= ' 別の承認者による承認後、「請求済」に確定されます。';
+
+                                Notification::make()
+                                    ->title('承認申請を送信しました')
+                                    ->body($message)
+                                    ->success()
+                                    ->send();
+
+                                return;
+                            }
+
+                            // off モード：現行通り直接請求確定（Unbilled → Billed）
                             $records->each(fn (MonthlyInvoice $r) => Gate::authorize('finalize', $r));
 
                             $targetRecords = $records->filter(fn (MonthlyInvoice $r) => $r->status === InvoiceStatus::Unbilled);

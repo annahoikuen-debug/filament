@@ -8,6 +8,7 @@ use Filament\Support\Contracts\HasLabel;
 enum InvoiceStatus: string implements HasColor, HasLabel
 {
     case Unbilled = 'unbilled'; // 未請求
+    case PendingApproval = 'pending_approval'; // 承認待ち
     case Billed = 'billed';     // 請求済
     case Paid = 'paid';         // 入金済
 
@@ -15,6 +16,7 @@ enum InvoiceStatus: string implements HasColor, HasLabel
     {
         return match ($this) {
             self::Unbilled => '未請求',
+            self::PendingApproval => '承認待ち',
             self::Billed => '請求済',
             self::Paid => '入金済',
         };
@@ -24,6 +26,7 @@ enum InvoiceStatus: string implements HasColor, HasLabel
     {
         return match ($this) {
             self::Unbilled => 'warning',
+            self::PendingApproval => 'gray',
             self::Billed => 'info',
             self::Paid => 'success',
         };

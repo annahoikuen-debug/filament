@@ -72,9 +72,9 @@
 # Health check endpoint
 :8000 {
     @health {
-        path /up
+        path /health
     }
     handle @health {
-        respond "OK" 200
+        php_server
     }
 }

@@ -39,6 +39,38 @@ class MonthlyInvoicePolicy
     }
 
     /**
+     * 承認申請の認可（Unbilled → PendingApproval）
+     */
+    public function submitForApproval(User $user, ?MonthlyInvoice $invoice = null): bool
+    {
+        return $this->allowsBillingAction($user, $invoice);
+    }
+
+    /**
+     * 承認の認可（PendingApproval → Billed）
+     *
+     * double_check モードでは申請者自身の承認はモデル側でブロックする。
+     * admin_only モードではモデル側で is_admin チェックする。
+     * ここでは施設スコープのみをチェックする。
+     */
+    public function approve(User $user, ?MonthlyInvoice $invoice = null): bool
+    {
+        if ($user->role === 'care_staff') {
+            return false;
+        }
+
+        if ($user->canAccessAllFacilities()) {
+            return true;
+        }
+
+        if ($invoice && $invoice->facility_id) {
+            return (int) $user->facility_id === (int) $invoice->facility_id;
+        }
+
+        return true;
+    }
+
+    /**
      * 全銀フォーマット出力の認可（経理・管理者のみ）
      */
     public function exportZengin(User $user, ?MonthlyInvoice $invoice = null): bool

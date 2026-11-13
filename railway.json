@@ -5,8 +5,8 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "frankenphp run --config /etc/frankenphp/Caddyfile",
-    "healthcheckPath": "/up",
+    "startCommand": "/app/docker/entrypoint.sh",
+    "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "on_failure",
     "restartPolicyMaxRetries": 3,

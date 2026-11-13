@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 
 /**
  * Step 13: 「単一品目モード」と「プリセット一括モード」をタブ切替可能な一括入力ページ
@@ -500,12 +501,16 @@ class BulkDailyChargeEntry extends Page
                     continue;
                 }
 
-                // 同一日・同一品目の重複スキップ（Step 14）
-                $exists = DailyCharge::where('resident_id', $residentId)
+                // 同一日・同一品目の重複時は数量を加算（二重登録防止：1行に統一）
+                $existing = DailyCharge::where('resident_id', $residentId)
                     ->where('charge_item_id', $chargeItem->id)
                     ->where('date', $this->date)
-                    ->exists();
-                if ($exists) {
+                    ->first();
+                if ($existing) {
+                    $existing->quantity = (int) $existing->quantity + $qty;
+                    $existing->save();
+
+                    $saved++;
                     continue;
                 }
 
@@ -523,7 +528,7 @@ class BulkDailyChargeEntry extends Page
             }
         });
 
-        $skippedDuplicate = count($selectedResidentIds) - $saved - $skippedLocked;
+        $skippedDuplicate = 0; // 重複はスキップせず数量加算するため、スキップ件数は0
 
         if ($saved === 0 && $skippedLocked > 0) {
             Notification::make()
@@ -539,12 +544,9 @@ class BulkDailyChargeEntry extends Page
         if ($skippedLocked > 0) {
             $message .= "（※確定済の {$skippedLocked} 件をスキップしました）";
         }
-        if ($skippedDuplicate > 0) {
-            $message .= "（※同日同品目の重複 {$skippedDuplicate} 件をスキップしました）";
-        }
 
         Notification::make()
-            ->title("{$saved}件の自費記録を一括登録しました")
+            ->title("{$saved}件の自費記録を保存しました")
             ->body($message)
             ->success()
             ->send();
@@ -622,12 +624,15 @@ class BulkDailyChargeEntry extends Page
         if ($skippedLocked > 0) {
             $message .= "（※確定済入居者 {$skippedLocked} 名をスキップ）";
         }
-        if ($result['skipped'] > 0) {
-            $message .= "（※同日同品目の重複 {$result['skipped']} 件をスキップ）";
+        if (($result['skipped'] ?? 0) > 0) {
+            $message .= "（※同日同品目の重複 {$result['skipped']} 件を数量に加算）";
+        }
+        if (($result['merged'] ?? 0) > 0) {
+            $message .= "（※既存レコードへ数量を加算 {$result['merged']} 件）";
         }
 
         Notification::make()
-            ->title("{$result['created']}件の自費記録を一括登録しました")
+            ->title("{$result['created']}件の自費記録を保存しました")
             ->body($message)
             ->success()
             ->send();

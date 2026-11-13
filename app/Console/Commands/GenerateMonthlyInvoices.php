@@ -5,11 +5,14 @@ namespace App\Console\Commands;
 use App\Enums\InvoiceStatus;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
+use App\Notifications\MonthlyInvoicesGenerated;
 use App\Services\InvoiceCalculationService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class GenerateMonthlyInvoices extends Command
 {
@@ -89,8 +92,12 @@ class GenerateMonthlyInvoices extends Command
                 return self::FAILURE;
             }
 
-            return self::SUCCESS;
+            // 完了通知を送信（ドライラン時は通知しない）
+            if (! $dryRun && config('ops.notifications.monthly_generation_enabled', true)) {
+                $this->sendGenerationNotification($yearMonth, $facilityId, $result);
+            }
 
+            return self::SUCCESS;
         } catch (\Throwable $e) {
             $this->error("エラーが発生しました: {$e->getMessage()}");
             Log::error('GenerateMonthlyInvoices failed', [
@@ -230,5 +237,27 @@ class GenerateMonthlyInvoices extends Command
         if ($dryRun) {
             $this->warn('ドライランモードのため、データは保存されていません。実際に実行するには --dry-run オプションを外してください。');
         }
+    }
+
+    /**
+     * 月次請求生成完了通知を送信する。
+     */
+    private function sendGenerationNotification(string $yearMonth, ?int $facilityId, array $result): void
+    {
+        $recipients = app(\App\Services\Ops\NotificationTargetResolver::class)
+            ->resolveForFacility($facilityId);
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        Notification::send($recipients, new MonthlyInvoicesGenerated(
+            yearMonth: $yearMonth,
+            created: $result['created'],
+            updated: $result['updated'],
+            skipped: $result['skipped'],
+            errors: $result['errors'],
+            facilityId: $facilityId,
+        ));
     }
 }

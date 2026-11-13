@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Enums\InvoiceStatus;
 use App\Models\MonthlyClosingState;
 use App\Models\MonthlyInvoice;
+use App\Notifications\BillingAnomalyAlert;
 use App\Services\BillingAnomalyDetector;
 use App\Services\InvoiceCalculationService;
 use App\Services\InvoiceCsvExportService;
@@ -14,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification as SupportNotification;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -101,6 +103,22 @@ class MonthlyClosingWizard extends Page implements HasForms
             ->body($summary)
             ->status($this->anomalyReport['error_count'] > 0 ? 'danger' : 'success')
             ->send();
+
+        // 異常がある場合、管理者へ即時通知
+        if (($this->anomalyReport['error_count'] ?? 0) > 0 || ($this->anomalyReport['warning_count'] ?? 0) > 0) {
+            if (config('ops.notifications.anomaly_alert_enabled', true)) {
+                $recipients = app(\App\Services\Ops\NotificationTargetResolver::class)
+                    ->resolveForFacility($this->facilityId);
+
+                if ($recipients->isNotEmpty()) {
+                    SupportNotification::send($recipients, new BillingAnomalyAlert(
+                        yearMonth: $this->yearMonth,
+                        anomalyReport: $this->anomalyReport,
+                        facilityId: $this->facilityId,
+                    ));
+                }
+            }
+        }
     }
 
     /** Errorがある場合は次へ進めないバリデーション（Step 20） */
@@ -287,15 +305,15 @@ class MonthlyClosingWizard extends Page implements HasForms
 
         try {
             DB::transaction(function () use ($state) {
-                // 未確定（unbilled）のまま残っている請求があればクローズ不可
+                // 未確定（unbilled / 承認待ち）のまま残っている請求があればクローズ不可
                 $unbilledCount = MonthlyInvoice::query()
                     ->forYearMonth($this->yearMonth)
                     ->forFacility($this->facilityId)
-                    ->where('status', InvoiceStatus::Unbilled)
+                    ->whereIn('status', [InvoiceStatus::Unbilled, InvoiceStatus::PendingApproval])
                     ->count();
 
                 if ($unbilledCount > 0) {
-                    throw new \DomainException("未確定（下書き）の請求書が {$unbilledCount} 件あります。確定後にクローズしてください。");
+                    throw new \DomainException("未確定（下書き・承認待ち）の請求書が {$unbilledCount} 件あります。確定後にクローズしてください。");
                 }
 
                 while ($state->status !== MonthlyClosingState::STATUS_CLOSED) {

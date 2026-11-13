@@ -37,3 +37,21 @@ database/database.sqlite
 !/.env.example
 !/.env.production.example
 /*.env
+
+# --- 追加：リポジトリ衛生のため追跡から除外 ---
+/pcov.zip
+/pcov_extracted/
+/composer.phar
+/cookies.txt
+/*.bak
+/basic_test.php
+/manual_test_validation.php
+/test_dotenv.php
+/test_final_result.txt
+/test_pdf.php
+/scripts/debug_*.php
+/scripts/test_pdf.php
+/scripts/load_test.php
+/scripts/loadtest/debug_*.php
+/scripts/loadtest/results/
+/storage/app/app/debug_*.pdf

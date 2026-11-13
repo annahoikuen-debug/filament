@@ -13,9 +13,11 @@ use App\Observers\DailyChargeObserver;
 use App\Policies\MonthlyInvoicePolicy;
 use App\Services\Accounting\AccountingSyncService;
 use App\Services\FacilityConfigService;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -45,6 +47,12 @@ class AppServiceProvider extends ServiceProvider
         ChatbotSynonym::observe(ChatbotSynonymObserver::class);
 
         $this->registerRateLimiters();
+
+        // ログイン成功時に 2FA 検証セッションをリセット
+        Event::listen(Login::class, function ($event) {
+            $event->request->session()->put('2fa_verified', false);
+            $event->request->session()->forget('2fa_verified_at');
+        });
     }
 
     /**
@@ -56,6 +64,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('trial-convert', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
         RateLimiter::for('booking-create', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
         RateLimiter::for('quote-send', fn (Request $request) => Limit::perMinute(3)->by($request->ip()));
+        RateLimiter::for('downloads', fn (Request $request) => Limit::perMinute(30)->by($request->user() ?? $request->ip()));
+        RateLimiter::for('two-factor-verify', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
     }
 
     /**

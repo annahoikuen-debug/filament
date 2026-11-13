@@ -85,7 +85,7 @@ class DatabaseBackupCommandTest extends TestCase
         config()->set('database.default', 'sqlite');
 
         $this->artisan('backup:database', ['--type' => 'database', '--notify' => true])
-            ->expectsOutputToContain('通知送信機能は別途実装が必要です')
+            ->expectsOutputToContain('バックアップ正常完了')
             ->assertSuccessful();
     }
 

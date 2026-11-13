@@ -355,7 +355,9 @@ class NewIntentsTest extends TestCase
         ]);
 
         // MonthParser は「今月」を null（最新月扱い）にするため、明示的な月指定で絞り込む
-        $response = $this->getService()->handle($this->makeRequest('山田太郎の10月の介護請求'), $this->user);
+        // 今月の月番号を動的生成し、日付依存（フレーキー）を防ぐ
+        $monthLabel = now()->format('n');
+        $response = $this->getService()->handle($this->makeRequest("山田太郎の{$monthLabel}月の介護請求"), $this->user);
 
         $this->assertEquals('service_invoice', $response->intent);
         $this->assertCount(1, $response->data['invoices']);

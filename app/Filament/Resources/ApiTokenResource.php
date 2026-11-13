@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 class ApiTokenResource extends Resource
@@ -41,7 +42,10 @@ class ApiTokenResource extends Resource
                     ->schema([
                         Select::make('facility_id')
                             ->label('施設')
-                            ->options(fn () => Facility::where('is_active', true)->pluck('name', 'id'))
+                            ->options(fn () => Facility::where('is_active', true)
+                                ->when(Auth::user()?->requiresFacilityScope(),
+                                    fn ($q) => $q->where('id', Auth::user()->facility_id))
+                                ->pluck('name', 'id'))
                             ->required()
                             ->searchable()
                             ->default(fn () => Auth::user()?->facility_id),
@@ -57,6 +61,8 @@ class ApiTokenResource extends Resource
                             ->options([
                                 'invoices.read' => '請求データの読み取り (invoices.read)',
                                 'invoices.write' => '請求データの書き込み (invoices.write)',
+                                'mobile.read' => 'スマホ入力の読み取り (mobile.read)',
+                                'mobile.write' => 'スマホ入力の書き込み (mobile.write)',
                             ])
                             ->required()
                             ->columns(2)
@@ -126,5 +132,20 @@ class ApiTokenResource extends Resource
             'create' => Pages\CreateApiToken::route('/create'),
             'edit' => Pages\EditApiToken::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * 施設によるデータ分離（他施設のAPIトークンへの不正アクセスを防止）
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $user = Auth::user();
+        if ($user && $user->requiresFacilityScope()) {
+            $query->where('facility_id', $user->facility_id);
+        }
+
+        return $query;
     }
 }

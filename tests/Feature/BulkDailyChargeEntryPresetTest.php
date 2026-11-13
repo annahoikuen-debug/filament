@@ -116,12 +116,14 @@ class BulkDailyChargeEntryPresetTest extends TestCase
         $this->assertSame(1, $result1['created']);
         $this->assertSame(0, $result1['skipped']);
 
-        // 同じレコードを再送 → 全件スキップ
+        // 同じレコードを再送 → 数量に加算（merged）
         $result2 = $this->service->bulkCreate($records);
         $this->assertSame(0, $result2['created']);
-        $this->assertSame(1, $result2['skipped']);
+        $this->assertSame(0, $result2['skipped']);
+        $this->assertSame(1, $result2['merged']);
 
         $this->assertSame(1, DailyCharge::count());
+        $this->assertSame(2, DailyCharge::first()->quantity); // 数量が加算されていること
     }
 
     public function test_曜日パターンで月水金のみに展開される(): void

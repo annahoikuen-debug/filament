@@ -9,6 +9,7 @@ use App\Models\Resident;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Database\QueryException;
 
 /**
  * Step 11-12: プリセット一括展開サービス
@@ -67,14 +68,14 @@ class DailyChargePresetService
     }
 
     /**
-     * レコードを一括登録（重複スキップ付き）
+     * レコードを一括登録（重複時は数量を加算して1行に統合）
      *
-     * @return array{created: int, skipped: int}
+     * @return array{created: int, skipped: int, merged: int}
      */
     public function bulkCreate(array $records): array
     {
         if ($records === []) {
-            return ['created' => 0, 'skipped' => 0];
+            return ['created' => 0, 'skipped' => 0, 'merged' => 0];
         }
 
         // 同一日・同一品目・同一入居者の重複検出（Step 14: 排他制御）
@@ -82,15 +83,32 @@ class DailyChargePresetService
         $seen = [];
         $toInsert = [];
         $skipped = 0;
+        $merged = 0;
 
         foreach ($records as $record) {
             $key = $record['resident_id'].'|'.$record['charge_item_id'].'|'.$record['date'];
-            if (isset($existing[$key]) || isset($seen[$key])) {
-                $skipped++;
+            if (isset($existing[$key])) {
+                // 既存レコードに数量を加算
+                try {
+                    DailyCharge::where('resident_id', $record['resident_id'])
+                        ->where('charge_item_id', $record['charge_item_id'])
+                        ->where('date', $record['date'])
+                        ->increment('quantity', (int) $record['quantity']);
+                    $merged++;
+                } catch (\Throwable $e) {
+                    $skipped++;
+                }
 
                 continue;
             }
-            $seen[$key] = true;
+            if (isset($seen[$key])) {
+                // 同一バッチ内の重複は数量を合算してから挿入
+                $toInsert[array_search($seen[$key], $toInsert, true)]['quantity']
+                    = (int) $toInsert[array_search($seen[$key], $toInsert, true)]['quantity'] + (int) $record['quantity'];
+                $skipped++;
+                continue;
+            }
+            $seen[$key] = $record;
             $toInsert[] = $record;
         }
 
@@ -109,7 +127,7 @@ class DailyChargePresetService
             }
         }
 
-        return ['created' => count($toInsert), 'skipped' => $skipped];
+        return ['created' => count($toInsert), 'skipped' => $skipped, 'merged' => $merged];
     }
 
     /**
