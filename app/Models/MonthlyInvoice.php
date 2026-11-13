@@ -4,12 +4,12 @@ namespace App\Models;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Config;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -79,6 +79,7 @@ class MonthlyInvoice extends Model
         'tax_amount',
         'total_with_tax',
     ];
+
     /**
      * 締め済み（closed）の月に変更を許可する入金・領収書系フィールド
      *
@@ -202,11 +203,15 @@ class MonthlyInvoice extends Model
 
     /**
      * 入金処理を行い、領収書番号を発行する
+     *
+     * @param  bool  $skipEvidenceCheck  証憑チェックをスキップするか（自動消込等で使用）
      */
-    public function markAsPaid(PaymentMethod $method, ?string $paidAt = null, ?string $receiptDateMode = null, ?string $customReceiptDate = null): void
+    public function markAsPaid(PaymentMethod $method, ?string $paidAt = null, ?string $receiptDateMode = null, ?string $customReceiptDate = null, bool $skipEvidenceCheck = false): void
     {
         // 証憑添付必須モードの場合、証憑がないと入金消込をブロック
-        if (Config::get('billing.payment_evidence_required', false)
+        // （自動消込等で skipEvidenceCheck=true の場合はスキップ）
+        if (! $skipEvidenceCheck
+            && Config::get('billing.payment_evidence_required', false)
             && $this->paymentEvidences()->count() === 0) {
             throw new \DomainException(
                 '入金消込には証憑（受領書・明細書・振込明細等）の添付が必要です。'
@@ -339,7 +344,7 @@ class MonthlyInvoice extends Model
     /**
      * 証憑リレーション
      */
-    public function paymentEvidences(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function paymentEvidences(): HasMany
     {
         return $this->hasMany(PaymentEvidence::class, 'monthly_invoice_id');
     }

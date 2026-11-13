@@ -131,8 +131,9 @@ class ZenginReconcileService
                     }
 
                     // 振替成功: markAsPaid で消込（領収書番号は自動採番）
+                    // 自動消込はシステム処理のため証憑チェックをスキップ
                     if ($invoice->status !== InvoiceStatus::Paid) {
-                        $invoice->markAsPaid(PaymentMethod::DirectDebit, $paidAt);
+                        $invoice->markAsPaid(PaymentMethod::DirectDebit, $paidAt, null, null, true);
                     }
                     $successCount++;
                     $successAmount += (int) $entry['amount'];
