@@ -8,7 +8,7 @@ class FuzzyMatcher
      * 2つの文字列間の類似度（0.0 〜 1.0）を計算する
      * マルチバイト文字列に対応したレーベンシュタイン距離
      */
-    public function similarity(string $a, string $b): float
+    public static function similarity(string $a, string $b): float
     {
         $a = trim($a);
         $b = trim($b);
@@ -24,7 +24,7 @@ class FuzzyMatcher
             return 0.0;
         }
 
-        $distance = $this->mbLevenshtein($a, $b);
+        $distance = self::mbLevenshtein($a, $b);
         $maxLen = max($lenA, $lenB);
 
         return max(0.0, 1.0 - ($distance / $maxLen));
@@ -48,7 +48,7 @@ class FuzzyMatcher
     /**
      * マルチバイト対応のレーベンシュタイン距離
      */
-    private function mbLevenshtein(string $str1, string $str2): int
+    private static function mbLevenshtein(string $str1, string $str2): int
     {
         $chars1 = mb_str_split($str1);
         $chars2 = mb_str_split($str2);

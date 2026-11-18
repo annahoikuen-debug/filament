@@ -68,10 +68,9 @@ class ResidentQueryService
         }
 
         // 2. カナ一致 & 曖昧一致
-        $matcher = $this->fuzzyMatcher ?? new FuzzyMatcher;
         $threshold = (float) config('chatbot.fuzzy.threshold', 0.7);
 
-        $normalizedKeyword = $matcher->normalizeKana($keyword);
+        $normalizedKeyword = FuzzyMatcher::normalizeKana($keyword);
 
         // 2-1. 正規化インデックスによる高速完全・前方一致（DBインデックス活用）
         if ($normalizedKeyword !== '') {
@@ -102,8 +101,8 @@ class ResidentQueryService
         $scored = [];
 
         foreach ($allResidents as $resident) {
-            $normalizedKana = $resident->normalized_kana ?? $matcher->normalizeKana($resident->name_kana ?? '');
-            $normalizedName = $resident->normalized_name ?? $matcher->normalizeKana($resident->name);
+            $normalizedKana = $resident->normalized_kana ?? FuzzyMatcher::normalizeKana($resident->name_kana ?? '');
+            $normalizedName = $resident->normalized_name ?? FuzzyMatcher::normalizeKana($resident->name);
 
             // カナ正規化後の完全一致/部分一致
             if ($normalizedKeyword !== '' && (
@@ -121,10 +120,10 @@ class ResidentQueryService
 
             // 曖昧一致（名前およびカナに対するレーベンシュタイン類似度）
             $nameSim = max(
-                $matcher->similarity($resident->name, $keyword),
-                $matcher->similarity($normalizedName, $normalizedKeyword)
+                FuzzyMatcher::similarity($resident->name, $keyword),
+                FuzzyMatcher::similarity($normalizedName, $normalizedKeyword)
             );
-            $kanaSim = $resident->name_kana ? $matcher->similarity($normalizedKana, $normalizedKeyword) : 0.0;
+            $kanaSim = $resident->name_kana ? FuzzyMatcher::similarity($normalizedKana, $normalizedKeyword) : 0.0;
             $bestSim = max($nameSim, $kanaSim);
 
             // プレフィックスに「施設」「ホーム」等の共通語が含まれていて識別部が異なる場合の過剰一致を抑制

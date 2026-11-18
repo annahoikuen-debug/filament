@@ -38,6 +38,13 @@ class TwoFactorAuthService
 
     /**
      * TOTP コードを検証（時間窓 ±1 = 前後30秒）
+     *
+     * 検証に成功したコードは Cache に使用済みとして記録され、
+     * 同一コードの再利用（リプレイ）は以後拒否される（TTL 90秒）。
+     *
+     * セマンティクス: 「検証成功 = コード消費」。
+     * 呼び出し元は、検証成功が直ちに操作の確定を意味するフロー
+     * （2FA 検証・無効化・セットアップ確認）でのみ使用すること。
      */
     public function verifyCode(string $secret, string $code): bool
     {
@@ -59,6 +66,7 @@ class TwoFactorAuthService
             if (hash_equals($calculatedCode, $code)) {
                 // 使用済みとしてマーク（TTL 90秒: -1/0/+1 の窓をカバー）
                 Cache::put($replayKey, true, 90);
+
                 return true;
             }
         }
