@@ -55,3 +55,8 @@ database/database.sqlite
 /scripts/loadtest/debug_*.php
 /scripts/loadtest/results/
 /storage/app/app/debug_*.pdf
+
+# 実行時生成アーティファクト（バージョン管理対象外）
+/storage/app/temp/*
+/storage/app/private/invoices/*
+/storage/framework/testing/disks/s3/database_backups/*

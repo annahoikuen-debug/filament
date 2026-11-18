@@ -56,15 +56,14 @@ class Resident extends Model
                 $resident->base_management_fee = ($resident->base_management_fee_non_taxable ?? 0) + ($resident->base_management_fee_taxable ?? 0);
             }
 
-            $matcher = new FuzzyMatcher;
             if ($resident->name) {
-                $resident->normalized_name = $matcher->normalizeKana($resident->name);
+                $resident->normalized_name = FuzzyMatcher::normalizeKana($resident->name);
             }
             if ($resident->name_kana) {
-                $resident->normalized_kana = $matcher->normalizeKana($resident->name_kana);
+                $resident->normalized_kana = FuzzyMatcher::normalizeKana($resident->name_kana);
             }
             if ($resident->nickname) {
-                $resident->normalized_nickname = $matcher->normalizeKana($resident->nickname);
+                $resident->normalized_nickname = FuzzyMatcher::normalizeKana($resident->nickname);
             } else {
                 $resident->normalized_nickname = null;
             }

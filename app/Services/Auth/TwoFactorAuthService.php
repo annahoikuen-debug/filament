@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
@@ -47,9 +48,17 @@ class TwoFactorAuthService
 
         $currentTimeSlice = (int) floor(time() / 30);
 
+        // 同一コードの再利用を拒否（TOTP リプレイ攻撃対策）
+        $replayKey = 'totp:replay:'.hash('sha256', $secret.'|'.$code);
+        if (Cache::has($replayKey)) {
+            return false;
+        }
+
         for ($i = -1; $i <= 1; $i++) {
             $calculatedCode = $this->calculateTotp($secret, $currentTimeSlice + $i);
             if (hash_equals($calculatedCode, $code)) {
+                // 使用済みとしてマーク（TTL 90秒: -1/0/+1 の窓をカバー）
+                Cache::put($replayKey, true, 90);
                 return true;
             }
         }

@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Models\DirectDebitResult;
 use App\Models\Facility;
+use App\Models\MonthlyClosingState;
 use App\Models\MonthlyInvoice;
 use App\Models\Resident;
 use App\Services\Banking\ZenginReconcileService;
@@ -147,11 +148,67 @@ class ZenginReconcileTest extends TestCase
         $this->assertSame(1, DirectDebitResult::count());
     }
 
-    // ------------------------------------------------------------------
+    public function test_Paidの請求書は振替不能でもステータスが退行しない(): void
+    {
+        $invoice = $this->createInvoice('4001');
+        $invoice->markAsPaid(PaymentMethod::BankTransfer, '2026-10-27');
 
-    protected function createInvoice(string $seed): MonthlyInvoice
+        $content = $this->buildResultFile([
+            ['resident_id' => $invoice->resident_id, 'amount' => $invoice->total_with_tax, 'code' => '1'],
+        ]);
+
+        $result = $this->service->reconcile($content, '2026-10', '2026-10-27');
+
+        $this->assertSame(0, $result['success_count']);
+        $this->assertSame(1, $result['failed_count']);
+        $this->assertSame(1, DirectDebitResult::count());
+        $this->assertSame('資金不足', $result['details']['failed'][0]['reason']);
+
+        $invoice->refresh();
+        $this->assertSame(InvoiceStatus::Paid, $invoice->status);
+        $this->assertSame(PaymentMethod::BankTransfer, $invoice->payment_method);
+    }
+
+    public function test_締め月の振替不能でもファイル全体がロールバックされない(): void
     {
         $facility = Facility::factory()->create();
+
+        // 月オープン中に請求書を作成（締め後は MonthlyInvoice::create もガードでブロックされる）
+        $invSuccess = $this->createInvoice('5001', $facility->id);
+        $invFailed = $this->createInvoice('5002', $facility->id);
+
+        // 月を締める
+        MonthlyClosingState::create([
+            'billing_year_month' => '2026-10',
+            'facility_id' => $facility->id,
+            'status' => MonthlyClosingState::STATUS_CLOSED,
+        ]);
+
+        $content = $this->buildResultFile([
+            ['resident_id' => $invSuccess->resident_id, 'amount' => $invSuccess->total_with_tax, 'code' => '0'],
+            ['resident_id' => $invFailed->resident_id, 'amount' => $invFailed->total_with_tax, 'code' => '1'],
+        ]);
+
+        $result = $this->service->reconcile($content, '2026-10', '2026-10-27');
+
+        $this->assertSame(1, $result['success_count']);
+        $this->assertSame(1, $result['failed_count']);
+        $this->assertSame(2, DirectDebitResult::count());
+
+        $invSuccess->refresh();
+        $this->assertSame(InvoiceStatus::Paid, $invSuccess->status);
+
+        $invFailed->refresh();
+        // 締め月なのでステータス変更はスキップされ、unbilled のまま維持される
+        $this->assertSame(InvoiceStatus::Unbilled, $invFailed->status);
+        $this->assertSame('資金不足', $result['details']['failed'][0]['reason']);
+    }
+
+    // ------------------------------------------------------------------
+
+    protected function createInvoice(string $seed, ?int $facilityId = null): MonthlyInvoice
+    {
+        $facility = $facilityId ? Facility::find($facilityId) : Facility::factory()->create();
         $resident = Resident::create([
             'facility_id' => $facility->id,
             'room_number' => '10'.$seed,

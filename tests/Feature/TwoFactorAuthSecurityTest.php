@@ -31,6 +31,22 @@ class TwoFactorAuthSecurityTest extends TestCase
         $this->assertFalse($service->verifyCode($secret, '999999'));
     }
 
+    public function test_totp_code_cannot_be_replayed_within_window(): void
+    {
+        $service = new TwoFactorAuthService;
+        $secret = $service->generateSecretKey();
+
+        $timeSlice = (int) floor(time() / 30);
+        $method = new \ReflectionMethod(TwoFactorAuthService::class, 'calculateTotp');
+        $code = $method->invoke($service, $secret, $timeSlice);
+
+        // 1回目の検証: 成功（使用済みとしてマークされる）
+        $this->assertTrue($service->verifyCode($secret, $code));
+
+        // 2回目: 同じコードのリプレイは拒否される
+        $this->assertFalse($service->verifyCode($secret, $code));
+    }
+
     public function test_recovery_codes_can_be_consumed_only_once(): void
     {
         $service = new TwoFactorAuthService;

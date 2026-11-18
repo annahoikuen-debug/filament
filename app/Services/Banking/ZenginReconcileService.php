@@ -169,10 +169,28 @@ class ZenginReconcileService
                         continue;
                     }
 
-                    // 振替不能: failed相当としてアラート記録
-                    $invoice->update([
-                        'status' => InvoiceStatus::Billed,
-                    ]);
+                    // Paid の請求書はステータスを退行させない（手動消込等の確定を守る）
+                    if ($invoice->status !== InvoiceStatus::Paid) {
+                        try {
+                            $invoice->update([
+                                'status' => InvoiceStatus::Billed,
+                            ]);
+                        } catch (\RuntimeException $e) {
+                            // 締め月等でステータス更新がスキップされた場合、
+                            // 例外でトランザクション全体をロールバックさせない
+                            Log::warning('ZenginReconcile: 請求書ステータス更新をスキップ(締め月等)', [
+                                'resident_id' => $entry['resident_id'],
+                                'monthly_invoice_id' => $invoice->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                            $details['skipped'][] = [
+                                'resident_id' => $entry['resident_id'],
+                                'amount' => (int) $entry['amount'],
+                                'reason' => '締め月のためステータスを請求済に更新できませんでした（結果は DirectDebitResult に記録）',
+                            ];
+                        }
+                    }
+
                     $failedCount++;
                     $failedAmount += (int) $entry['amount'];
                     $details['failed'][] = [

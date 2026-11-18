@@ -4,7 +4,7 @@
     "description": "Elderly Care Facility Billing Management System with Filament",
     "license": "MIT",
     "require": {
-        "php": "^8.2",
+        "php": "^8.4.27",
         "bacon/bacon-qr-code": "^2.0",
         "barryvdh/laravel-dompdf": "^3.0",
         "filament/filament": "^3.2",

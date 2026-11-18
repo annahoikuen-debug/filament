@@ -33,7 +33,7 @@ class FuzzyMatcher
     /**
      * カナ・全角半角・空白・濁点を正規化する
      */
-    public function normalizeKana(string $text): string
+    public static function normalizeKana(string $text): string
     {
         // 全角英数字・スペースを半角に変換、ひらがなを全角カタカナに変換（K: 半角カタカナを全角カタカナに、V: 濁点付きを1文字に、c: ひらがなをカタカナに、s: 全角スペースを半角に）
         $converted = mb_convert_kana($text, 'KVCs', 'UTF-8');
