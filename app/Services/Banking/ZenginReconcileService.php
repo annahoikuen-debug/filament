@@ -26,18 +26,19 @@ class ZenginReconcileService
     /**
      * 結果ファイルを取込し、請求ステータスを自動更新する
      *
+     * details.skipped の reason には以下が含まれ得る:
+     * - 同一ファイル内の重複エントリ
+     * - 振替成功済み（再取込による重複をスキップ）
+     * - 同一の振替不能結果を記録済み
+     * - 締め月のためステータスを請求済に更新できませんでした
+     *   （この場合 details.failed にも同一イベントが記録される。failed_count は振替不能の事実数、
+     *   skipped_count はステータス更新の未実施数を意味するため、
+     *   UI 表示時は reason で分岐して二重表示を避けること）
+     *
      * @param  string  $content  全銀結果ファイルの内容
      * @param  string  $yearMonth  対象請求年月 (Y-m)
      * @param  ?string  $paidAt  入金日 (Y-m-d)
      * @return array{success_count: int, failed_count: int, mismatch_count: int, skipped_count: int, success_amount: int, failed_amount: int, mismatch_amount: int, details: array}
-     *                                                                                                                                                                              details.skipped の reason には以下が含まれ得る:
-     *                                                                                                                                                                              - 同一ファイル内の重複エントリ
-     *                                                                                                                                                                              - 振替成功済み（再取込による重複をスキップ）
-     *                                                                                                                                                                              - 同一の振替不能結果を記録済み
-     *                                                                                                                                                                              - 締め月のためステータスを請求済に更新できませんでした
-     *                                                                                                                                                                              （この場合 details.failed にも同一イベントが記録される。failed_count は振替不能の事実数、
-     *                                                                                                                                                                              skipped_count はステータス更新の未実施数を意味するため、
-     *                                                                                                                                                                              UI 表示時は reason で分岐して二重表示を避けること）
      */
     public function reconcile(string $content, string $yearMonth, ?string $paidAt = null): array
     {

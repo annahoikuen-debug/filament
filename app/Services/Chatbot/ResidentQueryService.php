@@ -14,10 +14,6 @@ use Illuminate\Support\Facades\DB;
 
 class ResidentQueryService
 {
-    public function __construct(
-        private readonly ?FuzzyMatcher $fuzzyMatcher = null,
-    ) {}
-
     /**
      * 施設スコープを適用した入居者検索（完全一致 → カナ一致 → 曖昧一致）
      */
